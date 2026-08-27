@@ -57,12 +57,26 @@ export async function GET(
     }
 
     try {
+      // Resolve the repository ID — if it's a GitHub integer ID, look up the DB UUID first
+      let repoDbId = id;
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+      if (!isUuid) {
+        const repo = await db.query.repositories.findFirst({
+          where: eq(repositories.githubRepoId, parseInt(id, 10)),
+          columns: { id: true },
+        });
+        if (!repo) {
+          return NextResponse.json({ success: false, error: 'Repository not found' }, { status: 200 });
+        }
+        repoDbId = repo.id;
+      }
+
       const reviewRecord = await db.query.reviews.findFirst({
-        where: eq(reviews.repositoryId, id),
+        where: eq(reviews.repositoryId, repoDbId),
       });
 
       if (!reviewRecord) {
-        return NextResponse.json({ success: false, error: 'AI Review not found' }, { status: 404 });
+        return NextResponse.json({ success: false, error: 'AI Review not found' }, { status: 200 });
       }
 
       return NextResponse.json({

@@ -3,6 +3,7 @@ import { db } from '@/lib/drizzle';
 import { users, passports, repositories, reviews, trustScores, skillDna } from '@/database/schema';
 import { PassportBadgeService } from '@/services/passport/badge';
 import { PassportTimelineService } from '@/services/passport/timeline';
+import { getDummyUserByUsername } from '@/lib/dummyData';
 import { eq, and } from 'drizzle-orm';
 import ProfileClientView from './ProfileClientView';
 
@@ -65,54 +66,53 @@ export default async function PublicProfilePage(
 ) {
   const { username } = await params;
 
-  // Resolve user
-  let userRecord = await db.query.users.findFirst({
-    where: eq(users.username, username),
-  });
+  // Resolve user from DB or Dummy Users
+  let userRecord: any = null;
+  try {
+    userRecord = await db.query.users.findFirst({
+      where: eq(users.username, username),
+    });
+  } catch {}
 
   // Mock profile fallback
   if (!userRecord) {
-    if (username === 'siddharthkadbhane-pixel') {
-      userRecord = {
-        id: '1',
-        email: 'developer@skillverse.dev',
-        name: 'Sidharth Kadbhane',
-        username: 'siddharthkadbhane-pixel',
-        avatarUrl: 'https://avatars.githubusercontent.com/u/84218321?v=4',
-        bio: 'Full Stack Engineer specializing in TypeScript, Next.js, PostgreSQL and Distributed AI Pipelines.',
-        website: 'https://siddharthkadbhane-pixel.github.io',
-        location: 'Mumbai, India',
-        role: 'developer',
-        githubToken: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-    } else {
-      return (
-        <div className="flex h-screen w-screen flex-col items-center justify-center bg-zinc-950 gap-3 text-center px-4">
-          <h2 className="text-xl font-bold text-white">Profile Unavailable</h2>
-          <p className="text-zinc-500 text-xs max-w-sm">This user could not be found in the database workspace.</p>
-        </div>
-      );
-    }
+    const dummy = getDummyUserByUsername(username);
+    userRecord = {
+      id: dummy.id,
+      email: dummy.email,
+      name: dummy.name,
+      username: dummy.username,
+      avatarUrl: dummy.avatarUrl,
+      bio: dummy.bio,
+      website: dummy.website,
+      location: dummy.location,
+      role: dummy.role,
+      githubToken: null,
+      githubId: dummy.githubId,
+      companyId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
   }
+
+  const resolvedUser = userRecord!;
 
   // Get settings & increase views
   let passportRecord = await db.query.passports.findFirst({
-    where: eq(passports.userId, userRecord.id),
+    where: eq(passports.userId, resolvedUser.id),
   });
 
   const trustScore = await db.query.trustScores.findFirst({
-    where: eq(trustScores.userId, userRecord.id),
+    where: eq(trustScores.userId, resolvedUser.id),
   });
 
   const skillDnaRecord = await db.query.skillDna.findFirst({
-    where: eq(skillDna.userId, userRecord.id),
+    where: eq(skillDna.userId, resolvedUser.id),
   });
 
   const repos = await db.query.repositories.findMany({
     where: and(
-      eq(repositories.userId, userRecord.id),
+      eq(repositories.userId, resolvedUser.id),
       eq(repositories.isAnalyzed, true)
     ),
   });
@@ -146,14 +146,14 @@ export default async function PublicProfilePage(
     });
   }
 
-  const badges = await PassportBadgeService.calculateBadgesForUser(userRecord.id);
-  const timeline = await PassportTimelineService.compileTimelineForUser(userRecord.id);
+  const badges = await PassportBadgeService.calculateBadgesForUser(resolvedUser.id);
+  const timeline = await PassportTimelineService.compileTimelineForUser(resolvedUser.id);
 
   const initialData = {
     profile: {
-      ...userRecord,
-      createdAt: userRecord.createdAt.toISOString(),
-      updatedAt: userRecord.updatedAt.toISOString(),
+      ...resolvedUser,
+      createdAt: resolvedUser.createdAt.toISOString(),
+      updatedAt: resolvedUser.updatedAt.toISOString(),
     },
     passport: passportRecord ? {
       ...passportRecord,
@@ -201,13 +201,13 @@ export default async function PublicProfilePage(
     '@type': 'ProfilePage',
     'mainEntity': {
       '@type': 'Person',
-      'name': userRecord.name,
-      'alternateName': userRecord.username,
-      'description': userRecord.bio,
-      'image': userRecord.avatarUrl,
+      'name': resolvedUser.name,
+      'alternateName': resolvedUser.username,
+      'description': resolvedUser.bio,
+      'image': resolvedUser.avatarUrl,
       'sameAs': [
-        userRecord.website,
-        `https://github.com/${userRecord.username}`
+        resolvedUser.website,
+        `https://github.com/${resolvedUser.username}`
       ].filter(Boolean)
     }
   };

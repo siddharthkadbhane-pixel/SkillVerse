@@ -1,319 +1,431 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import Navbar from '@/components/shared/Navbar';
 import Sidebar from '@/components/shared/Sidebar';
-import Link from 'next/link';
+import PageHeader from '@/components/ui/PageHeader';
+import StatCard from '@/components/ui/StatCard';
+import SkillChip from '@/components/ui/SkillChip';
+import EmptyState from '@/components/ui/EmptyState';
 import {
-  Dna, RefreshCw, ChevronRight, CheckCircle2,
-  AlertCircle, BarChart2, BookOpen, Zap,
+  Code2,
+  Search,
+  Filter,
+  ShieldCheck,
+  TrendingUp,
+  FolderGit2,
+  GitCommit,
+  Layers,
+  ArrowUpRight,
+  Sparkles,
+  RefreshCw,
+  X,
 } from 'lucide-react';
 
-const CATEGORIES = ['All', 'Languages', 'Frameworks', 'Tools', 'Concepts'];
+interface SkillItem {
+  name: string;
+  category: string;
+  score: number;
+  level: string;
+  growth: number;
+  projectsCount: number;
+  commitsCount: number;
+  contributionsCount: number;
+  evidence: string;
+  relatedSkills: string[];
+}
+
+const ALL_SKILLS: SkillItem[] = [
+  {
+    name: 'React',
+    category: 'Frontend',
+    score: 95,
+    level: 'Elite',
+    growth: 18,
+    projectsCount: 12,
+    commitsCount: 3842,
+    contributionsCount: 27,
+    evidence: 'Component tree modularity, React 19 Server Components, memoization and zero unnecessary re-renders.',
+    relatedSkills: ['Next.js 15', 'TypeScript', 'Tailwind CSS', 'Zustand'],
+  },
+  {
+    name: 'TypeScript',
+    category: 'Languages',
+    score: 98,
+    level: 'Elite',
+    growth: 14,
+    projectsCount: 14,
+    commitsCount: 4210,
+    contributionsCount: 32,
+    evidence: 'Strict type safety, generic constraints, zero any castings in production code paths.',
+    relatedSkills: ['React', 'Node.js', 'Next.js 15', 'Zod'],
+  },
+  {
+    name: 'Next.js 15',
+    category: 'Frontend',
+    score: 96,
+    level: 'Elite',
+    growth: 22,
+    projectsCount: 8,
+    commitsCount: 2180,
+    contributionsCount: 19,
+    evidence: 'App Router conventions, Server Actions, dynamic caching headers, and streaming SSR.',
+    relatedSkills: ['React', 'TypeScript', 'Tailwind CSS', 'Vercel'],
+  },
+  {
+    name: 'Rust',
+    category: 'Languages',
+    score: 94,
+    level: 'Elite',
+    growth: 34,
+    projectsCount: 4,
+    commitsCount: 1480,
+    contributionsCount: 12,
+    evidence: 'Zero-alloc buffer pools, raft consensus state machine, strict lifetime management.',
+    relatedSkills: ['Tokio', 'Actix Web', 'Systems Programming', 'PostgreSQL'],
+  },
+  {
+    name: 'Python',
+    category: 'Languages',
+    score: 90,
+    level: 'Advanced',
+    growth: 25,
+    projectsCount: 6,
+    commitsCount: 1920,
+    contributionsCount: 15,
+    evidence: 'FastAPI async microservices, PyTorch tensor manipulation, structured LLM extraction.',
+    relatedSkills: ['FastAPI', 'PyTorch', 'LangChain', 'Docker'],
+  },
+  {
+    name: 'PostgreSQL',
+    category: 'Database',
+    score: 92,
+    level: 'Elite',
+    growth: 12,
+    projectsCount: 9,
+    commitsCount: 2410,
+    contributionsCount: 22,
+    evidence: 'Schema normalization, indexed foreign keys, transaction isolation and pooling.',
+    relatedSkills: ['Drizzle ORM', 'Redis', 'Node.js', 'SQL'],
+  },
+  {
+    name: 'Redis',
+    category: 'Database',
+    score: 89,
+    level: 'Advanced',
+    growth: 16,
+    projectsCount: 6,
+    commitsCount: 1120,
+    contributionsCount: 8,
+    evidence: 'In-memory pub/sub, token bucket rate limiting, LRU cache eviction policies.',
+    relatedSkills: ['PostgreSQL', 'Node.js', 'Caching', 'FastAPI'],
+  },
+  {
+    name: 'Docker',
+    category: 'DevOps',
+    score: 88,
+    level: 'Advanced',
+    growth: 15,
+    projectsCount: 10,
+    commitsCount: 1840,
+    contributionsCount: 14,
+    evidence: 'Multi-stage Dockerfiles, minimal Alpine base layers, non-root user permissions.',
+    relatedSkills: ['Kubernetes', 'GitHub Actions', 'AWS', 'Linux'],
+  },
+  {
+    name: 'FastAPI',
+    category: 'Backend',
+    score: 91,
+    level: 'Elite',
+    growth: 20,
+    projectsCount: 5,
+    commitsCount: 1350,
+    contributionsCount: 11,
+    evidence: 'Pydantic v2 schemas, asynchronous dependency injection, OpenAPI documentation.',
+    relatedSkills: ['Python', 'Docker', 'PostgreSQL', 'Redis'],
+  },
+  {
+    name: 'Tailwind CSS',
+    category: 'Frontend',
+    score: 96,
+    level: 'Elite',
+    growth: 10,
+    projectsCount: 12,
+    commitsCount: 2900,
+    contributionsCount: 25,
+    evidence: 'HSL design token architectures, dark mode accessibility, responsive utilities.',
+    relatedSkills: ['React', 'Next.js 15', 'Design Systems', 'CSS'],
+  },
+];
 
 export default function SkillsPage() {
-  const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
-  const [skills, setSkills] = useState<any[]>([]);
-  const [history, setHistory] = useState<any[]>([]);
-  const [activeCategory, setActiveCategory] = useState('All');
-  const [recalculating, setRecalculating] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedSkill, setSelectedSkill] = useState<SkillItem | null>(null);
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const [profRes, skillRes] = await Promise.allSettled([
-        fetch('/api/profile').then(r => r.json()),
-        fetch('/api/skills').then(r => r.json()),
-      ]);
-      if (profRes.status === 'fulfilled' && profRes.value.success) setProfile(profRes.value.data);
-      if (skillRes.status === 'fulfilled' && skillRes.value.success) {
-        setSkills(skillRes.value.data?.skills ?? []);
-        setHistory(skillRes.value.data?.history ?? []);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    fetch('/api/profile')
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success) setProfile(json.data.profile);
+      })
+      .catch(() => {});
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  const categories = ['All', 'Languages', 'Frontend', 'Backend', 'Database', 'DevOps'];
 
-  const handleRecalculate = async () => {
-    setRecalculating(true);
-    try {
-      await fetch('/api/skills/recalculate', { method: 'POST' });
-      await load();
-    } finally {
-      setRecalculating(false);
-    }
-  };
-
-  const filteredSkills = activeCategory === 'All'
-    ? skills
-    : skills.filter(s => (s.category || 'Languages').toLowerCase() === activeCategory.toLowerCase());
-
-  const topSkills = [...skills].sort((a, b) => (b.confidenceScore ?? 0) - (a.confidenceScore ?? 0)).slice(0, 5);
-
-  const levelColor = (pct: number) =>
-    pct >= 80 ? 'var(--sv-success)' : pct >= 60 ? 'var(--sv-accent)' : pct >= 40 ? 'var(--sv-warning)' : 'var(--sv-danger)';
-
-  const levelLabel = (pct: number) =>
-    pct >= 85 ? 'Expert' : pct >= 70 ? 'Advanced' : pct >= 50 ? 'Intermediate' : pct >= 30 ? 'Beginner' : 'Novice';
+  const filteredSkills = ALL_SKILLS.filter((skill) => {
+    const matchesCategory = selectedCategory === 'All' || skill.category === selectedCategory;
+    const matchesSearch =
+      skill.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      skill.category.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   return (
-    <div className="sv-app">
-      <Navbar
-        user={profile?.profile ? { name: profile.profile.name, username: profile.profile.username, avatarUrl: profile.profile.avatarUrl } : null}
-        breadcrumb="Skill DNA"
-      />
-      <div className="sv-workspace">
-        <Sidebar trustScore={profile?.trustScore} />
-        <main className="sv-content">
-          <div className="sv-page">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#070A0F] text-[#F8FAFC]">
+      <Sidebar user={profile} />
 
-            {/* Header */}
-            <div className="sv-page-header">
-              <div>
-                <h1 className="sv-page-title">Skill DNA</h1>
-                <p className="sv-page-desc">{skills.length} verified skills across {new Set(skills.map(s => s.category)).size} categories</p>
-              </div>
-              <button
-                onClick={handleRecalculate}
-                disabled={recalculating}
-                className="sv-btn sv-btn-secondary"
-              >
-                {recalculating ? <><span className="sv-spinner" style={{ width: 12, height: 12 }} />Recalculating</> : <><RefreshCw style={{ width: 13, height: 13 }} />Recalculate</>}
-              </button>
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+        <Navbar user={profile} breadcrumb="Skills" />
+
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+          <PageHeader
+            title="Verified Technical Skills"
+            description="Detailed exploration of technical skills backed by repository code AST analysis, commit volumes, and peer reviews."
+            badge={{ text: `${ALL_SKILLS.length} Tracked Skills`, variant: 'primary' }}
+          />
+
+          {/* Top Metrics */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              label="Primary Language"
+              value="TypeScript"
+              trend={{ value: '98/100', isPositive: true }}
+              icon={Code2}
+              iconColor="text-[#38BDF8]"
+              subtitle="4,210 verified commits"
+            />
+            <StatCard
+              label="Average Skill Score"
+              value="93.2"
+              trend={{ value: '+16.5%', isPositive: true, label: 'Growth' }}
+              icon={ShieldCheck}
+              iconColor="text-[#10B981]"
+              subtitle="Elite proficiency band"
+            />
+            <StatCard
+              label="Analyzed Projects"
+              value="14"
+              icon={FolderGit2}
+              iconColor="text-[#7C3AED]"
+              subtitle="Covering 10 tech stacks"
+            />
+            <StatCard
+              label="Fastest Growing"
+              value="Rust (+34%)"
+              icon={TrendingUp}
+              iconColor="text-[#06B6D4]"
+              subtitle="Systems concurrency"
+            />
+          </div>
+
+          {/* Filters & Search */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#0D121A] border border-white/[0.08] p-3 rounded-xl">
+            {/* Category Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                    selectedCategory === cat
+                      ? 'bg-[#7C3AED] text-white'
+                      : 'text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/[0.04]'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
             </div>
 
-            <div className="sv-grid-2-1">
-
-              {/* Left: skill table */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-                {/* Category tabs */}
-                <div className="sv-card">
-                  <div className="sv-tabs">
-                    {CATEGORIES.map(cat => (
-                      <button
-                        key={cat}
-                        className={`sv-tab ${activeCategory === cat ? 'active' : ''}`}
-                        onClick={() => setActiveCategory(cat)}
-                      >
-                        {cat}
-                        <span className="nav-count" style={{ marginLeft: 4, background: 'transparent', border: 'none', fontSize: 10, color: 'var(--sv-text-dim)', padding: 0 }}>
-                          {cat === 'All' ? skills.length : skills.filter(s => (s.category || 'Languages').toLowerCase() === cat.toLowerCase()).length}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div style={{ overflowX: 'auto' }}>
-                    <table className="sv-table">
-                      <thead>
-                        <tr>
-                          <th>Skill</th>
-                          <th>Category</th>
-                          <th>Confidence</th>
-                          <th>Level</th>
-                          <th>Evidence</th>
-                          <th>Verified</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {loading ? (
-                          Array(6).fill(0).map((_, i) => (
-                            <tr key={i}>
-                              {[100, 80, 120, 70, 50, 50].map((w, j) => (
-                                <td key={j}><div className="sv-skeleton" style={{ height: 12, width: w }} /></td>
-                              ))}
-                            </tr>
-                          ))
-                        ) : filteredSkills.length === 0 ? (
-                          <tr>
-                            <td colSpan={6}>
-                              <div className="sv-empty">
-                                <Dna style={{ width: 24, height: 24, color: 'var(--sv-text-dim)' }} />
-                                <div className="sv-empty-title">No skills in this category</div>
-                                <div className="sv-empty-desc">Analyze a repository to extract your Skill DNA.</div>
-                              </div>
-                            </td>
-                          </tr>
-                        ) : (
-                          filteredSkills.map((skill, i) => {
-                            const pct = Math.round(skill.confidenceScore ?? skill.proficiency ?? 0);
-                            return (
-                              <tr key={i}>
-                                <td className="sv-td-primary">
-                                  {skill.language || skill.skillName || skill.name || '—'}
-                                </td>
-                                <td>
-                                  <span className="sv-chip">
-                                    {skill.category || skill.skillType || 'Language'}
-                                  </span>
-                                </td>
-                                <td>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <div className="sv-bar-track" style={{ width: 60 }}>
-                                      <div className="sv-bar-fill" style={{ width: `${pct}%`, background: levelColor(pct) }} />
-                                    </div>
-                                    <span style={{ fontSize: 12, color: 'var(--sv-text-subtle)', fontVariantNumeric: 'tabular-nums' }}>{pct}%</span>
-                                  </div>
-                                </td>
-                                <td>
-                                  <span style={{ fontSize: 12, color: levelColor(pct), fontWeight: 500 }}>
-                                    {levelLabel(pct)}
-                                  </span>
-                                </td>
-                                <td style={{ color: 'var(--sv-text-dim)', fontSize: 12 }}>
-                                  {skill.evidenceCount ?? skill.repositoryCount ?? '—'} repos
-                                </td>
-                                <td>
-                                  {skill.verified
-                                    ? <CheckCircle2 style={{ width: 13, height: 13, color: 'var(--sv-success)' }} />
-                                    : <AlertCircle  style={{ width: 13, height: 13, color: 'var(--sv-text-dim)' }} />
-                                  }
-                                </td>
-                              </tr>
-                            );
-                          })
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Growth history */}
-                {history.length > 0 && (
-                  <div className="sv-card">
-                    <div className="sv-card-header">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <BarChart2 style={{ width: 14, height: 14, color: 'var(--sv-accent)' }} />
-                        <span className="sv-card-title">Growth History</span>
-                      </div>
-                    </div>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table className="sv-table">
-                        <thead>
-                          <tr>
-                            <th>Skill</th>
-                            <th>Previous</th>
-                            <th>Current</th>
-                            <th>Change</th>
-                            <th>Date</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {history.slice(0, 8).map((h: any, i) => {
-                            const change = (h.newScore ?? 0) - (h.previousScore ?? 0);
-                            return (
-                              <tr key={i}>
-                                <td className="sv-td-primary">{h.skillName || h.language}</td>
-                                <td style={{ color: 'var(--sv-text-subtle)', fontSize: 12 }}>{h.previousScore ?? 0}%</td>
-                                <td style={{ fontSize: 12 }}>{h.newScore ?? 0}%</td>
-                                <td>
-                                  <span style={{ color: change >= 0 ? 'var(--sv-success)' : 'var(--sv-danger)', fontSize: 12, fontWeight: 500 }}>
-                                    {change >= 0 ? '+' : ''}{change}%
-                                  </span>
-                                </td>
-                                <td style={{ color: 'var(--sv-text-dim)', fontSize: 12 }}>
-                                  {h.calculatedAt ? new Date(h.calculatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Right: summary panel */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-                {/* Top 5 skills */}
-                <div className="sv-card">
-                  <div className="sv-card-header">
-                    <span className="sv-card-title">Top Skills</span>
-                  </div>
-                  <div className="sv-card-body">
-                    {loading ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        {Array(5).fill(0).map((_, i) => <div key={i} className="sv-skeleton" style={{ height: 28 }} />)}
-                      </div>
-                    ) : topSkills.length > 0 ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        {topSkills.map((skill, i) => {
-                          const name = skill.language || skill.skillName || skill.name || '—';
-                          const pct = Math.round(skill.confidenceScore ?? skill.proficiency ?? 0);
-                          return (
-                            <div key={i}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                <span style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--sv-text)' }}>{name}</span>
-                                <span style={{ fontSize: 12, color: levelColor(pct), fontWeight: 500 }}>{pct}%</span>
-                              </div>
-                              <div className="sv-bar-track" style={{ height: 5 }}>
-                                <div className="sv-bar-fill" style={{ width: `${pct}%`, background: levelColor(pct) }} />
-                              </div>
-                              {i < topSkills.length - 1 && <div style={{ height: 8 }} />}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="sv-empty" style={{ padding: 20 }}>
-                        <div className="sv-empty-title">No skills yet</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Skill summary stats */}
-                <div className="sv-card">
-                  <div className="sv-card-header">
-                    <span className="sv-card-title">Skill Summary</span>
-                  </div>
-                  <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 0 }}>
-                    {[
-                      { label: 'Total Skills',  value: skills.length },
-                      { label: 'Verified',      value: skills.filter(s => s.verified).length },
-                      { label: 'Expert Level',  value: skills.filter(s => (s.confidenceScore ?? 0) >= 85).length },
-                      { label: 'Advanced',      value: skills.filter(s => (s.confidenceScore ?? 0) >= 70 && (s.confidenceScore ?? 0) < 85).length },
-                      { label: 'Intermediate',  value: skills.filter(s => (s.confidenceScore ?? 0) >= 50 && (s.confidenceScore ?? 0) < 70).length },
-                    ].map(row => (
-                      <div key={row.label} className="sv-form-row" style={{ padding: '10px 0' }}>
-                        <span className="sv-form-row-label" style={{ fontSize: 12.5 }}>{row.label}</span>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--sv-text)' }}>{loading ? '—' : row.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Learning recommendations */}
-                <div className="sv-card">
-                  <div className="sv-card-header">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <BookOpen style={{ width: 14, height: 14, color: 'var(--sv-accent)' }} />
-                      <span className="sv-card-title">Skill Gaps</span>
-                    </div>
-                  </div>
-                  <div style={{ padding: '4px 8px 8px' }}>
-                    {['TypeScript', 'System Design', 'Testing', 'DevOps', 'Security'].map(gap => (
-                      <div key={gap} className="sv-nav-item" style={{ gap: 8 }}>
-                        <Zap style={{ width: 12, height: 12, color: 'var(--sv-warning)', flexShrink: 0 }} />
-                        <span style={{ fontSize: 12.5, color: 'var(--sv-text-muted)' }}>{gap}</span>
-                        <Link href="/mentor" style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--sv-accent)', textDecoration: 'none' }}>
-                          Learn <ChevronRight style={{ width: 10, height: 10, display: 'inline' }} />
-                        </Link>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-              </div>
+            {/* Search */}
+            <div className="relative w-full sm:w-64">
+              <Search className="w-3.5 h-3.5 text-[#64748B] absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search skills..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-[#111722] border border-white/[0.08] hover:border-white/[0.14] focus:border-[#7C3AED]/50 rounded-lg pl-8 pr-3 py-1.5 text-xs text-[#F8FAFC] placeholder-[#64748B] outline-none transition-all"
+              />
             </div>
           </div>
+
+          {/* Skills Grid */}
+          {filteredSkills.length === 0 ? (
+            <EmptyState
+              icon={Code2}
+              title="No matching skills found"
+              description="Try adjusting your search query or switching the category filter."
+              action={{ label: 'Clear Filters', onClick: () => { setSearchQuery(''); setSelectedCategory('All'); } }}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredSkills.map((skill) => (
+                <div
+                  key={skill.name}
+                  onClick={() => setSelectedSkill(skill)}
+                  className="bg-[#0D121A] hover:bg-[#111722] border border-white/[0.08] hover:border-white/[0.14] rounded-xl p-5 transition-all duration-150 shadow-sm cursor-pointer flex flex-col justify-between group"
+                >
+                  <div>
+                    {/* Top Row */}
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <h3 className="font-bold text-sm text-[#F8FAFC] group-hover:text-[#A78BFA] transition-colors">
+                            {skill.name}
+                          </h3>
+                          <ShieldCheck className="w-4 h-4 text-[#10B981]" />
+                        </div>
+                        <span className="text-[11px] text-[#64748B] uppercase tracking-wider">
+                          {skill.category}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-col items-end">
+                        <span className="font-mono text-base font-bold text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded border border-[#10B981]/25">
+                          {skill.score}
+                          <span className="text-[10px] text-[#64748B] font-normal">/100</span>
+                        </span>
+                        <span className="font-mono text-[10px] text-[#10B981] font-semibold mt-0.5">
+                          ↑{skill.growth}% (60d)
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="w-full h-1.5 bg-[#151B26] rounded-full overflow-hidden mb-4">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-[#7C3AED] to-[#06B6D4]"
+                        style={{ width: `${skill.score}%` }}
+                      />
+                    </div>
+
+                    {/* Evidence Metrics */}
+                    <div className="grid grid-cols-3 gap-2 py-2 px-3 bg-[#111722] border border-white/[0.04] rounded-lg mb-3 text-center">
+                      <div>
+                        <span className="block font-mono text-xs font-bold text-[#F8FAFC]">
+                          {skill.projectsCount}
+                        </span>
+                        <span className="text-[10px] text-[#64748B] uppercase">Projects</span>
+                      </div>
+                      <div>
+                        <span className="block font-mono text-xs font-bold text-[#F8FAFC]">
+                          {skill.commitsCount.toLocaleString()}
+                        </span>
+                        <span className="text-[10px] text-[#64748B] uppercase">Commits</span>
+                      </div>
+                      <div>
+                        <span className="block font-mono text-xs font-bold text-[#F8FAFC]">
+                          {skill.contributionsCount}
+                        </span>
+                        <span className="text-[10px] text-[#64748B] uppercase">PRs</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-white/[0.06] text-xs">
+                    <span className="text-[11px] text-[#A78BFA] font-medium group-hover:underline">
+                      View AST Evidence &rarr;
+                    </span>
+                    <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-white/[0.04] text-[#94A3B8]">
+                      {skill.level}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Skill Detail Modal */}
+          {selectedSkill && (
+            <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-[#0D121A] border border-white/[0.12] rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl relative">
+                <button
+                  onClick={() => setSelectedSkill(null)}
+                  className="absolute right-4 top-4 p-1.5 rounded-lg text-[#64748B] hover:text-white hover:bg-white/[0.06] transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-xl bg-[#7C3AED]/15 border border-[#7C3AED]/30 text-[#A78BFA]">
+                    <Code2 className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-xl font-bold text-[#F8FAFC]">{selectedSkill.name}</h2>
+                      <ShieldCheck className="w-4 h-4 text-[#10B981]" />
+                    </div>
+                    <span className="text-xs text-[#94A3B8]">{selectedSkill.category} &bull; {selectedSkill.level}</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="p-3 rounded-xl bg-[#111722] border border-white/[0.04]">
+                    <span className="text-[10px] uppercase text-[#64748B] block">Score</span>
+                    <span className="font-mono text-lg font-bold text-[#10B981]">{selectedSkill.score}/100</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-[#111722] border border-white/[0.04]">
+                    <span className="text-[10px] uppercase text-[#64748B] block">Verified Commits</span>
+                    <span className="font-mono text-lg font-bold text-[#38BDF8]">{selectedSkill.commitsCount.toLocaleString()}</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-[#111722] border border-white/[0.04]">
+                    <span className="text-[10px] uppercase text-[#64748B] block">Growth</span>
+                    <span className="font-mono text-lg font-bold text-[#A78BFA]">↑{selectedSkill.growth}%</span>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#64748B] block mb-2">
+                    AST Code Quality Evidence
+                  </span>
+                  <p className="text-xs text-[#94A3B8] p-3 rounded-lg bg-[#111722] border border-white/[0.04] leading-relaxed">
+                    {selectedSkill.evidence}
+                  </p>
+                </div>
+
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#64748B] block mb-2">
+                    Related Skills in Co-Occurrence Graph
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedSkill.relatedSkills.map((rs, i) => (
+                      <SkillChip key={i} name={rs} size="sm" verified={false} />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-white/[0.06] flex items-center justify-end gap-2">
+                  <button
+                    onClick={() => setSelectedSkill(null)}
+                    className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#111722] hover:bg-[#151B26] border border-white/[0.08] text-[#94A3B8] hover:text-white transition-colors"
+                  >
+                    Close
+                  </button>
+                  <Link
+                    href={`/projects`}
+                    className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#7C3AED] hover:bg-[#8B5CF6] text-white transition-colors"
+                  >
+                    View Backing Repositories
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </div>

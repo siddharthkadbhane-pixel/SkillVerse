@@ -62,9 +62,9 @@ export default function PassportPage() {
 
   const score = trustScore?.overallScore ?? 0;
   const trustColor =
-    score >= 900 ? 'var(--sv-accent)'  :
-    score >= 700 ? 'var(--sv-success)' :
-    score >= 400 ? 'var(--sv-warning)' : 'var(--sv-danger)';
+    score >= 900 ? 'var(--accent)'  :
+    score >= 700 ? 'var(--success)' :
+    score >= 400 ? 'var(--warning)' : 'var(--danger)';
   const trustLabel =
     score >= 900 ? 'Elite Developer'         :
     score >= 700 ? 'Trusted Developer'        :
@@ -130,7 +130,7 @@ export default function PassportPage() {
                 <div className="sv-card">
                   <div className="sv-card-header">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <ShieldCheck style={{ width: 14, height: 14, color: 'var(--sv-accent)' }} />
+                      <ShieldCheck style={{ width: 14, height: 14, color: 'var(--accent)' }} />
                       <span className="sv-card-title">Trust Score Breakdown</span>
                     </div>
                     <span className="sv-card-subtitle">Transparent scoring system</span>
@@ -159,15 +159,15 @@ export default function PassportPage() {
                           categories.map(cat => {
                             const val = trustScore?.[cat.key] ?? 0;
                             const pct = Math.round((val / cat.max) * 100);
-                            const color = pct >= 70 ? 'var(--sv-success)' : pct >= 40 ? 'var(--sv-warning)' : 'var(--sv-danger)';
+                            const color = pct >= 70 ? 'var(--success)' : pct >= 40 ? 'var(--warning)' : 'var(--danger)';
                             return (
                               <tr key={cat.key}>
                                 <td className="sv-td-primary">{cat.label}</td>
                                 <td>
                                   <span style={{ color, fontWeight: 600, fontSize: 13 }}>{val}</span>
                                 </td>
-                                <td style={{ color: 'var(--sv-text-dim)', fontSize: 12 }}>{cat.max}</td>
-                                <td style={{ color: 'var(--sv-text-subtle)', fontSize: 12 }}>{pct}%</td>
+                                <td style={{ color: 'var(--text-dim)', fontSize: 12 }}>{cat.max}</td>
+                                <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{pct}%</td>
                                 <td>
                                   <div className="sv-bar-track" style={{ width: 80 }}>
                                     <div className="sv-bar-fill" style={{ width: `${pct}%`, background: color }} />
@@ -178,10 +178,10 @@ export default function PassportPage() {
                           })
                         )}
                         {!loading && (
-                          <tr style={{ borderTop: '1px solid var(--sv-border)' }}>
-                            <td style={{ fontWeight: 600, fontSize: 13, color: 'var(--sv-text)' }}>Total</td>
+                          <tr style={{ borderTop: '1px solid var(--border)' }}>
+                            <td style={{ fontWeight: 600, fontSize: 13, color: 'var(--text)' }}>Total</td>
                             <td><span style={{ color: trustColor, fontWeight: 700, fontSize: 14 }}>{score}</span></td>
-                            <td style={{ color: 'var(--sv-text-dim)', fontSize: 12 }}>1000</td>
+                            <td style={{ color: 'var(--text-dim)', fontSize: 12 }}>1000</td>
                             <td><span style={{ color: trustColor, fontSize: 12, fontWeight: 500 }}>{Math.round(score / 10)}%</span></td>
                             <td>
                               <div className="sv-bar-track" style={{ width: 80 }}>
@@ -224,7 +224,7 @@ export default function PassportPage() {
                           topSkills.map((skill, i) => {
                             const pct = Math.round(skill.confidenceScore ?? skill.proficiency ?? 0);
                             const level = pct >= 85 ? 'Expert' : pct >= 70 ? 'Advanced' : pct >= 50 ? 'Intermediate' : 'Beginner';
-                            const color = pct >= 80 ? 'var(--sv-success)' : pct >= 60 ? 'var(--sv-accent)' : pct >= 40 ? 'var(--sv-warning)' : 'var(--sv-danger)';
+                            const color = pct >= 80 ? 'var(--success)' : pct >= 60 ? 'var(--accent)' : pct >= 40 ? 'var(--warning)' : 'var(--danger)';
                             return (
                               <tr key={i}>
                                 <td className="sv-td-primary">{skill.language || skill.skillName || '—'}</td>
@@ -234,13 +234,13 @@ export default function PassportPage() {
                                     <div className="sv-bar-track" style={{ width: 60 }}>
                                       <div className="sv-bar-fill" style={{ width: `${pct}%`, background: color }} />
                                     </div>
-                                    <span style={{ fontSize: 11, color: 'var(--sv-text-dim)' }}>{pct}%</span>
+                                    <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{pct}%</span>
                                   </div>
                                 </td>
                                 <td>
                                   {skill.verified
-                                    ? <CheckCircle2 style={{ width: 13, height: 13, color: 'var(--sv-success)' }} />
-                                    : <AlertCircle  style={{ width: 13, height: 13, color: 'var(--sv-text-dim)' }} />
+                                    ? <CheckCircle2 style={{ width: 13, height: 13, color: 'var(--success)' }} />
+                                    : <AlertCircle  style={{ width: 13, height: 13, color: 'var(--text-dim)' }} />
                                   }
                                 </td>
                               </tr>
@@ -279,20 +279,20 @@ export default function PassportPage() {
                           {analyzedRepos.map((repo, i) => (
                             <tr key={i}>
                               <td className="sv-td-primary">
-                                <Link href={`/repositories/${repo.id}`} style={{ color: 'var(--sv-text)', textDecoration: 'none' }}>
+                                <Link href={`/repositories/${repo.id}`} style={{ color: 'var(--text)', textDecoration: 'none' }}>
                                   {repo.name || repo.repoName}
                                 </Link>
                               </td>
                               <td>{repo.languages?.[0] || repo.primaryLanguage
                                 ? <span className="sv-chip">{repo.languages?.[0] || repo.primaryLanguage}</span>
-                                : <span style={{ color: 'var(--sv-text-dim)' }}>—</span>}
+                                : <span style={{ color: 'var(--text-dim)' }}>—</span>}
                               </td>
                               <td>
-                                <span style={{ color: (repo.aiScore ?? 0) >= 80 ? 'var(--sv-success)' : 'var(--sv-warning)', fontWeight: 600, fontSize: 13 }}>
+                                <span style={{ color: (repo.aiScore ?? 0) >= 80 ? 'var(--success)' : 'var(--warning)', fontWeight: 600, fontSize: 13 }}>
                                   {repo.aiScore ?? '—'}{repo.aiScore ? '/100' : ''}
                                 </span>
                               </td>
-                              <td style={{ color: 'var(--sv-success)', fontSize: 12 }}>
+                              <td style={{ color: 'var(--success)', fontSize: 12 }}>
                                 +{repo.trustImpact ?? Math.floor((repo.aiScore ?? 0) * 0.3)}
                               </td>
                             </tr>
@@ -334,17 +334,17 @@ export default function PassportPage() {
                     <div className="sv-divider" style={{ marginBottom: 14 }} />
                     {/* Tier guide */}
                     {[
-                      { range: '900–1000', label: 'Elite',    color: 'var(--sv-accent)' },
-                      { range: '700–899',  label: 'Trusted',  color: 'var(--sv-success)' },
-                      { range: '400–699',  label: 'Verified', color: 'var(--sv-warning)' },
-                      { range: '0–399',    label: 'Unverified', color: 'var(--sv-danger)' },
+                      { range: '900–1000', label: 'Elite',    color: 'var(--accent)' },
+                      { range: '700–899',  label: 'Trusted',  color: 'var(--success)' },
+                      { range: '400–699',  label: 'Verified', color: 'var(--warning)' },
+                      { range: '0–399',    label: 'Unverified', color: 'var(--danger)' },
                     ].map(tier => (
                       <div key={tier.range} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 0' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <div style={{ width: 6, height: 6, borderRadius: '50%', background: tier.color, flexShrink: 0 }} />
-                          <span style={{ fontSize: 12, color: 'var(--sv-text-muted)' }}>{tier.label}</span>
+                          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{tier.label}</span>
                         </div>
-                        <span style={{ fontSize: 11, color: 'var(--sv-text-dim)', fontVariantNumeric: 'tabular-nums' }}>{tier.range}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-dim)', fontVariantNumeric: 'tabular-nums' }}>{tier.range}</span>
                       </div>
                     ))}
                   </div>
@@ -370,12 +370,12 @@ export default function PassportPage() {
                             const change = (h.overallScore ?? 0) - (h.previousScore ?? 0);
                             return (
                               <tr key={i}>
-                                <td style={{ color: 'var(--sv-text-dim)', fontSize: 12 }}>
+                                <td style={{ color: 'var(--text-dim)', fontSize: 12 }}>
                                   {h.calculatedAt ? new Date(h.calculatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
                                 </td>
                                 <td style={{ fontWeight: 600, fontSize: 13 }}>{h.overallScore ?? 0}</td>
                                 <td>
-                                  <span style={{ color: change >= 0 ? 'var(--sv-success)' : 'var(--sv-danger)', fontSize: 12, fontWeight: 500 }}>
+                                  <span style={{ color: change >= 0 ? 'var(--success)' : 'var(--danger)', fontSize: 12, fontWeight: 500 }}>
                                     {change >= 0 ? '+' : ''}{change}
                                   </span>
                                 </td>
@@ -401,9 +401,9 @@ export default function PassportPage() {
                       'Maintain consistent commit history',
                       'Complete SkillVerse challenges',
                     ].map((tip, i) => (
-                      <div key={i} style={{ display: 'flex', gap: 8, padding: '7px 4px', borderBottom: i < 4 ? '1px solid var(--sv-border-2)' : 'none' }}>
-                        <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--sv-accent)', flexShrink: 0, marginTop: 5 }} />
-                        <span style={{ fontSize: 12, color: 'var(--sv-text-muted)', lineHeight: 1.5 }}>{tip}</span>
+                      <div key={i} style={{ display: 'flex', gap: 8, padding: '7px 4px', borderBottom: i < 4 ? '1px solid var(--border)' : 'none' }}>
+                        <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0, marginTop: 5 }} />
+                        <span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>{tip}</span>
                       </div>
                     ))}
                   </div>

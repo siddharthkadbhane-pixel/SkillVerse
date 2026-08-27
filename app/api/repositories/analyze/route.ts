@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/drizzle';
-import { repositories, reviews, userSkills, skills, trustScores, skillDna, activityLogs } from '@/database/schema';
+import { users, repositories, reviews, userSkills, skills, trustScores, skillDna, activityLogs } from '@/database/schema';
 import { getSessionUser } from '@/services/supabase';
 import { GitHubService } from '@/services/github';
 import { HuggingFaceService } from '@/services/huggingface';
@@ -15,6 +15,7 @@ const AnalyzeRequestSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  let mockReviewResult: any = null;
   try {
     const body = await req.json();
     const parsedData = AnalyzeRequestSchema.safeParse(body);
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
     const { githubRepoId, fullName, name, language } = parsedData.data;
 
     // Define a fallback mock review payload on DB or API failures
-    const mockReviewResult = {
+    mockReviewResult = {
       id: 'rev_mock_' + Math.random().toString(36).substring(2, 9),
       summary: `Verified review for ${fullName}. Project exposes structure built with modern modular architecture. Clean components layout detected and valid dependency boundaries.`,
       strengths: [
@@ -133,6 +134,7 @@ export async function POST(req: NextRequest) {
         githubRepoId,
         name,
         fullName,
+        htmlUrl: `https://github.com/${fullName}`,
         description: analysisData.packageJson?.description || null,
         language,
         isAnalyzed: true,
@@ -305,6 +307,19 @@ export async function POST(req: NextRequest) {
       action: 'repo_analysis_completed',
       metadata: { repository: fullName, score: reviewOverallScore },
     });
+
+    // Record Capability Growth Events (Phase 23)
+    try {
+      const { CapabilityGrowthService } = await import('@/services/dcc/growth');
+      await CapabilityGrowthService.processAuditGrowthEvents(
+        dbUser.id,
+        { id: repoRecord.id, name, fullName, isAnalyzed: true },
+        { overallScore: reviewOverallScore, architecture: aiReview.architecture, codeQuality: aiReview.codeQuality },
+        aiReview.detectedSkills || []
+      );
+    } catch (growthErr) {
+      console.warn('⚠️ Failed to record capability growth events in analyze route:', growthErr);
+    }
 
     return NextResponse.json({
       success: true,

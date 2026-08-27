@@ -23,9 +23,10 @@ export async function GET(
     }
 
     try {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
       const repo = await db.query.repositories.findFirst({
         where: and(
-          eq(repositories.id, id),
+          isUuid ? eq(repositories.id, id) : eq(repositories.githubRepoId, parseInt(id, 10)),
           eq(repositories.userId, user.id)
         ),
       });

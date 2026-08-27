@@ -1,10 +1,33 @@
 import React from 'react';
 import type { Metadata } from 'next';
+import { Inter, Outfit, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
+
+const outfit = Outfit({
+  subsets: ['latin'],
+  variable: '--font-outfit',
+  display: 'swap',
+  weight: ['400', '500', '600', '700', '800', '900'],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
+  display: 'swap',
+  weight: ['400', '500', '600', '700'],
+});
+
 export const metadata: Metadata = {
-  title: 'SkillVerse - Proof of Skill Platform',
-  description: 'Proving developer capability through verified repository audits and skill passports.',
+  title: 'SkillVerse — Developer Verification & Technical Hiring Platform',
+  description: 'Developers prove their abilities through real technical evidence, and companies discover developers based on that evidence. Proof over claims.',
+  keywords: ['developer verification', 'skill dna', 'technical hiring', 'code analysis', 'trust score', 'developer passport'],
+  themeColor: '#070A0F',
 };
 
 export default function RootLayout({
@@ -13,8 +36,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="antialiased bg-zinc-950 text-zinc-50 min-h-screen flex flex-col">
+    <html lang="en" className={`dark ${inter.variable} ${outfit.variable} ${jetbrainsMono.variable}`}>
+      <body className="font-sans antialiased bg-[#070A0F] text-[#F8FAFC]">
         {children}
       </body>
     </html>

@@ -1,0 +1,24 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/drizzle';
+import { aiAgents } from '@/database/schema';
+import { getSessionUser } from '@/services/supabase';
+import { Logger } from '@/lib/logger';
+
+export async function GET(req: NextRequest) {
+  try {
+    const user = await getSessionUser();
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const list = await db.select().from(aiAgents);
+
+    return NextResponse.json({
+      success: true,
+      data: list,
+    });
+  } catch (error: any) {
+    Logger.error('API Error in /api/agents:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}

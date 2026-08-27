@@ -64,15 +64,59 @@ export async function POST(
     }
 
     // Fetch repository record from database
-    const repoRecord = await db.query.repositories.findFirst({
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+    let repoRecord = await db.query.repositories.findFirst({
       where: and(
-        eq(repositories.id, id),
+        isUuid ? eq(repositories.id, id) : eq(repositories.githubRepoId, parseInt(id, 10)),
         eq(repositories.userId, user.id)
       ),
     });
 
     if (!repoRecord) {
-      return NextResponse.json({ success: false, error: 'Repository not found in workspace' }, { status: 404 });
+      if (isUuid) {
+        return NextResponse.json({ success: false, error: 'Repository not found in workspace' }, { status: 404 });
+      }
+      
+      // Fetch details from GitHub by ID and auto-import
+      try {
+        const repoData = await RepositoryAnalyzerService.githubFetch(`/repositories/${id}`, gitToken);
+        if (!repoData) {
+          return NextResponse.json({ success: false, error: 'Repository not found on GitHub' }, { status: 404 });
+        }
+        
+        const [insertedRepo] = await db
+          .insert(repositories)
+          .values({
+            userId: user.id,
+            githubRepoId: parseInt(id, 10),
+            name: repoData.name,
+            fullName: repoData.full_name,
+            description: repoData.description,
+            htmlUrl: repoData.html_url,
+            language: repoData.language,
+            stars: repoData.stargazers_count || 0,
+            forks: repoData.forks_count || 0,
+            isAnalyzed: false,
+            reviewStatus: 'idle',
+          })
+          .onConflictDoUpdate({
+            target: repositories.githubRepoId,
+            set: {
+              name: repoData.name,
+              fullName: repoData.full_name,
+              description: repoData.description,
+              htmlUrl: repoData.html_url,
+              language: repoData.language,
+              stars: repoData.stargazers_count || 0,
+              forks: repoData.forks_count || 0,
+            },
+          })
+          .returning();
+          
+        repoRecord = insertedRepo;
+      } catch (err: any) {
+        return NextResponse.json({ success: false, error: `Failed to fetch or import repository: ${err.message}` }, { status: 502 });
+      }
     }
 
     // Log start of analysis

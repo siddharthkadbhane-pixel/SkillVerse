@@ -1,104 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { passports, users } from '@/database/schema';
+import { passportExports, trustScores, userSkills, users } from '@/database/schema';
 import { getSessionUser } from '@/services/supabase';
 import { eq } from 'drizzle-orm';
+import { Logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
-  try {
-    const user = await getSessionUser();
-    
-    // Baseline mock passport configurations if not logged in
-    if (!user) {
-      return NextResponse.json({
-        success: true,
-        data: {
-          id: 'p_mock',
-          visibility: 'public',
-          theme: 'dark',
-          viewCount: 15,
-          lastGeneratedAt: new Date().toISOString(),
-        }
-      });
-    }
-
-    try {
-      let passport = await db.query.passports.findFirst({
-        where: eq(passports.userId, user.id),
-      });
-
-      if (!passport) {
-        // Initialize passport record
-        const [newPassport] = await db
-          .insert(passports)
-          .values({
-            userId: user.id,
-            visibility: 'public',
-            theme: 'dark',
-            viewCount: 0,
-            generatedSummary: 'Verified Developer Passport. Dynamic credentials generated from repository reviews.',
-          })
-          .returning();
-        passport = newPassport;
-      }
-
-      return NextResponse.json({
-        success: true,
-        data: passport,
-      });
-    } catch {
-      // Database connection fallback
-      return NextResponse.json({
-        success: true,
-        data: {
-          id: 'p_mock',
-          visibility: 'public',
-          theme: 'dark',
-          viewCount: 15,
-          lastGeneratedAt: new Date().toISOString(),
-        }
-      });
-    }
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-  }
-}
-
-export async function POST(req: NextRequest) {
   try {
     const user = await getSessionUser();
     if (!user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { visibility, theme } = await req.json();
+    const { searchParams } = new URL(req.url);
+    const format = searchParams.get('format') || 'json';
 
-    try {
-      const [updatedPassport] = await db
-        .update(passports)
-        .set({
-          visibility,
-          theme,
-          lastGeneratedAt: new Date(),
-        })
-        .where(eq(passports.userId, user.id))
-        .returning();
+    // 1. Log passport export transaction (Module 1)
+    await db.insert(passportExports).values({
+      userId: user.id,
+      format,
+    });
 
-      return NextResponse.json({
-        success: true,
-        data: updatedPassport,
-      });
-    } catch {
-      // Fallback mock success
-      return NextResponse.json({
-        success: true,
-        data: {
-          visibility,
-          theme,
+    const dbUser = await db.query.users.findFirst({
+      where: eq(users.id, user.id),
+    });
+
+    const trust = await db.query.trustScores.findFirst({
+      where: eq(trustScores.userId, user.id),
+    });
+
+    const skills = await db.query.userSkills.findMany({
+      where: eq(userSkills.userId, user.id),
+    });
+
+    const exportPayload = {
+      title: 'SkillVerse Certified Developer Passport',
+      issuedBy: 'SkillVerse Network Inc.',
+      verifiedBadge: 'Verified Developer DNA Standard (v1.0)',
+      timestamp: new Date().toISOString(),
+      developer: {
+        username: dbUser?.username,
+        name: dbUser?.name,
+      },
+      trustScore: trust?.overallScore || 0,
+      skills: (skills as any[]).map((s: any) => ({ skillId: s.skillId, level: s.proficiencyLevel || 85 })),
+    };
+
+    if (format === 'pdf') {
+      // Simulate binary PDF payload response
+      return new NextResponse(JSON.stringify(exportPayload, null, 2), {
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename=passport-${dbUser?.username || 'developer'}.pdf`,
         }
       });
     }
+
+    return NextResponse.json({
+      success: true,
+      data: exportPayload,
+    });
   } catch (error: any) {
+    Logger.error('API Error in /api/passport:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

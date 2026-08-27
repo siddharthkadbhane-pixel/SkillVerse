@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { users, passports, passportViews, repositories, reviews } from '@/database/schema';
+import { users, passports, passportViews, repositories, reviews, trustScores, skillDna } from '@/database/schema';
 import { PassportBadgeService } from '@/services/passport/badge';
 import { PassportTimelineService } from '@/services/passport/timeline';
 import { eq, and } from 'drizzle-orm';

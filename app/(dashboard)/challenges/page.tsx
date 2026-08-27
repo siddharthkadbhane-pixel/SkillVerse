@@ -3,190 +3,207 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/shared/Navbar';
 import Sidebar from '@/components/shared/Sidebar';
-import Link from 'next/link';
-import { Trophy, Search, Clock, Users, Zap, ChevronRight, RefreshCw, Filter } from 'lucide-react';
-
-const FILTERS = ['All', 'Active', 'Completed', 'Upcoming'];
+import PageHeader from '@/components/ui/PageHeader';
+import StatCard from '@/components/ui/StatCard';
+import SkillChip from '@/components/ui/SkillChip';
+import EmptyState from '@/components/ui/EmptyState';
+import {
+  Trophy,
+  Search,
+  Zap,
+  CheckCircle2,
+  Clock,
+  Users,
+  ArrowRight,
+  Code2,
+  Layers,
+  Sparkles,
+  ShieldCheck,
+} from 'lucide-react';
+import { DUMMY_CHALLENGES } from '@/lib/dummyData';
 
 export default function ChallengesPage() {
-  const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
-  const [challenges, setChallenges] = useState<any[]>([]);
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedChallenge, setSelectedChallenge] = useState<any>(null);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [profRes, chalRes] = await Promise.allSettled([
-          fetch('/api/profile').then(r => r.json()),
-          fetch('/api/challenges').then(r => r.json()),
-        ]);
-        if (profRes.status === 'fulfilled' && profRes.value.success) setProfile(profRes.value.data);
-        if (chalRes.status === 'fulfilled' && chalRes.value.success) setChallenges(chalRes.value.data ?? []);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+    fetch('/api/profile')
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success) setProfile(json.data.profile);
+      })
+      .catch(() => {});
   }, []);
 
-  const filtered = challenges.filter(c => {
-    const name = (c.title || c.name || '').toLowerCase();
-    const matchSearch = !search || name.includes(search.toLowerCase());
-    const matchFilter = filter === 'All' || c.status?.toLowerCase() === filter.toLowerCase();
-    return matchSearch && matchFilter;
+  const categories = [
+    'All',
+    'Distributed Systems',
+    'Frontend Architecture',
+    'Zero-Knowledge',
+    'AI Multi-Agent',
+  ];
+
+  const getDifficultyColor = (diff: string) => {
+    switch (diff.toLowerCase()) {
+      case 'expert':
+      case 'hard':
+        return 'text-[#EF4444] bg-[#EF4444]/10 border-[#EF4444]/25';
+      case 'medium':
+      case 'advanced':
+        return 'text-[#F59E0B] bg-[#F59E0B]/10 border-[#F59E0B]/25';
+      default:
+        return 'text-[#10B981] bg-[#10B981]/10 border-[#10B981]/25';
+    }
+  };
+
+  const filteredChallenges = DUMMY_CHALLENGES.filter((ch) => {
+    const matchesSearch =
+      ch.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ch.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
   });
 
-  const diffBadge = (diff: string) => {
-    if (diff === 'Hard') return <span className="sv-badge sv-badge-red">Hard</span>;
-    if (diff === 'Medium') return <span className="sv-badge sv-badge-amber">Medium</span>;
-    return <span className="sv-badge sv-badge-green">Easy</span>;
-  };
-
-  const statusBadge = (status: string) => {
-    if (status === 'active')    return <span className="sv-badge sv-badge-blue">Active</span>;
-    if (status === 'completed') return <span className="sv-badge sv-badge-green">Completed</span>;
-    if (status === 'upcoming')  return <span className="sv-badge sv-badge-zinc">Upcoming</span>;
-    return <span className="sv-badge sv-badge-zinc">{status}</span>;
-  };
-
   return (
-    <div className="sv-app">
-      <Navbar
-        user={profile?.profile ? { name: profile.profile.name, username: profile.profile.username, avatarUrl: profile.profile.avatarUrl } : null}
-        breadcrumb="Challenges"
-      />
-      <div className="sv-workspace">
-        <Sidebar trustScore={profile?.trustScore} />
-        <main className="sv-content">
-          <div className="sv-page">
-            <div className="sv-page-header">
-              <div>
-                <h1 className="sv-page-title">Challenges</h1>
-                <p className="sv-page-desc">Prove your skills through verified coding challenges</p>
-              </div>
+    <div className="flex h-screen w-screen overflow-hidden bg-[#070A0F] text-[#F8FAFC]">
+      <Sidebar user={profile} />
+
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+        <Navbar user={profile} breadcrumb="Challenges & Hackathons" />
+
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+          <PageHeader
+            title="Practical Engineering Challenges"
+            description="Prove real-world engineering capabilities across distributed systems, algorithmic efficiency, and architectural design."
+            badge={{ text: 'Verifiable Proof', variant: 'cyan' }}
+          />
+
+          {/* Top Metrics */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              label="Completed Challenges"
+              value="8 / 12"
+              trend={{ value: 'Top 1%', isPositive: true }}
+              icon={Trophy}
+              iconColor="text-[#FBBF24]"
+              subtitle="Score multiplier: 1.25x"
+            />
+            <StatCard
+              label="Verified XP Earned"
+              value="4,850 XP"
+              icon={Zap}
+              iconColor="text-[#7C3AED]"
+              subtitle="Tier: Elite Challenger"
+            />
+            <StatCard
+              label="Active Hackathons"
+              value="4 Live"
+              icon={Users}
+              iconColor="text-[#38BDF8]"
+              subtitle="$47,000 Total Prize Pools"
+            />
+            <StatCard
+              label="Fast-Track Referrals"
+              value="3 Unlocked"
+              icon={ShieldCheck}
+              iconColor="text-[#10B981]"
+              subtitle="Hyperion AI, Vanguard Tech"
+            />
+          </div>
+
+          {/* Filter Toolbar */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#0D121A] border border-white/[0.08] p-3 rounded-xl">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                    selectedCategory === cat
+                      ? 'bg-[#7C3AED] text-white'
+                      : 'text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/[0.04]'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
             </div>
 
-            {/* Stats row */}
-            <div className="sv-stats-row" style={{ marginBottom: 16 }}>
-              <div className="sv-stat-cell">
-                <div className="sv-stat-label">Active</div>
-                <div className="sv-stat-value">{challenges.filter(c => c.status === 'active').length}</div>
-              </div>
-              <div className="sv-stat-cell">
-                <div className="sv-stat-label">Completed</div>
-                <div className="sv-stat-value">{challenges.filter(c => c.status === 'completed').length}</div>
-              </div>
-              <div className="sv-stat-cell">
-                <div className="sv-stat-label">Total Challenges</div>
-                <div className="sv-stat-value">{challenges.length}</div>
-              </div>
-              <div className="sv-stat-cell">
-                <div className="sv-stat-label">Trust Earned</div>
-                <div className="sv-stat-value" style={{ color: 'var(--sv-success)' }}>
-                  +{challenges.filter(c => c.status === 'completed').reduce((s, c) => s + (c.trustReward ?? 0), 0)}
-                </div>
-              </div>
+            <div className="relative w-full sm:w-64">
+              <Search className="w-3.5 h-3.5 text-[#64748B] absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search challenges..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-[#111722] border border-white/[0.08] hover:border-white/[0.14] focus:border-[#7C3AED]/50 rounded-lg pl-8 pr-3 py-1.5 text-xs text-[#F8FAFC] placeholder-[#64748B] outline-none transition-all"
+              />
             </div>
+          </div>
 
-            {/* Filter + Search */}
-            <div className="sv-card" style={{ marginBottom: 16 }}>
-              <div style={{ padding: '8px 12px', display: 'flex', gap: 8, alignItems: 'center', borderBottom: '1px solid var(--sv-border)' }}>
-                <div className="sv-search" style={{ maxWidth: 280 }}>
-                  <Search style={{ width: 13, height: 13, color: 'var(--sv-text-dim)', flexShrink: 0 }} />
-                  <input
-                    placeholder="Search challenges..."
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                  />
-                </div>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  {FILTERS.map(f => (
-                    <button
-                      key={f}
-                      onClick={() => setFilter(f)}
-                      className={`sv-btn sv-btn-sm ${filter === f ? 'sv-btn-primary' : 'sv-btn-ghost'}`}
+          {/* Challenges Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {filteredChallenges.map((challenge) => (
+              <div
+                key={challenge.id}
+                className="bg-[#0D121A] hover:bg-[#111722] border border-white/[0.08] hover:border-white/[0.14] rounded-xl p-5 transition-all duration-150 shadow-sm flex flex-col justify-between group"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-3 mb-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 rounded-lg bg-[#111722] border border-white/[0.06] text-[#A78BFA]">
+                        <Code2 className="w-4 h-4" />
+                      </div>
+                      <h3 className="font-bold text-sm text-[#F8FAFC] group-hover:text-[#A78BFA] transition-colors">
+                        {challenge.title}
+                      </h3>
+                    </div>
+
+                    <span
+                      className={`font-mono text-[10px] font-bold uppercase px-2 py-0.5 rounded border shrink-0 ${getDifficultyColor(
+                        challenge.difficulty
+                      )}`}
                     >
-                      {f}
-                    </button>
-                  ))}
-                </div>
-                <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--sv-text-subtle)' }}>{filtered.length} results</span>
-              </div>
+                      {challenge.difficulty}
+                    </span>
+                  </div>
 
-              <div style={{ overflowX: 'auto' }}>
-                <table className="sv-table">
-                  <thead>
-                    <tr>
-                      <th>Challenge</th>
-                      <th>Type</th>
-                      <th>Difficulty</th>
-                      <th>Trust Reward</th>
-                      <th>Participants</th>
-                      <th>Deadline</th>
-                      <th>Status</th>
-                      <th style={{ width: 80 }}>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loading ? (
-                      Array(5).fill(0).map((_, i) => (
-                        <tr key={i}>{[180, 80, 80, 70, 70, 90, 80, 70].map((w, j) => (
-                          <td key={j}><div className="sv-skeleton" style={{ height: 12, width: w }} /></td>
-                        ))}</tr>
-                      ))
-                    ) : filtered.length === 0 ? (
-                      <tr><td colSpan={8}>
-                        <div className="sv-empty">
-                          <Trophy style={{ width: 24, height: 24, color: 'var(--sv-text-dim)' }} />
-                          <div className="sv-empty-title">{search ? 'No challenges match your search' : 'No challenges available'}</div>
-                          <div className="sv-empty-desc">Check back soon for new challenges to prove your skills.</div>
-                        </div>
-                      </td></tr>
-                    ) : (
-                      filtered.map((c, i) => (
-                        <tr key={i}>
-                          <td className="sv-td-primary">
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                              <span>{c.title || c.name}</span>
-                              {c.description && (
-                                <span style={{ fontSize: 11, color: 'var(--sv-text-dim)', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {c.description}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td><span className="sv-chip">{c.type || c.challengeType || 'Coding'}</span></td>
-                          <td>{diffBadge(c.difficulty || 'Medium')}</td>
-                          <td>
-                            <span style={{ color: 'var(--sv-success)', fontWeight: 600, fontSize: 13 }}>
-                              +{c.trustReward ?? c.rewardPoints ?? 0}
-                            </span>
-                          </td>
-                          <td style={{ color: 'var(--sv-text-subtle)', fontSize: 12 }}>
-                            <Users style={{ width: 11, height: 11, display: 'inline', marginRight: 3 }} />
-                            {c.participantCount ?? 0}
-                          </td>
-                          <td style={{ color: 'var(--sv-text-dim)', fontSize: 12 }}>
-                            {c.endDate ? new Date(c.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
-                          </td>
-                          <td>{statusBadge(c.status || 'active')}</td>
-                          <td>
-                            <Link
-                              href={`/challenges/${c.id}`}
-                              className={`sv-btn sv-btn-sm ${c.status === 'completed' ? 'sv-btn-ghost' : 'sv-btn-primary'}`}
-                            >
-                              {c.status === 'completed' ? 'View' : <><Zap style={{ width: 11, height: 11 }} />Start</>}
-                            </Link>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                  <p className="text-xs text-[#94A3B8] line-clamp-2 mb-4 leading-relaxed">
+                    {challenge.description}
+                  </p>
+
+                  {/* Tech stack */}
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {challenge.technologies.map((tech, i) => (
+                      <SkillChip key={i} name={tech} size="sm" verified={false} />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Footer Metrics & Action */}
+                <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-3 text-[#94A3B8]">
+                    <span className="font-mono text-[#FBBF24] font-bold flex items-center gap-1">
+                      <Trophy className="w-3.5 h-3.5" />
+                      {challenge.prizePool}
+                    </span>
+                    <span className="font-mono text-[11px] text-[#64748B] flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      {challenge.timeLimit}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => alert(`Starting Challenge: ${challenge.title}. Sandbox container initialized.`)}
+                    className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#7C3AED] hover:bg-[#8B5CF6] text-white transition-colors"
+                  >
+                    Start Challenge
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
         </main>
       </div>

@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, integer, timestamp, boolean, jsonb, primaryKey, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, integer, timestamp, boolean, jsonb, primaryKey, pgEnum, bigint } from 'drizzle-orm/pg-core';
 
 // Enums
 export const userRoleEnum = pgEnum('user_role', ['developer', 'recruiter', 'company_admin', 'admin']);
@@ -95,9 +95,37 @@ export const reviews = pgTable('reviews', {
   suggestedLearning: jsonb('suggested_learning').notNull(), // JSON Array of strings
   overallScore: integer('overall_score').notNull(), // 0 to 100
   confidenceScore: integer('confidence_score').notNull(), // 0 to 100
+  healthScores: jsonb('health_scores'), // Category health scores & details
+  intelligenceReport: jsonb('intelligence_report'), // Repository structure analysis
+  aiExplainability: jsonb('ai_explainability'), // Premium AI findings and evidence
+  skillsExtracted: jsonb('skills_extracted'), // Advanced verified skills
   rawAiOutput: text('raw_ai_output'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
+
+// 5b. Review History Table (to support version history tracking)
+export const reviewHistory = pgTable('review_history', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  repositoryId: uuid('repository_id').references(() => repositories.id, { onDelete: 'cascade' }).notNull(),
+  version: integer('version').default(1).notNull(),
+  summary: text('summary').notNull(),
+  strengths: jsonb('strengths').notNull(),
+  weaknesses: jsonb('weaknesses').notNull(),
+  architecture: text('architecture').notNull(),
+  codeQuality: text('code_quality').notNull(),
+  documentation: text('documentation').notNull(),
+  bestPractices: text('best_practices').notNull(),
+  suggestedLearning: jsonb('suggested_learning').notNull(),
+  overallScore: integer('overall_score').notNull(),
+  confidenceScore: integer('confidence_score').notNull(),
+  healthScores: jsonb('health_scores'),
+  intelligenceReport: jsonb('intelligence_report'),
+  aiExplainability: jsonb('ai_explainability'),
+  skillsExtracted: jsonb('skills_extracted'),
+  rawAiOutput: text('raw_ai_output'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 
 // 6. Skills Table (System master list of verified skills)
 export const skills = pgTable('skills', {
@@ -115,9 +143,9 @@ export const userSkills = pgTable('user_skills', {
   verificationSource: varchar('verification_source', { length: 100 }).notNull(),
   reviewId: uuid('review_id').references(() => reviews.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-}, (t) => [
-  primaryKey({ columns: [t.userId, t.skillId] })
-]);
+}, (t) => ({
+  pk: primaryKey({ columns: [t.userId, t.skillId] })
+}));
 
 // 8. Projects Table (Manual verified uploads)
 export const projects = pgTable('projects', {
@@ -175,9 +203,9 @@ export const teamMembers = pgTable('team_members', {
   teamId: uuid('team_id').references(() => teams.id, { onDelete: 'cascade' }).notNull(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   joinedAt: timestamp('joined_at').defaultNow().notNull(),
-}, (t) => [
-  primaryKey({ columns: [t.teamId, t.userId] })
-]);
+}, (t) => ({
+  pk: primaryKey({ columns: [t.teamId, t.userId] })
+}));
 
 // 13. Companies Table
 export const companies = pgTable('companies', {
@@ -513,3 +541,401 @@ export const apiUsage = pgTable('api_usage', {
   statusCode: integer('status_code').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
+
+// 46. AI Agents Table
+export const aiAgents = pgTable('ai_agents', {
+  id: varchar('id', { length: 50 }).primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  role: text('role').notNull(),
+  status: varchar('status', { length: 20 }).default('active').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 47. Agent Runs Table
+export const agentRuns = pgTable('agent_runs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  repositoryId: uuid('repository_id').references(() => repositories.id, { onDelete: 'cascade' }).notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  status: varchar('status', { length: 20 }).default('pending').notNull(),
+  startedAt: timestamp('started_at').defaultNow().notNull(),
+  completedAt: timestamp('completed_at'),
+  durationMs: integer('duration_ms'),
+});
+
+// 48. Agent Outputs Table
+export const agentOutputs = pgTable('agent_outputs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  runId: uuid('run_id').references(() => agentRuns.id, { onDelete: 'cascade' }).notNull(),
+  agentId: varchar('agent_id', { length: 50 }).references(() => aiAgents.id, { onDelete: 'cascade' }).notNull(),
+  output: jsonb('output').notNull(),
+  status: varchar('status', { length: 20 }).default('completed').notNull(),
+  errorMessage: text('error_message'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 49. Agent Memory Table
+export const agentMemory = pgTable('agent_memory', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  repositoryId: uuid('repository_id').references(() => repositories.id, { onDelete: 'cascade' }),
+  memoryKey: varchar('memory_key', { length: 100 }).notNull(),
+  memoryValue: jsonb('memory_value').notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// 50. Agent Logs Table
+export const agentLogs = pgTable('agent_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  runId: uuid('run_id').references(() => agentRuns.id, { onDelete: 'cascade' }).notNull(),
+  agentId: varchar('agent_id', { length: 50 }).references(() => aiAgents.id, { onDelete: 'cascade' }).notNull(),
+  logLevel: varchar('log_level', { length: 10 }).notNull(),
+  message: text('message').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 51. Agent Metrics Table
+export const agentMetrics = pgTable('agent_metrics', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  runId: uuid('run_id').references(() => agentRuns.id, { onDelete: 'cascade' }).notNull(),
+  agentId: varchar('agent_id', { length: 50 }).references(() => aiAgents.id, { onDelete: 'cascade' }).notNull(),
+  executionTimeMs: integer('execution_time_ms').notNull(),
+  tokensUsed: integer('tokens_used').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 52. Agent Feedback Table
+export const agentFeedback = pgTable('agent_feedback', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  outputId: uuid('output_id').references(() => agentOutputs.id, { onDelete: 'cascade' }).notNull(),
+  rating: integer('rating').notNull(),
+  comments: text('comments'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 53. Graph Nodes Table
+export const graphNodes = pgTable('graph_nodes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  type: varchar('type', { length: 50 }).notNull(), // 'developer', 'repository', 'skill', 'technology', 'challenge', 'company'
+  label: varchar('label', { length: 255 }).notNull(),
+  properties: jsonb('properties').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 54. Graph Edges Table
+export const graphEdges = pgTable('graph_edges', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sourceNodeId: uuid('source_node_id').references(() => graphNodes.id, { onDelete: 'cascade' }).notNull(),
+  targetNodeId: uuid('target_node_id').references(() => graphNodes.id, { onDelete: 'cascade' }).notNull(),
+  type: varchar('type', { length: 50 }).notNull(), // 'knows', 'contributed_to', 'completed', 'works_at', 'collaborates_with'
+  properties: jsonb('properties').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 55. Skill Evolution History Table
+export const skillEvolutionHistory = pgTable('skill_evolution_history', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  skillName: varchar('skill_name', { length: 100 }).notNull(),
+  level: integer('level').notNull(),
+  confidence: integer('confidence').notNull(),
+  changedAt: timestamp('changed_at').defaultNow().notNull(),
+});
+
+// 56. Activity Events Table
+export const activityEvents = pgTable('activity_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  eventType: varchar('event_type', { length: 50 }).notNull(), // 'commit', 'release', 'pull_request', 'documentation'
+  repositoryName: varchar('repository_name', { length: 255 }).notNull(),
+  payload: jsonb('payload').notNull(),
+  processed: boolean('processed').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 57. Engineering Timeline Table
+export const engineeringTimeline = pgTable('engineering_timeline', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  eventClass: varchar('event_class', { length: 50 }).notNull(), // 'milestone', 'achievement', 'contribution', 'skill_change'
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description').notNull(),
+  timestamp: timestamp('timestamp').defaultNow().notNull(),
+});
+
+// 58. AI Opportunities / Recommendations Table
+export const recommendations = pgTable('recommendations', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  type: varchar('type', { length: 50 }).notNull(), // 'job', 'project', 'mentor', 'challenge', 'resource'
+  itemId: varchar('item_id', { length: 255 }).notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  reasoning: text('reasoning').notNull(),
+  score: integer('score').notNull(), // relevancy index 0-100
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 59. Reputation Scores Table
+export const reputationScores = pgTable('reputation_scores', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull().unique(),
+  engineering: integer('engineering').default(0).notNull(),
+  community: integer('community').default(0).notNull(),
+  mentorship: integer('mentorship').default(0).notNull(),
+  openSource: integer('open_source').default(0).notNull(),
+  learning: integer('learning').default(0).notNull(),
+  challenge: integer('challenge').default(0).notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// 60. Privacy Settings Table
+export const privacySettings = pgTable('privacy_settings', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull().unique(),
+  publicRepos: boolean('public_repos').default(true).notNull(),
+  privateRepos: boolean('private_repos').default(false).notNull(),
+  visibleSkills: jsonb('visible_skills').notNull(),
+  visibleActivity: boolean('visible_activity').default(true).notNull(),
+  profileVisibility: varchar('profile_visibility', { length: 20 }).default('public').notNull(),
+  companyVisibility: varchar('company_visibility', { length: 20 }).default('public').notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// 61. Cloud Workspaces Table
+export const workspaces = pgTable('workspaces', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  repositoryId: uuid('repository_id').references(() => repositories.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 62. Execution Jobs Table
+export const executionJobs = pgTable('execution_jobs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').references(() => workspaces.id, { onDelete: 'cascade' }).notNull(),
+  status: varchar('status', { length: 20 }).default('pending').notNull(), // 'pending' | 'running' | 'completed' | 'failed'
+  language: varchar('language', { length: 50 }).notNull(),
+  command: text('command').notNull(),
+  exitCode: integer('exit_code'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 63. Builds Table
+export const builds = pgTable('builds', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').references(() => workspaces.id, { onDelete: 'cascade' }).notNull(),
+  status: varchar('status', { length: 20 }).default('pending').notNull(), // 'pending' | 'running' | 'completed' | 'failed'
+  commitHash: varchar('commit_hash', { length: 100 }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 64. Deployments Table
+export const deployments = pgTable('deployments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').references(() => workspaces.id, { onDelete: 'cascade' }).notNull(),
+  status: varchar('status', { length: 20 }).default('pending').notNull(), // 'pending' | 'running' | 'completed' | 'failed'
+  platform: varchar('platform', { length: 50 }).notNull(), // 'vercel' | 'netlify' | 'cloudflare'
+  deploymentUrl: text('deployment_url'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 65. Artifacts Table
+export const artifacts = pgTable('artifacts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').references(() => workspaces.id, { onDelete: 'cascade' }).notNull(),
+  type: varchar('type', { length: 50 }).notNull(), // 'build_bundle' | 'test_report' | 'coverage_report'
+  fileName: varchar('file_name', { length: 255 }).notNull(),
+  fileSize: integer('file_size').notNull(),
+  meta: jsonb('meta'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 66. Runtime Logs Table
+export const runtimeLogs = pgTable('runtime_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  jobId: uuid('job_id').references(() => executionJobs.id, { onDelete: 'cascade' }).notNull(),
+  stream: varchar('stream', { length: 10 }).notNull(), // 'stdout' | 'stderr'
+  content: text('content').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 67. Workspace Members Table
+export const workspaceMembers = pgTable('workspace_members', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').references(() => workspaces.id, { onDelete: 'cascade' }).notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  role: varchar('role', { length: 50 }).default('owner').notNull(), // 'owner' | 'collaborator'
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 68. Resource Usage Table
+export const resourceUsage = pgTable('resource_usage', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').references(() => workspaces.id, { onDelete: 'cascade' }).notNull(),
+  cpuShares: integer('cpu_shares').notNull(),
+  memoryBytes: bigint('memory_bytes', { mode: 'number' }).notNull(),
+  durationSec: integer('duration_sec').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 69. Organizations Table
+export const organizations = pgTable('organizations', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: varchar('name', { length: 255 }).notNull(),
+  type: varchar('type', { length: 50 }).notNull(), // 'company' | 'bootcamp' | 'partner'
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 70. Institutions Table
+export const institutions = pgTable('institutions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: varchar('name', { length: 255 }).notNull(),
+  type: varchar('type', { length: 50 }).notNull(), // 'academic' | 'vocational'
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 71. Verification Requests Table
+export const verificationRequests = pgTable('verification_requests', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  partnerId: uuid('partner_id').references(() => organizations.id, { onDelete: 'cascade' }).notNull(),
+  status: varchar('status', { length: 20 }).default('pending').notNull(), // 'pending' | 'approved' | 'rejected'
+  requestedData: jsonb('requested_data').notNull(), // array of strings (e.g. ['skills', 'trust'])
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 72. Evidenced Certificates Table
+export const certificates = pgTable('certificates', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  evidenceRepoUrl: text('evidence_repo_url').notNull(),
+  issuedAt: timestamp('issued_at').defaultNow().notNull(),
+});
+
+// 73. Partner Integrations Table
+export const partnerIntegrations = pgTable('partner_integrations', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  platform: varchar('platform', { length: 50 }).notNull(), // 'github' | 'vscode' | 'slack'
+  token: text('token').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 74. Passport Exports Table
+export const passportExports = pgTable('passport_exports', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  format: varchar('format', { length: 10 }).notNull(), // 'pdf' | 'json'
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 75. Organization Members Table
+export const organizationMembers = pgTable('organization_members', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  organizationId: uuid('organization_id').references(() => organizations.id, { onDelete: 'cascade' }).notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  role: varchar('role', { length: 50 }).default('member').notNull(), // 'admin' | 'member'
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 76. Challenge Events Table
+export const challengeEvents = pgTable('challenge_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  organizationId: uuid('organization_id').references(() => organizations.id, { onDelete: 'cascade' }).notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  rules: text('rules'),
+  status: varchar('status', { length: 20 }).default('active').notNull(), // 'active' | 'ended'
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 77. Developer Capability Cards (DCC) Table
+export const developerCapabilityCards = pgTable('developer_capability_cards', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull().unique(),
+  overallScore: integer('overall_score').default(0).notNull(),
+  level: varchar('level', { length: 50 }).default('Explorer').notNull(), // 'Explorer' | 'Builder' | 'Elite' etc.
+  summary: text('summary'),
+  verificationStatus: varchar('verification_status', { length: 50 }).default('unverified').notNull(), // 'verified' | 'unverified'
+  confidenceScore: integer('confidence_score').default(0).notNull(),
+  lastUpdated: timestamp('last_updated').defaultNow().notNull(),
+});
+
+// 78. Capability Dimensions Table
+export const capabilityDimensions = pgTable('capability_dimensions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  cardId: uuid('card_id').references(() => developerCapabilityCards.id, { onDelete: 'cascade' }).notNull().unique(),
+  engineering: jsonb('engineering').notNull(), // codeQuality, architecture, security, performance, testing, documentation
+  skills: jsonb('skills').notNull(), // languages, frameworks, databases, devops, cloud, aiMl, mobile, web
+  projects: jsonb('projects').notNull(), // quality, complexity, openSource, buildSuccess, deployments, diversity
+  collaboration: jsonb('collaboration').notNull(), // pullRequests, codeReviews, mentoring, discussions, teamwork, community
+  growth: jsonb('growth').notNull(), // velocity, consistency, expansion, activity, milestones
+  career: jsonb('career').notNull(), // readiness, roleRecommendations, strengths, weaknesses
+});
+
+// 79. Capability History Table
+export const capabilityHistory = pgTable('capability_history', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  overallScore: integer('overall_score').notNull(),
+  level: varchar('level', { length: 50 }).notNull(),
+  changeType: varchar('change_type', { length: 50 }).default('score_update').notNull(), // 'skill_verified' | 'skill_strengthened' | 'dimension_improved' | 'repo_analyzed' | 'level_promoted' | 'score_update'
+  title: varchar('title', { length: 255 }),
+  description: text('description'),
+  skillName: varchar('skill_name', { length: 100 }),
+  dimension: varchar('dimension', { length: 50 }),
+  previousValue: varchar('previous_value', { length: 100 }),
+  newValue: varchar('new_value', { length: 100 }),
+  repositoryId: uuid('repository_id').references(() => repositories.id, { onDelete: 'set null' }),
+  evidenceRepo: varchar('evidence_repo', { length: 255 }),
+  evidenceReference: text('evidence_reference'),
+  isPublic: boolean('is_public').default(true).notNull(),
+  metadata: jsonb('metadata'),
+  changedAt: timestamp('changed_at').defaultNow().notNull(),
+});
+
+// 80. Capability Levels Table
+export const capabilityLevels = pgTable('capability_levels', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  levelName: varchar('level_name', { length: 50 }).notNull().unique(),
+  minScore: integer('min_score').notNull(),
+  badgeUrl: text('badge_url'),
+  achievementsRequired: jsonb('achievements_required'), // array of strings
+});
+
+// 81. Capability Insights Table
+export const capabilityInsights = pgTable('capability_insights', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull().unique(),
+  strengths: jsonb('strengths').notNull(), // array of strings
+  weaknesses: jsonb('weaknesses').notNull(), // array of strings
+  learningSuggestions: jsonb('learning_suggestions').notNull(), // array of objects
+  advice: text('advice'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 82. Verification Evidence Table
+export const verificationEvidence = pgTable('verification_evidence', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  dimension: varchar('dimension', { length: 50 }).notNull(), // 'engineering', 'skills', 'projects', etc.
+  sourceRepo: varchar('source_repo', { length: 255 }).notNull(),
+  verificationMethod: varchar('verification_method', { length: 100 }).notNull(), // 'AI Agent Audit' | 'CI Build Pipeline'
+  confidence: integer('confidence').notNull(),
+  verifiedAt: timestamp('verified_at').defaultNow().notNull(),
+});
+
+// 83. Comparison Cache Table
+export const comparisonCache = pgTable('comparison_cache', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId1: uuid('user_id_1').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  userId2: uuid('user_id_2').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  comparisonData: jsonb('comparison_data').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+
+
+
+

@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
       
       const skillsList = dna ? (dna.dnaStructure as any).skills.map((s: any) => s.name.toLowerCase()) : [];
 
-      const recommended = allJobs.map(job => {
+      const recommended = allJobs.map((job: any) => {
         const required = (job.requiredSkills as string[]) || [];
         
         let matchCount = 0;
@@ -68,8 +68,8 @@ export async function GET(req: NextRequest) {
           id: job.id,
           title: job.title,
           description: job.description,
-          salary: job.salary,
-          locationType: job.locationType,
+          salary: job.salaryRange || '$160,000 - $200,000',
+          locationType: job.location || 'Remote',
           minTrustScore: job.minTrustScore,
           matchPercentage,
         };

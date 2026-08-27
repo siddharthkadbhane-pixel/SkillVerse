@@ -49,7 +49,7 @@ export interface AnalyzerContext {
 export class RepositoryAnalyzerService {
   private static BASE_URL = 'https://api.github.com';
 
-  private static async githubFetch(endpoint: string, token: string, options: RequestInit = {}) {
+  static async githubFetch(endpoint: string, token: string, options: RequestInit = {}) {
     const headers = new Headers(options.headers);
     headers.set('Accept', 'application/vnd.github.v3+json');
     if (token) {
@@ -190,7 +190,7 @@ export class RepositoryAnalyzerService {
         ...node,
         score: getFileScore(node.path),
       }))
-      .sort((a, b) => b.score - a.score || a.size - b.size);
+      .sort((a: any, b: any) => b.score - a.score || a.size - b.size);
 
     let totalSizeBytes = 0;
     const finalFiles: { path: string; content: string }[] = [];

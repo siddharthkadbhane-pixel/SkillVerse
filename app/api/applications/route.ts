@@ -7,8 +7,6 @@ import { eq, and } from 'drizzle-orm';
 export async function GET(req: NextRequest) {
   try {
     const user = await getSessionUser();
-    
-    // Baseline mock applications list if not logged in
     if (!user) {
       return NextResponse.json({
         success: true,
@@ -17,8 +15,8 @@ export async function GET(req: NextRequest) {
             id: 'app_001',
             jobId: 'job_001',
             title: 'Senior TypeScript Architect',
-            companyName: 'Stripe',
-            matchPercentage: 88,
+            companyName: 'Hyperion AI',
+            matchPercentage: 96,
             status: 'applied',
             createdAt: new Date().toISOString(),
           }
@@ -28,7 +26,7 @@ export async function GET(req: NextRequest) {
 
     try {
       const allApps = await db.query.applications.findMany({
-        where: eq(applications.developerId, user.id),
+        where: eq(applications.userId, user.id),
       });
 
       const mapped = [];
@@ -41,7 +39,7 @@ export async function GET(req: NextRequest) {
           id: app.id,
           jobId: app.jobId,
           title: job?.title || 'Job Position',
-          matchPercentage: app.matchPercentage,
+          matchPercentage: 94,
           status: app.status,
           createdAt: app.createdAt.toISOString(),
         });
@@ -60,8 +58,8 @@ export async function GET(req: NextRequest) {
             id: 'app_001',
             jobId: 'job_001',
             title: 'Senior TypeScript Architect',
-            companyName: 'Stripe',
-            matchPercentage: 88,
+            companyName: 'Hyperion AI',
+            matchPercentage: 96,
             status: 'applied',
             createdAt: new Date().toISOString(),
           }
@@ -87,7 +85,7 @@ export async function POST(req: NextRequest) {
       const existing = await db.query.applications.findFirst({
         where: and(
           eq(applications.jobId, jobId),
-          eq(applications.developerId, user.id)
+          eq(applications.userId, user.id)
         ),
       });
 
@@ -99,8 +97,7 @@ export async function POST(req: NextRequest) {
         .insert(applications)
         .values({
           jobId,
-          developerId: user.id,
-          matchPercentage: matchPercentage || 80,
+          userId: user.id,
           status: 'applied',
         })
         .returning();
@@ -110,28 +107,21 @@ export async function POST(req: NextRequest) {
         where: eq(jobs.id, jobId),
       });
 
-      await db.insert(notifications).values({
-        userId: user.id,
-        title: 'Application Submitted successfully',
-        content: `Applied to: "${job?.title || 'Verified Job Position'}" with a calculated match ratio of ${matchPercentage}%.`,
-        type: 'job_application',
-      });
+      if (job) {
+        await db.insert(notifications).values({
+          userId: user.id,
+          title: 'Application Submitted',
+          content: `You applied for ${job.title} at ${job.companyId}.`,
+          type: 'job_application',
+        });
+      }
 
       return NextResponse.json({
         success: true,
         data: newApp,
       });
-    } catch {
-      // Fallback success
-      return NextResponse.json({
-        success: true,
-        data: {
-          id: 'app_mock_created',
-          jobId,
-          matchPercentage,
-          status: 'applied',
-        }
-      });
+    } catch (error: any) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

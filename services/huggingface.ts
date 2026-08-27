@@ -25,8 +25,45 @@ export type AnalysisResult = z.infer<typeof AnalysisResultSchema>;
 
 export class HuggingFaceService {
   private static HUGGINGFACE_API_KEY = process.env.HUGGINGFACE_API_KEY;
-  // Recommended instruction model that fits serverless JSON mode
-  private static MODEL_URL = 'https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-70B-Instruct';
+  private static MODEL = process.env.HUGGINGFACE_MODEL || 'Qwen/Qwen2.5-Coder-32B-Instruct';
+
+  static async queryModel(systemPrompt: string, userPrompt: string, retries = 2): Promise<string> {
+    if (!this.HUGGINGFACE_API_KEY) {
+      throw new Error('HUGGINGFACE_API_KEY is not defined.');
+    }
+
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const response = await fetch('https://api-inference.huggingface.co/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.HUGGINGFACE_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: this.MODEL,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt },
+            ],
+            temperature: 0.2,
+            max_tokens: 1500,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HF HTTP error status ${response.status}`);
+        }
+
+        const result = await response.json();
+        return result.choices?.[0]?.message?.content || '';
+      } catch (err) {
+        if (attempt === retries) throw err;
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+      }
+    }
+    throw new Error('Failed to query Hugging Face after retries');
+  }
 
   static async analyzeRepository(repoName: string, data: RepoAnalysisData): Promise<AnalysisResult> {
     if (!this.HUGGINGFACE_API_KEY) {
@@ -34,22 +71,24 @@ export class HuggingFaceService {
       return this.generateMockAnalysis(repoName, data);
     }
 
-    const prompt = this.buildPrompt(repoName, data);
+    const systemPrompt = this.buildSystemPrompt();
+    const userPrompt = this.buildUserPrompt(repoName, data);
 
     try {
-      const response = await fetch(this.MODEL_URL, {
+      const response = await fetch('https://api-inference.huggingface.co/v1/chat/completions', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${this.HUGGINGFACE_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          inputs: prompt,
-          parameters: {
-            max_new_tokens: 1500,
-            temperature: 0.2,
-            return_full_text: false,
-          },
+          model: this.MODEL,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature: 0.2,
+          max_tokens: 1500,
         }),
       });
 
@@ -58,7 +97,10 @@ export class HuggingFaceService {
       }
 
       const result = await response.json();
-      const outputText = Array.isArray(result) ? result[0].generated_text : result.generated_text;
+      if (!result.choices || !result.choices[0] || !result.choices[0].message) {
+        throw new Error(`Unexpected Hugging Face API response structure: ${JSON.stringify(result)}`);
+      }
+      const outputText = result.choices[0].message.content;
 
       // Extract JSON block if surrounded by markdown code blocks
       const jsonStart = outputText.indexOf('{');
@@ -77,18 +119,12 @@ export class HuggingFaceService {
     }
   }
 
-  private static buildPrompt(repoName: string, data: RepoAnalysisData): string {
-    const fileSnippets = data.topFiles
-      .map(f => `### File: ${f.path}\n\`\`\`\n${f.content.slice(0, 1500)}\n\`\`\``)
-      .join('\n\n');
-
-    const commitMessages = data.commits.map(c => `- [${c.sha.slice(0, 7)}] ${c.message} (by ${c.author})`).join('\n');
-
-    return `<system>
-You are an advanced software architect, security auditor, and senior code reviewer. 
+  private static buildSystemPrompt(): string {
+    return `You are an advanced software architect, security auditor, and senior code reviewer. 
 You must analyze the repository data provided and output a comprehensive JSON review.
 Your output must be strictly JSON containing exactly the keys detailed below. 
-Do not output any markdown text outside the JSON block.
+Do not output any explanation or markdown outside of the JSON block.
+
 JSON schema keys:
 - "summary": string (concise, professional overview of project capabilities)
 - "strengths": array of strings (top engineering strengths, libraries usage, cleanly written modules)
@@ -100,11 +136,17 @@ JSON schema keys:
 - "suggestedLearning": array of strings (targeted recommendations on how to address weaknesses)
 - "overallScore": number (0 to 100 rating based on structure, code quality, and security)
 - "confidenceScore": number (0 to 100 rating based on completeness of provided code context)
-- "detectedSkills": array of objects with keys: "name" (string, e.g. React, Python), "category" (string, e.g. Frontend, Backend, Database), "level" (number, 1 to 5 proficiency)
-</system>
+- "detectedSkills": array of objects with keys: "name" (string, e.g. React, Python), "category" (string, e.g. Frontend, Backend, Database), "level" (number, 1 to 5 proficiency)`;
+  }
 
-<user>
-Please review the repository: "${repoName}".
+  private static buildUserPrompt(repoName: string, data: RepoAnalysisData): string {
+    const fileSnippets = data.topFiles
+      .map(f => `### File: ${f.path}\n\`\`\`\n${f.content.slice(0, 1500)}\n\`\`\``)
+      .join('\n\n');
+
+    const commitMessages = data.commits.map(c => `- [${c.sha.slice(0, 7)}] ${c.message} (by ${c.author})`).join('\n');
+
+    return `Please review the repository: "${repoName}".
 
 ### package.json (Manifest)
 \`\`\`json
@@ -122,8 +164,7 @@ ${fileSnippets || 'No source files loaded'}
 ### Recent Commit History
 ${commitMessages || 'No commits recorded'}
 
-Generate audit.
-</user>`;
+Generate audit.`;
   }
 
   // Robust mock analysis for local tests & fallback scenarios

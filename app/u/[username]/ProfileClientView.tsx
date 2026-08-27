@@ -320,7 +320,7 @@ export default function ProfileClientView({ initialData }: ProfileClientProps) {
                     <div key={key}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, marginBottom: 4 }}>
                         <span style={{ color: 'var(--sv-text-subtle)' }}>
-                          {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                          {key.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => str.toUpperCase())}
                         </span>
                         <span style={{ fontWeight: 600, color: 'var(--sv-text)' }}>{scoreScore}/100</span>
                       </div>

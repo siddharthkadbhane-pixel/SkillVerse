@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
 
       let growth = 0;
       if (history.length > 1) {
-        growth = Math.max(0, history[0].score - history[history.length - 1].score);
+        growth = Math.max(0, history[0].overallScore - history[history.length - 1].overallScore);
       }
 
       return NextResponse.json({

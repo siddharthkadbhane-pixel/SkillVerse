@@ -236,7 +236,7 @@ export default function SkillPassport({ user, trustScore, skillDna, repositories
 
           <div className="h-72 w-full flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
-              <RadarChart cx="50%" cy="50%" radius="75%" data={activeRadarData}>
+              <RadarChart cx="50%" cy="50%" outerRadius="75%" data={activeRadarData}>
                 <PolarGrid stroke="#18181b" />
                 <PolarAngleAxis dataKey="subject" tick={{ fill: '#71717a', fontSize: 10, fontWeight: 600 }} />
                 <PolarRadiusAxis angle={30} domain={[0, 5]} tick={{ fill: '#3f3f46', fontSize: 9 }} />

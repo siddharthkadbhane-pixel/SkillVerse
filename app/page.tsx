@@ -2,21 +2,22 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Shield, ArrowRight, CheckCircle2, ChevronRight, Star, Terminal, Code2, Cpu, Globe, Check, X, ShieldCheck } from 'lucide-react';
+import { Shield, ArrowRight, CheckCircle2, ChevronRight, Star, Terminal, Code2, Cpu, Globe, Check, X, ShieldCheck, Sparkles, Zap } from 'lucide-react';
 
 export default function LandingPage() {
   return (
-    <div className="relative min-h-screen bg-[#030303] dot-matrix flex flex-col justify-between selection:bg-violet-500/30 selection:text-white">
+    <div className="relative min-h-screen bg-canvas dot-matrix flex flex-col justify-between selection:bg-violet-500/30 selection:text-white aurora-bg">
       
       {/* Immersive radial glow lights */}
-      <div className="absolute top-[-150px] left-1/2 -translate-x-1/2 w-full max-w-7xl h-[500px] ambient-glow-1 pointer-events-none" />
-      <div className="absolute bottom-[-150px] right-[5%] w-[600px] h-[600px] ambient-glow-2 pointer-events-none" />
+      <div className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-full max-w-7xl h-[600px] ambient-glow-1 pointer-events-none" />
+      <div className="absolute bottom-[-200px] right-[5%] w-[700px] h-[700px] ambient-glow-2 pointer-events-none" />
+      <div className="absolute top-[40%] left-[-10%] w-[500px] h-[500px] ambient-glow-3 pointer-events-none" />
 
       {/* Navigation Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-zinc-900 bg-zinc-950/40 backdrop-blur-md">
+      <header className="sticky top-0 z-50 w-full border-b bg-canvas/60 backdrop-blur-xl" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 shadow-lg shadow-violet-500/10">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-violet-600 to-cyan-500 shadow-lg shadow-violet-500/20">
               <Shield className="h-5 w-5 text-white" />
             </div>
             <span className="text-lg font-extrabold tracking-tight text-white heading-font">
@@ -25,12 +26,16 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-6">
-            <a href="#pipeline" className="text-xs font-semibold text-zinc-400 hover:text-white transition-colors">
+            <a href="#pipeline" className="text-xs font-semibold text-secondary hover:text-white transition-colors">
               How It Works
             </a>
+            <a href="#comparison" className="text-xs font-semibold text-secondary hover:text-white transition-colors hidden sm:block">
+              Compare
+            </a>
             <Link
-              href="/dashboard"
-              className="rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 px-4.5 py-2.5 text-xs font-bold text-white transition-all active:scale-95"
+              href="/login"
+              className="rounded-lg bg-elevated border hover:border-accent-muted px-4.5 py-2.5 text-xs font-bold text-white transition-all active:scale-95"
+              style={{ borderColor: 'rgba(255,255,255,0.08)' }}
             >
               Sign In
             </Link>
@@ -39,37 +44,39 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Presentation */}
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 sm:py-36 z-10 flex flex-col gap-28 items-center">
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 sm:py-36 z-10 flex flex-col gap-32 items-center">
         
         {/* Intro */}
         <div className="text-center max-w-3xl flex flex-col gap-6 items-center">
-          <div className="inline-flex items-center gap-2 rounded-full bg-violet-500/10 border border-violet-500/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-violet-400">
-            <ShieldCheck className="h-4 w-4" />
+          <div className="inline-flex items-center gap-2 rounded-full bg-accent-dim border px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-accent-hover"
+               style={{ borderColor: 'rgba(139,92,246,0.25)' }}>
+            <Sparkles className="h-3.5 w-3.5" />
             <span>The Trust Layer for Code Quality</span>
           </div>
           
           <h1 className="text-5xl sm:text-7xl font-black tracking-tight text-white leading-[1.08] heading-font">
             Prove your code.{<br />}
-            <span className="bg-gradient-to-r from-violet-400 via-indigo-300 to-fuchsia-400 bg-clip-text text-transparent">
+            <span className="text-gradient">
               Skip the resume.
             </span>
           </h1>
           
-          <p className="text-zinc-400 text-sm sm:text-base max-w-lg leading-relaxed font-normal">
+          <p className="text-secondary text-sm sm:text-base max-w-lg leading-relaxed font-normal">
             SkillVerse replaces generic claims and unverified resumes with AI-driven repository reviews, cryptographic reputation points, and verified Git timelines.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 mt-6">
             <Link
-              href="/dashboard"
-              className="btn-primary flex items-center justify-center gap-2 rounded-xl text-white font-bold px-7 py-3.5 text-xs active:scale-98"
+              href="/login"
+              className="btn-primary flex items-center justify-center gap-2 rounded-xl text-white font-bold px-7 py-3.5 text-xs active:scale-98 relative overflow-hidden"
             >
               Get Started with GitHub
               <ArrowRight className="h-4 w-4" />
             </Link>
             <a
               href="#comparison"
-              className="flex items-center justify-center gap-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 font-semibold px-7 py-3.5 text-xs hover:bg-zinc-850 hover:text-white transition-all active:scale-98"
+              className="flex items-center justify-center gap-2 rounded-xl bg-elevated border text-secondary font-semibold px-7 py-3.5 text-xs hover:bg-hover hover:text-white hover:border-accent-muted transition-all active:scale-98"
+              style={{ borderColor: 'rgba(255,255,255,0.08)' }}
             >
               Compare Verification
             </a>
@@ -77,11 +84,13 @@ export default function LandingPage() {
         </div>
 
         {/* Corporate Trust Badge */}
-        <div className="flex flex-col gap-5 items-center w-full max-w-4xl text-center border-y border-zinc-900/60 py-10">
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600">
+        <div className="flex flex-col gap-5 items-center w-full max-w-4xl text-center py-10 relative">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent-muted to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-accent-muted to-transparent" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-dim">
             INTEGRATED TELEMETRY PARTNERS
           </span>
-          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-14 opacity-30 grayscale hover:opacity-50 transition-opacity">
+          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-14 opacity-25 grayscale hover:opacity-40 transition-opacity duration-500">
             <span className="font-black text-sm tracking-widest text-white heading-font">STRIPE</span>
             <span className="font-black text-sm tracking-widest text-white heading-font">GITHUB</span>
             <span className="font-black text-sm tracking-widest text-white heading-font">VERCEL</span>
@@ -95,7 +104,7 @@ export default function LandingPage() {
             <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight heading-font">
               A Paradigm Shift in Recruiting
             </h2>
-            <p className="text-xs sm:text-sm text-zinc-500">
+            <p className="text-xs sm:text-sm text-muted">
               Traditional credential screening vs verified SkillVerse telemetry.
             </p>
           </div>
@@ -103,55 +112,55 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
             
             {/* Legacy Card */}
-            <div className="rounded-xl border border-zinc-900 bg-[#060608]/40 p-6 sm:p-8 flex flex-col justify-between gap-8">
-              <div className="flex items-center gap-2 text-zinc-500 text-xs font-bold uppercase tracking-wider">
-                <X className="h-4 w-4 text-red-500 shrink-0" />
+            <div className="rounded-xl border bg-surface/40 p-6 sm:p-8 flex flex-col justify-between gap-8 transition-all hover:border-red-500/20"
+                 style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+              <div className="flex items-center gap-2 text-dim text-xs font-bold uppercase tracking-wider">
+                <X className="h-4 w-4 text-danger shrink-0" />
                 Claims-Based Resume (Legacy)
               </div>
 
               <div className="flex flex-col gap-4">
-                <div className="flex items-start gap-3.5 text-xs text-zinc-400 leading-normal">
-                  <span className="h-5.5 w-5.5 rounded bg-zinc-900 border border-zinc-800 text-[10px] flex items-center justify-center text-zinc-600 shrink-0 font-bold">1</span>
-                  <span>Keyword-stuffed resume claims of expertise that lack proof</span>
-                </div>
-                <div className="flex items-start gap-3.5 text-xs text-zinc-400 leading-normal">
-                  <span className="h-5.5 w-5.5 rounded bg-zinc-900 border border-zinc-800 text-[10px] flex items-center justify-center text-zinc-600 shrink-0 font-bold">2</span>
-                  <span>Recruiters screening by college brand or company tenure</span>
-                </div>
-                <div className="flex items-start gap-3.5 text-xs text-zinc-400 leading-normal">
-                  <span className="h-5.5 w-5.5 rounded bg-zinc-900 border border-zinc-800 text-[10px] flex items-center justify-center text-zinc-600 shrink-0 font-bold">3</span>
-                  <span>Exhaustive live coding loops that test syntax memory</span>
-                </div>
+                {[
+                  'Keyword-stuffed resume claims of expertise that lack proof',
+                  'Recruiters screening by college brand or company tenure',
+                  'Exhaustive live coding loops that test syntax memory',
+                ].map((text, i) => (
+                  <div key={i} className="flex items-start gap-3.5 text-xs text-muted leading-normal">
+                    <span className="h-5.5 w-5.5 rounded bg-elevated border text-[10px] flex items-center justify-center text-dim shrink-0 font-bold"
+                          style={{ borderColor: 'rgba(255,255,255,0.06)' }}>{i + 1}</span>
+                    <span>{text}</span>
+                  </div>
+                ))}
               </div>
 
-              <span className="text-[10px] text-zinc-600 font-semibold pl-1">
+              <span className="text-[10px] text-dim font-semibold pl-1">
                 Result: Time wasted on false positives and recruitment mismatches.
               </span>
             </div>
 
             {/* Telemetry Card */}
-            <div className="rounded-xl border border-violet-500/20 bg-violet-600/5 p-6 sm:p-8 flex flex-col justify-between gap-8">
-              <div className="flex items-center gap-2 text-violet-400 text-xs font-bold uppercase tracking-wider">
-                <Check className="h-4 w-4 text-emerald-400 shrink-0" />
+            <div className="rounded-xl border p-6 sm:p-8 flex flex-col justify-between gap-8 transition-all hover:shadow-glow-sm"
+                 style={{ borderColor: 'rgba(139,92,246,0.20)', background: 'rgba(139,92,246,0.03)' }}>
+              <div className="flex items-center gap-2 text-accent-hover text-xs font-bold uppercase tracking-wider">
+                <Check className="h-4 w-4 text-success shrink-0" />
                 SkillVerse Telemetry (Modern)
               </div>
 
               <div className="flex flex-col gap-4">
-                <div className="flex items-start gap-3.5 text-xs text-zinc-300 leading-normal">
-                  <span className="h-5.5 w-5.5 rounded bg-violet-950/40 border border-violet-850 text-[10px] flex items-center justify-center text-violet-400 shrink-0 font-bold">1</span>
-                  <span>Deep AI reviewing of actual project layout, structures & commits</span>
-                </div>
-                <div className="flex items-start gap-3.5 text-xs text-zinc-300 leading-normal">
-                  <span className="h-5.5 w-5.5 rounded bg-violet-950/40 border border-violet-850 text-[10px] flex items-center justify-center text-violet-400 shrink-0 font-bold">2</span>
-                  <span>Standardized skill scores generated from verified Git footprints</span>
-                </div>
-                <div className="flex items-start gap-3.5 text-xs text-zinc-300 leading-normal">
-                  <span className="h-5.5 w-5.5 rounded bg-violet-950/40 border border-violet-850 text-[10px] flex items-center justify-center text-violet-400 shrink-0 font-bold">3</span>
-                  <span>Instant job matches based on trust gating verification scores</span>
-                </div>
+                {[
+                  'Deep AI reviewing of actual project layout, structures & commits',
+                  'Standardized skill scores generated from verified Git footprints',
+                  'Instant job matches based on trust gating verification scores',
+                ].map((text, i) => (
+                  <div key={i} className="flex items-start gap-3.5 text-xs text-secondary leading-normal">
+                    <span className="h-5.5 w-5.5 rounded text-[10px] flex items-center justify-center text-accent shrink-0 font-bold"
+                          style={{ background: 'rgba(139,92,246,0.10)', border: '1px solid rgba(139,92,246,0.20)' }}>{i + 1}</span>
+                    <span>{text}</span>
+                  </div>
+                ))}
               </div>
 
-              <span className="text-[10px] text-zinc-500 font-semibold pl-1">
+              <span className="text-[10px] text-muted font-semibold pl-1">
                 Result: Rapid hiring cycles with full code quality alignment.
               </span>
             </div>
@@ -165,64 +174,48 @@ export default function LandingPage() {
             <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight heading-font">
               The AI Review Pipeline
             </h2>
-            <p className="text-xs sm:text-sm text-zinc-500">
+            <p className="text-xs sm:text-sm text-muted">
               How repository structures are parsed, and verified.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-4">
-            <div className="glass-card rounded-xl p-5.5 flex flex-col gap-4">
-              <Code2 className="h-6 w-6 text-violet-400" />
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-bold text-white">1. Fetch Manifests</span>
-                <p className="text-[11px] text-zinc-400 leading-normal">
-                  Scans package files, readme descriptions, and recent commit messages under 500KB thresholds.
-                </p>
-              </div>
-            </div>
-
-            <div className="glass-card rounded-xl p-5.5 flex flex-col gap-4">
-              <Terminal className="h-6 w-6 text-violet-400" />
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-bold text-white">2. Context Compilation</span>
-                <p className="text-[11px] text-zinc-400 leading-normal">
-                  Structures a targeted instruction prompt detailing code snippets, file metrics, and design targets.
-                </p>
-              </div>
-            </div>
-
-            <div className="glass-card rounded-xl p-5.5 flex flex-col gap-4">
-              <Cpu className="h-6 w-6 text-violet-400" />
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-bold text-white">3. Inference Audit</span>
-                <p className="text-[11px] text-zinc-400 leading-normal">
-                  Processes telemetry queries through high-capacity instruct models on edge servers.
-                </p>
-              </div>
-            </div>
-
-            <div className="glass-card rounded-xl p-5.5 flex flex-col gap-4">
-              <Globe className="h-6 w-6 text-violet-400" />
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-bold text-white">4. Score Publication</span>
-                <p className="text-[11px] text-zinc-400 leading-normal">
-                  Saves audit summaries, registers verified skills, and publishes your cryptographic developer passport.
-                </p>
-              </div>
-            </div>
+            {[
+              { icon: Code2, title: '1. Fetch Manifests', desc: 'Scans package files, readme descriptions, and recent commit messages under 500KB thresholds.', color: '#8B5CF6' },
+              { icon: Terminal, title: '2. Context Compilation', desc: 'Structures a targeted instruction prompt detailing code snippets, file metrics, and design targets.', color: '#06B6D4' },
+              { icon: Cpu, title: '3. Inference Audit', desc: 'Processes telemetry queries through high-capacity instruct models on edge servers.', color: '#EC4899' },
+              { icon: Globe, title: '4. Score Publication', desc: 'Saves audit summaries, registers verified skills, and publishes your cryptographic developer passport.', color: '#10B981' },
+            ].map((step, i) => {
+              const Icon = step.icon;
+              return (
+                <div key={i} className="glow-card rounded-xl p-6 flex flex-col gap-4 group">
+                  <div className="flex items-center justify-center rounded-xl w-10 h-10 transition-all duration-300 group-hover:shadow-glow-sm"
+                       style={{ background: `${step.color}15`, border: `1px solid ${step.color}25` }}>
+                    <Icon style={{ width: 20, height: 20, color: step.color }} />
+                  </div>
+                  <div className="flex flex-col gap-1.5 relative z-10">
+                    <span className="text-xs font-bold text-white">{step.title}</span>
+                    <p className="text-[11px] text-muted leading-relaxed">
+                      {step.desc}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
 
       </main>
 
       {/* Footer */}
-      <footer className="w-full border-t border-zinc-900/60 py-8 text-[11px] text-zinc-600 bg-zinc-950/20 z-10">
+      <footer className="w-full py-8 text-[11px] text-dim z-10 relative">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent-muted to-transparent" />
         <div className="mx-auto max-w-7xl px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <span>© 2026 SkillVerse Inc. All rights reserved.</span>
           <div className="flex gap-4">
-            <span className="hover:text-zinc-400 cursor-pointer transition-colors">Security Audits</span>
-            <span className="hover:text-zinc-400 cursor-pointer transition-colors">Terms of Service</span>
-            <span className="hover:text-zinc-400 cursor-pointer transition-colors">API Docs</span>
+            <span className="hover:text-secondary cursor-pointer transition-colors">Security Audits</span>
+            <span className="hover:text-secondary cursor-pointer transition-colors">Terms of Service</span>
+            <span className="hover:text-secondary cursor-pointer transition-colors">API Docs</span>
           </div>
         </div>
       </footer>
