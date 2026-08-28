@@ -16,6 +16,7 @@ import {
   UserCheck,
   User,
   Search,
+  Bookmark,
   Briefcase,
   GitPullRequest,
   BarChart3,
@@ -30,6 +31,8 @@ import {
   ShieldCheck,
   Sparkles,
   Award,
+  Compass,
+  MessageSquare,
 } from 'lucide-react';
 import { DUMMY_USERS } from '@/lib/dummyData';
 
@@ -47,7 +50,7 @@ export default function Sidebar({ trustScore, user }: SidebarProps) {
   // Determine if in Company Mode vs Developer Mode
   const isCompanyPath = pathname?.startsWith('/company');
   const isRecruiterOrAdmin = activeUser.role === 'recruiter' || activeUser.role === 'admin';
-  const isCompanyMode = isCompanyPath || (isRecruiterOrAdmin && !pathname?.startsWith('/overview') && !pathname?.startsWith('/skill-dna') && !pathname?.startsWith('/projects') && !pathname?.startsWith('/github') && !pathname?.startsWith('/activity') && !pathname?.startsWith('/network') && !pathname?.startsWith('/challenges') && !pathname?.startsWith('/community') && !pathname?.startsWith('/profile') && !pathname?.startsWith('/skills'));
+  const isCompanyMode = isCompanyPath || (isRecruiterOrAdmin && !pathname?.startsWith('/overview') && !pathname?.startsWith('/skill-dna') && !pathname?.startsWith('/skills') && !pathname?.startsWith('/projects') && !pathname?.startsWith('/github') && !pathname?.startsWith('/activity') && !pathname?.startsWith('/network') && !pathname?.startsWith('/challenges') && !pathname?.startsWith('/community') && !pathname?.startsWith('/career') && !pathname?.startsWith('/profile') && !pathname?.startsWith('/developers') && !pathname?.startsWith('/developer'));
 
   useEffect(() => {
     if (user?.username) {
@@ -64,13 +67,17 @@ export default function Sidebar({ trustScore, user }: SidebarProps) {
 
   const DEVELOPER_NAV = [
     { name: 'Overview', href: '/overview', icon: LayoutDashboard },
+    { name: 'Career & Learning', href: '/career', icon: Compass },
+    { name: 'Discover', href: '/developers', icon: Search },
+    { name: 'Opportunities', href: '/jobs', icon: Briefcase },
+    { name: 'Challenges', href: '/challenges', icon: Trophy },
+    { name: 'Teams', href: '/teams', icon: Users },
     { name: 'Skill DNA', href: '/skill-dna', icon: Dna },
     { name: 'Skills', href: '/skills', icon: Code2 },
     { name: 'Projects', href: '/projects', icon: FolderGit2 },
     { name: 'GitHub', href: '/github', icon: Github },
     { name: 'Activity', href: '/activity', icon: Activity },
-    { name: 'Challenges', href: '/challenges', icon: Trophy },
-    { name: 'Community', href: '/community', icon: Users },
+    { name: 'Community', href: '/community', icon: MessageSquare },
     { name: 'Network', href: '/network', icon: UserCheck },
     { name: 'Profile', href: '/profile', icon: User },
   ];
@@ -78,16 +85,17 @@ export default function Sidebar({ trustScore, user }: SidebarProps) {
   const COMPANY_HIRING_NAV = [
     { name: 'Overview', href: '/company', icon: LayoutDashboard },
     { name: 'Find Developers', href: '/company/developers', icon: Search },
-    { name: 'Jobs', href: '/company/jobs', icon: Briefcase },
-    { name: 'Hiring Pipeline', href: '/company/pipeline', icon: GitPullRequest },
-    { name: 'Analytics', href: '/company/analytics', icon: BarChart3 },
+    { name: 'Opportunities', href: '/company/jobs', icon: Briefcase },
+    { name: 'Challenges', href: '/company/challenges', icon: Trophy },
+    { name: 'Applications', href: '/company/applications', icon: GitPullRequest },
+    { name: 'Saved Talent', href: '/company/saved', icon: Bookmark },
+    { name: 'Compare', href: '/company/compare', icon: ArrowLeftRight },
   ];
 
   const COMPANY_ORG_NAV = [
+    { name: 'Team Members', href: '/company/members', icon: Users },
     { name: 'Company Profile', href: '/company/profile', icon: Building2 },
-    { name: 'Team', href: '/company/team', icon: Users },
     { name: 'Settings', href: '/settings', icon: Settings },
-    { name: 'Billing', href: '/company/billing', icon: CreditCard },
   ];
 
   const toggleMode = () => {

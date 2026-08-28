@@ -121,7 +121,7 @@ export default function Navbar({ user, breadcrumb }: NavbarProps) {
                 if (isCompanyPath) {
                   router.push(`/company/developers?q=${encodeURIComponent(e.currentTarget.value)}`);
                 } else {
-                  router.push(`/skills?q=${encodeURIComponent(e.currentTarget.value)}`);
+                  router.push(`/developers?q=${encodeURIComponent(e.currentTarget.value)}`);
                 }
               }
             }}

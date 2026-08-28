@@ -65,10 +65,13 @@ export class GitHubService {
     }
   }
 
-  // Fetch latest 10 commits
-  static async getCommits(owner: string, repo: string, token: string): Promise<CommitInfo[]> {
+  // Fetch latest commits with optional incremental date filter
+  static async getCommits(owner: string, repo: string, token: string, since?: string): Promise<CommitInfo[]> {
     try {
-      const commits = await this.githubFetch(`/repos/${owner}/${repo}/commits?per_page=10`, token);
+      const endpoint = since 
+        ? `/repos/${owner}/${repo}/commits?per_page=15&since=${encodeURIComponent(since)}`
+        : `/repos/${owner}/${repo}/commits?per_page=15`;
+      const commits = await this.githubFetch(endpoint, token);
       if (!Array.isArray(commits)) return [];
       
       return commits.map((c: any) => ({
@@ -76,6 +79,27 @@ export class GitHubService {
         message: c.commit.message,
         author: c.commit.author?.name || c.commit.committer?.name || 'Unknown',
         date: c.commit.author?.date || c.commit.committer?.date || '',
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  // Fetch recent pull requests for activity intelligence
+  static async getRecentPullRequests(owner: string, repo: string, token: string): Promise<any[]> {
+    try {
+      const prs = await this.githubFetch(`/repos/${owner}/${repo}/pulls?state=all&per_page=10`, token);
+      if (!Array.isArray(prs)) return [];
+      
+      return prs.map((pr: any) => ({
+        id: pr.id.toString(),
+        number: pr.number,
+        title: pr.title,
+        state: pr.state, // 'open' | 'closed'
+        mergedAt: pr.merged_at,
+        createdAt: pr.created_at,
+        htmlUrl: pr.html_url,
+        user: pr.user?.login || 'Unknown',
       }));
     } catch {
       return [];

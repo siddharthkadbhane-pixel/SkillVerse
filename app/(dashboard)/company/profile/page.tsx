@@ -4,160 +4,213 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/shared/Navbar';
 import Sidebar from '@/components/shared/Sidebar';
-import PageHeader from '@/components/ui/PageHeader';
-import SkillChip from '@/components/ui/SkillChip';
 import {
   Building2,
-  ShieldCheck,
   Globe,
   MapPin,
   Users,
-  Briefcase,
-  ExternalLink,
-  Code2,
+  ShieldCheck,
   CheckCircle2,
+  ExternalLink,
+  Save,
+  AlertCircle
 } from 'lucide-react';
-import { DUMMY_COMPANIES, DUMMY_JOBS } from '@/lib/dummyData';
+import { CompanyProfile } from '@/types/company';
 
 export default function CompanyProfilePage() {
-  const [profile, setProfile] = useState<any>(null);
-  const company = DUMMY_COMPANIES[0]; // Hyperion AI
+  const [profile, setProfile] = useState<CompanyProfile | null>(null);
+  const [name, setName] = useState('');
+  const [website, setWebsite] = useState('');
+  const [description, setDescription] = useState('');
+  const [industry, setIndustry] = useState('');
+  const [location, setLocation] = useState('');
+  const [size, setSize] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [savedMessage, setSavedMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/profile')
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.success) setProfile(json.data.profile);
-      })
-      .catch(() => {});
+    async function loadCompany() {
+      try {
+        const res = await fetch('/api/company').then(r => r.json());
+        if (res.success && res.data?.profile) {
+          const p: CompanyProfile = res.data.profile;
+          setProfile(p);
+          setName(p.name);
+          setWebsite(p.website || '');
+          setDescription(p.description || '');
+          setIndustry(p.industry || 'Software & Cloud Infrastructure');
+          setLocation(p.location || 'San Francisco, CA & Remote');
+          setSize(p.size || '50-200 employees');
+        }
+      } catch (err) {
+        console.error('Failed to load company profile:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadCompany();
   }, []);
 
-  const techStack = [
-    'Next.js 15',
-    'React 19',
-    'TypeScript',
-    'Rust',
-    'Python',
-    'PyTorch',
-    'PostgreSQL',
-    'Redis',
-    'Kubernetes',
-    'Docker',
-  ];
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await fetch('/api/company', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          website,
+          description,
+          industry,
+          location,
+          size,
+        }),
+      }).then(r => r.json());
+
+      if (res.success && res.data) {
+        setProfile(res.data);
+        setSavedMessage('Company profile updated successfully.');
+        setTimeout(() => setSavedMessage(null), 3000);
+      }
+    } catch (err) {
+      console.error('Failed to update company profile:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#070A0F] text-[#F8FAFC]">
-      <Sidebar user={profile} />
+    <div className="flex h-screen bg-[#070A0F] text-[#F8FAFC]">
+      <Sidebar />
 
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <Navbar user={profile} breadcrumb="Company Profile" />
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <Navbar />
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-5xl w-full mx-auto space-y-6">
-          <PageHeader
-            title="Company Profile"
-            description="Company identity, verified employer credentials, and engineering culture."
-            badge={{ text: 'Verified Employer', variant: 'primary' }}
-          />
+        <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-8 space-y-6 max-w-[1000px] w-full mx-auto">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-[#7C3AED]" />
+                <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                  Company Workspace Profile
+                </h1>
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/30">
+                  ✓ Verified Company
+                </span>
+              </div>
+              <p className="text-xs text-[#94A3B8] mt-1">
+                Manage your organization details and recruiter workspace identity.
+              </p>
+            </div>
+          </div>
 
-          {/* Company Card */}
-          <div className="bg-[#0D121A] border border-white/[0.08] rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-              <div className="flex items-center gap-5">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#7C3AED] to-[#06B6D4] flex items-center justify-center text-white text-3xl font-black shadow-lg">
-                  H
+          {savedMessage && (
+            <div className="p-3.5 rounded-xl bg-[#10B981]/10 border border-[#10B981]/20 text-xs text-[#10B981] flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{savedMessage}</span>
+            </div>
+          )}
+
+          {/* Form */}
+          <div className="bg-[#0D121A] border border-white/[0.08] rounded-2xl p-6 sm:p-8 space-y-6 shadow-sm">
+            <form onSubmit={handleSave} className="space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[11px] font-mono text-[#64748B] block mb-1.5">
+                    Company Name
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    className="w-full bg-[#111722] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#7C3AED]"
+                  />
                 </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-xl sm:text-2xl font-bold text-[#F8FAFC]">
-                      {company.name}
-                    </h1>
-                    <ShieldCheck className="w-5 h-5 text-[#10B981]" />
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#10B981]/20 text-[#34D399] border border-[#10B981]/30">
-                      ✓ Verified Company
-                    </span>
-                  </div>
 
-                  <p className="text-xs text-[#94A3B8]">
-                    Frontier AI Infrastructure & High-Throughput Distributed Systems
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-[#64748B] pt-1">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5" />
-                      San Francisco, CA &bull; Remote
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Users className="w-3.5 h-3.5" />
-                      150 - 500 Employees
-                    </span>
-                    <a
-                      href={company.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-[#A78BFA] hover:underline"
-                    >
-                      <Globe className="w-3.5 h-3.5" />
-                      {company.website}
-                    </a>
-                  </div>
+                <div>
+                  <label className="text-[11px] font-mono text-[#64748B] block mb-1.5">
+                    Official Website
+                  </label>
+                  <input
+                    type="url"
+                    value={website}
+                    onChange={(e) => setWebsite(e.target.value)}
+                    placeholder="https://company.com"
+                    className="w-full bg-[#111722] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#7C3AED]"
+                  />
                 </div>
               </div>
-            </div>
 
-            {/* Description */}
-            <div className="pt-4 border-t border-white/[0.06] text-xs text-[#94A3B8] leading-relaxed">
-              {company.description}
-            </div>
-          </div>
+              <div>
+                <label className="text-[11px] font-mono text-[#64748B] block mb-1.5">
+                  About the Company
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                  placeholder="Describe your engineering stack, mission, and culture..."
+                  className="w-full bg-[#111722] border border-white/[0.08] rounded-xl p-3.5 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#7C3AED]"
+                />
+              </div>
 
-          {/* Technology Stack */}
-          <div className="bg-[#0D121A] border border-white/[0.08] rounded-xl p-6 shadow-sm space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b border-white/[0.06]">
-              <Code2 className="w-4 h-4 text-[#7C3AED]" />
-              <h3 className="font-semibold text-sm text-[#F8FAFC]">
-                Engineering Technology Stack
-              </h3>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {techStack.map((tech, i) => (
-                <SkillChip key={i} name={tech} verified={true} />
-              ))}
-            </div>
-          </div>
-
-          {/* Open Positions */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-[#F8FAFC]">
-                Active Engineering Vacancies ({DUMMY_JOBS.length})
-              </h3>
-              <Link href="/company/jobs" className="text-xs font-semibold text-[#A78BFA] hover:underline">
-                Manage Jobs &rarr;
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {DUMMY_JOBS.map((j) => (
-                <div
-                  key={j.id}
-                  className="p-4 rounded-xl bg-[#0D121A] border border-white/[0.08] hover:border-white/[0.14] transition-all space-y-2"
-                >
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-xs text-[#F8FAFC]">{j.title}</h4>
-                    <span className="text-[10px] font-mono text-[#10B981] font-semibold">{j.salaryRange}</span>
-                  </div>
-                  <p className="text-[11px] text-[#94A3B8]">{j.location}</p>
-                  <div className="flex flex-wrap gap-1 pt-1">
-                    {(j.requirements || []).slice(0, 3).map((r: string, i: number) => (
-                      <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-[#111722] text-[#94A3B8]">
-                        {r}
-                      </span>
-                    ))}
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-[11px] font-mono text-[#64748B] block mb-1.5">
+                    Industry
+                  </label>
+                  <input
+                    type="text"
+                    value={industry}
+                    onChange={(e) => setIndustry(e.target.value)}
+                    placeholder="e.g. Developer Tools, FinTech"
+                    className="w-full bg-[#111722] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#7C3AED]"
+                  />
                 </div>
-              ))}
-            </div>
+
+                <div>
+                  <label className="text-[11px] font-mono text-[#64748B] block mb-1.5">
+                    Company Size
+                  </label>
+                  <input
+                    type="text"
+                    value={size}
+                    onChange={(e) => setSize(e.target.value)}
+                    placeholder="e.g. 50-200 employees"
+                    className="w-full bg-[#111722] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#7C3AED]"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-mono text-[#64748B] block mb-1.5">
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="e.g. San Francisco, CA"
+                    className="w-full bg-[#111722] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#7C3AED]"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-white/[0.06] flex items-center justify-end">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#7C3AED] hover:bg-[#6D28D9] disabled:opacity-50 text-white text-xs font-semibold shadow-lg shadow-[#7C3AED]/25 transition-all"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{saving ? 'Saving Changes...' : 'Save Profile'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </main>
       </div>

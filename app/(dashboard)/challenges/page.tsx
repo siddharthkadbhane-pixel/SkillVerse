@@ -1,12 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import Navbar from '@/components/shared/Navbar';
 import Sidebar from '@/components/shared/Sidebar';
-import PageHeader from '@/components/ui/PageHeader';
-import StatCard from '@/components/ui/StatCard';
-import SkillChip from '@/components/ui/SkillChip';
-import EmptyState from '@/components/ui/EmptyState';
 import {
   Trophy,
   Search,
@@ -19,192 +16,258 @@ import {
   Layers,
   Sparkles,
   ShieldCheck,
+  Filter,
+  DollarSign,
+  Briefcase
 } from 'lucide-react';
-import { DUMMY_CHALLENGES } from '@/lib/dummyData';
+import { ChallengeItem, ChallengeType, ChallengeDifficulty } from '@/types/challenge';
 
 export default function ChallengesPage() {
-  const [profile, setProfile] = useState<any>(null);
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedChallenge, setSelectedChallenge] = useState<any>(null);
+  const [challenges, setChallenges] = useState<ChallengeItem[]>([]);
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [diffFilter, setDiffFilter] = useState<string>('all');
+  const [loading, setLoading] = useState(true);
+
+  async function fetchChallenges() {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (search.trim()) params.set('q', search.trim());
+      if (typeFilter !== 'all') params.set('type', typeFilter);
+      if (diffFilter !== 'all') params.set('difficulty', diffFilter);
+
+      const res = await fetch(`/api/challenges?${params.toString()}`).then(r => r.json());
+      if (res.success && Array.isArray(res.data)) {
+        setChallenges(res.data);
+      }
+    } catch (err) {
+      console.error('Failed to load challenges:', err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    fetch('/api/profile')
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.success) setProfile(json.data.profile);
-      })
-      .catch(() => {});
-  }, []);
+    fetchChallenges();
+  }, [typeFilter, diffFilter]);
 
-  const categories = [
-    'All',
-    'Distributed Systems',
-    'Frontend Architecture',
-    'Zero-Knowledge',
-    'AI Multi-Agent',
+  const typeOptions = [
+    { label: 'All Challenges', value: 'all' },
+    { label: 'Frontend', value: 'frontend' },
+    { label: 'Backend', value: 'backend' },
+    { label: 'DevOps', value: 'devops' },
+    { label: 'AI / ML', value: 'ai_ml' },
+    { label: 'Coding', value: 'coding' },
   ];
+
+  const diffOptions = ['all', 'Beginner', 'Intermediate', 'Advanced', 'Expert'];
 
   const getDifficultyColor = (diff: string) => {
     switch (diff.toLowerCase()) {
       case 'expert':
-      case 'hard':
         return 'text-[#EF4444] bg-[#EF4444]/10 border-[#EF4444]/25';
-      case 'medium':
       case 'advanced':
         return 'text-[#F59E0B] bg-[#F59E0B]/10 border-[#F59E0B]/25';
+      case 'intermediate':
+        return 'text-[#38BDF8] bg-[#38BDF8]/10 border-[#38BDF8]/25';
       default:
         return 'text-[#10B981] bg-[#10B981]/10 border-[#10B981]/25';
     }
   };
 
-  const filteredChallenges = DUMMY_CHALLENGES.filter((ch) => {
-    const matchesSearch =
-      ch.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ch.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
-  });
-
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#070A0F] text-[#F8FAFC]">
-      <Sidebar user={profile} />
+    <div className="flex h-screen bg-[#070A0F] text-[#F8FAFC]">
+      <Sidebar />
 
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <Navbar user={profile} breadcrumb="Challenges & Hackathons" />
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <Navbar />
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
-          <PageHeader
-            title="Practical Engineering Challenges"
-            description="Prove real-world engineering capabilities across distributed systems, algorithmic efficiency, and architectural design."
-            badge={{ text: 'Verifiable Proof', variant: 'cyan' }}
-          />
-
-          {/* Top Metrics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard
-              label="Completed Challenges"
-              value="8 / 12"
-              trend={{ value: 'Top 1%', isPositive: true }}
-              icon={Trophy}
-              iconColor="text-[#FBBF24]"
-              subtitle="Score multiplier: 1.25x"
-            />
-            <StatCard
-              label="Verified XP Earned"
-              value="4,850 XP"
-              icon={Zap}
-              iconColor="text-[#7C3AED]"
-              subtitle="Tier: Elite Challenger"
-            />
-            <StatCard
-              label="Active Hackathons"
-              value="4 Live"
-              icon={Users}
-              iconColor="text-[#38BDF8]"
-              subtitle="$47,000 Total Prize Pools"
-            />
-            <StatCard
-              label="Fast-Track Referrals"
-              value="3 Unlocked"
-              icon={ShieldCheck}
-              iconColor="text-[#10B981]"
-              subtitle="Hyperion AI, Vanguard Tech"
-            />
+        <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-8 space-y-6 max-w-[1400px] w-full mx-auto">
+          {/* Header Banner */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-[#F59E0B]" />
+                <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                  Verification Challenges & Competitions
+                </h1>
+                <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/25">
+                  AST Evaluated
+                </span>
+              </div>
+              <p className="text-xs text-[#94A3B8] mt-1">
+                Demonstrate verified capability by solving real architectural problems. Submissions are audited by our AST Code Engine.
+              </p>
+            </div>
           </div>
 
-          {/* Filter Toolbar */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#0D121A] border border-white/[0.08] p-3 rounded-xl">
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-                    selectedCategory === cat
-                      ? 'bg-[#7C3AED] text-white'
-                      : 'text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/[0.04]'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+          {/* Search & Filters */}
+          <div className="bg-[#0D121A] border border-white/[0.08] p-5 rounded-2xl space-y-4">
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <div className="relative flex-1 w-full">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') fetchChallenges(); }}
+                  placeholder="Search challenges by title, technology, or problem statement..."
+                  className="w-full bg-[#111722] border border-white/[0.08] rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#F59E0B]"
+                />
+              </div>
+
+              <button
+                onClick={fetchChallenges}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#F59E0B] hover:bg-[#D97706] text-black text-xs font-bold transition-all shadow-md shadow-[#F59E0B]/20"
+              >
+                Search Challenges
+              </button>
             </div>
 
-            <div className="relative w-full sm:w-64">
-              <Search className="w-3.5 h-3.5 text-[#64748B] absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search challenges..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#111722] border border-white/[0.08] hover:border-white/[0.14] focus:border-[#7C3AED]/50 rounded-lg pl-8 pr-3 py-1.5 text-xs text-[#F8FAFC] placeholder-[#64748B] outline-none transition-all"
-              />
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-xs">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                {typeOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setTypeFilter(opt.value)}
+                    className={`px-3 py-1.5 rounded-lg text-[11px] font-mono transition-colors shrink-0 ${
+                      typeFilter === opt.value
+                        ? 'bg-[#F59E0B] text-black font-bold'
+                        : 'bg-[#111722] text-[#94A3B8] hover:text-white border border-white/[0.06]'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-mono text-[#64748B]">Difficulty:</span>
+                <select
+                  value={diffFilter}
+                  onChange={(e) => setDiffFilter(e.target.value)}
+                  className="bg-[#111722] border border-white/[0.08] text-white text-[11px] font-mono rounded-lg px-2.5 py-1.5 focus:outline-none"
+                >
+                  {diffOptions.map(d => (
+                    <option key={d} value={d}>{d === 'all' ? 'All Difficulties' : d}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
           {/* Challenges Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredChallenges.map((challenge) => (
-              <div
-                key={challenge.id}
-                className="bg-[#0D121A] hover:bg-[#111722] border border-white/[0.08] hover:border-white/[0.14] rounded-xl p-5 transition-all duration-150 shadow-sm flex flex-col justify-between group"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-3 mb-2.5">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-lg bg-[#111722] border border-white/[0.06] text-[#A78BFA]">
-                        <Code2 className="w-4 h-4" />
+          {loading ? (
+            <div className="text-center py-20 text-xs text-[#64748B]">
+              Loading verified capability challenges...
+            </div>
+          ) : challenges.length === 0 ? (
+            <div className="bg-[#0D121A] border border-white/[0.08] rounded-2xl p-12 text-center space-y-3">
+              <Trophy className="w-8 h-8 text-[#64748B] mx-auto" />
+              <h3 className="text-sm font-bold text-white">No challenges match your criteria</h3>
+              <p className="text-xs text-[#94A3B8]">Try selecting a different category or clearing your search.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {challenges.map((ch) => (
+                <div
+                  key={ch.id}
+                  className="bg-[#0D121A] border border-white/[0.08] hover:border-white/[0.16] rounded-2xl p-6 transition-all flex flex-col justify-between space-y-5"
+                >
+                  <div className="space-y-4">
+                    {/* Top Organizer & Difficulty */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <img
+                          src={ch.organizer.logoUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80'}
+                          alt={ch.organizer.name}
+                          className="w-8 h-8 rounded-lg border border-white/[0.1] object-cover"
+                        />
+                        <div>
+                          <span className="text-xs font-semibold text-white block leading-tight">
+                            {ch.organizer.name}
+                          </span>
+                          <span className="text-[10px] font-mono text-[#64748B]">
+                            Verified Organizer
+                          </span>
+                        </div>
                       </div>
-                      <h3 className="font-bold text-sm text-[#F8FAFC] group-hover:text-[#A78BFA] transition-colors">
-                        {challenge.title}
-                      </h3>
+
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${getDifficultyColor(ch.difficulty)}`}>
+                          {ch.difficulty}
+                        </span>
+                        {ch.prizePool && (
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/25">
+                            {ch.prizePool}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    <span
-                      className={`font-mono text-[10px] font-bold uppercase px-2 py-0.5 rounded border shrink-0 ${getDifficultyColor(
-                        challenge.difficulty
-                      )}`}
+                    {/* Title & Description */}
+                    <div className="space-y-1.5">
+                      <h3 className="text-base font-bold text-white leading-snug">
+                        {ch.title}
+                      </h3>
+                      <p className="text-xs text-[#94A3B8] leading-relaxed line-clamp-3">
+                        {ch.description}
+                      </p>
+                    </div>
+
+                    {/* Criteria Weights Snippet */}
+                    <div className="p-3 rounded-xl bg-[#111722] border border-white/[0.04] space-y-1.5">
+                      <span className="text-[10px] font-mono text-[#64748B] uppercase tracking-wider block">
+                        AST Evaluation Weights:
+                      </span>
+                      <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono text-[#94A3B8]">
+                        <span>Func: <strong className="text-white">{ch.criteriaWeights.functionality}%</strong></span>
+                        <span>•</span>
+                        <span>Code: <strong className="text-white">{ch.criteriaWeights.codeQuality}%</strong></span>
+                        <span>•</span>
+                        <span>Arch: <strong className="text-white">{ch.criteriaWeights.architecture}%</strong></span>
+                        <span>•</span>
+                        <span>Tests: <strong className="text-white">{ch.criteriaWeights.testing}%</strong></span>
+                      </div>
+                    </div>
+
+                    {/* Required Skills */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {ch.requiredSkills.map(sk => (
+                        <span
+                          key={sk}
+                          className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#070A0F] border border-white/[0.06] text-[#E2E8F0]"
+                        >
+                          {sk}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Bottom Stats & Action */}
+                  <div className="pt-4 border-t border-white/[0.06] flex items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-3 text-[11px] font-mono text-[#64748B]">
+                      <span className="flex items-center gap-1">
+                        <Users className="w-3.5 h-3.5" />
+                        {ch.participantsCount} Joined
+                      </span>
+                      <span>•</span>
+                      <span>{ch.submissionsCount} Submissions</span>
+                    </div>
+
+                    <Link
+                      href={`/challenges/${ch.id}`}
+                      className="px-4 py-2 rounded-xl bg-[#F59E0B] hover:bg-[#D97706] text-black text-xs font-bold transition-all flex items-center gap-1.5 shadow-md shadow-[#F59E0B]/20"
                     >
-                      {challenge.difficulty}
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-[#94A3B8] line-clamp-2 mb-4 leading-relaxed">
-                    {challenge.description}
-                  </p>
-
-                  {/* Tech stack */}
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {challenge.technologies.map((tech, i) => (
-                      <SkillChip key={i} name={tech} size="sm" verified={false} />
-                    ))}
+                      <span>Enter Challenge</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
                   </div>
                 </div>
-
-                {/* Footer Metrics & Action */}
-                <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-3 text-[#94A3B8]">
-                    <span className="font-mono text-[#FBBF24] font-bold flex items-center gap-1">
-                      <Trophy className="w-3.5 h-3.5" />
-                      {challenge.prizePool}
-                    </span>
-                    <span className="font-mono text-[11px] text-[#64748B] flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      {challenge.timeLimit}
-                    </span>
-                  </div>
-
-                  <button
-                    onClick={() => alert(`Starting Challenge: ${challenge.title}. Sandbox container initialized.`)}
-                    className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#7C3AED] hover:bg-[#8B5CF6] text-white transition-colors"
-                  >
-                    Start Challenge
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </main>
       </div>
     </div>

@@ -207,7 +207,7 @@ async function runMasterTestSuite() {
   // -------------------------------------------------------------
   // Test 7: Full DCC 2.0 Public Profile Model Sanitization
   // -------------------------------------------------------------
-  console.log('\n🌐 [7/7] Testing Full DCC 2.0 Dataset & Public Profile Model...');
+  console.log('\n🌐 [7/8] Testing Full DCC 2.0 Dataset & Public Profile Model...');
   try {
     const fullDCC = await DeveloperCapabilityCardService.getFullDCC(DUMMY_DEVELOPER_ID);
     if (
@@ -231,10 +231,267 @@ async function runMasterTestSuite() {
   }
 
   // -------------------------------------------------------------
+  // Test 8: Developer Discovery & Search Engine (Phase 26)
+  // -------------------------------------------------------------
+  console.log('\n🔍 [8/9] Testing Developer Discovery & Search Engine...');
+  try {
+    const { DeveloperSearchService } = await import('../services/discovery/search');
+    const searchRes = await DeveloperSearchService.searchDevelopers({ q: 'TypeScript' });
+    if (searchRes && Array.isArray(searchRes.developers) && searchRes.developers.length > 0) {
+      console.log(`   ✅ Passed: Discovery Engine found ${searchRes.developers.length} verified developer(s):`);
+      console.log(`      - Top Match: @${searchRes.developers[0].username} (Level: ${searchRes.developers[0].dccLevel})`);
+      console.log(`      - Verified Skills: ${searchRes.developers[0].topVerifiedSkills.map(s => s.name).join(', ')}`);
+      console.log(`      - Direct DCC Link: ${searchRes.developers[0].dccUrl}`);
+      passedTests++;
+    } else {
+      throw new Error('Developer search query returned no results');
+    }
+  } catch (err: any) {
+    console.error('   ❌ Failed:', err.message);
+  }
+
+  // -------------------------------------------------------------
+  // Test 9: Developer Activity & Contribution Intelligence (Phase 27)
+  // -------------------------------------------------------------
+  console.log('\n⚡ [9/11] Testing Developer Activity & Contribution Intelligence...');
+  try {
+    const { ContributionIntelligenceService } = await import('../services/activity/intelligence');
+    const activityIntel = await ContributionIntelligenceService.getContributionIntelligence(DUMMY_DEVELOPER_ID);
+    if (
+      activityIntel &&
+      activityIntel.activeRepositoriesCount > 0 &&
+      activityIntel.monthlyTimeline.length === 6 &&
+      activityIntel.contextualSummary
+    ) {
+      console.log(`   ✅ Passed: Contribution Intelligence synthesized contextual metrics:`);
+      console.log(`      - Active Repositories: ${activityIntel.activeRepositoriesCount} public repos`);
+      console.log(`      - Activity Cadence: ${activityIntel.frequency}`);
+      console.log(`      - Contextual Narrative: "${activityIntel.contextualSummary}"`);
+      console.log(`      - Monthly Timeline: ${activityIntel.monthlyTimeline.length} monthly density buckets`);
+      passedTests++;
+    } else {
+      throw new Error('Contribution intelligence compilation incomplete');
+    }
+  } catch (err: any) {
+    console.error('   ❌ Failed:', err.message);
+  }
+
+  // -------------------------------------------------------------
+  // Test 10: Skill Intelligence & Capability Mapping (Phase 28)
+  // -------------------------------------------------------------
+  console.log('\n🧠 [10/11] Testing Skill Intelligence & Capability Mapping...');
+  try {
+    const { SkillIntelligenceService } = await import('../services/capability/engine');
+    const caps = await SkillIntelligenceService.calculateDeveloperCapabilities(DUMMY_DEVELOPER_ID);
+    if (caps && Array.isArray(caps) && caps.length > 0) {
+      console.log(`   ✅ Passed: Mapped ${caps.length} engineering capabilities:`);
+      console.log(`      - Top Capability: ${caps[0].capabilityName} (${caps[0].level}, ${caps[0].confidenceScore}% confidence)`);
+      console.log(`      - Supporting Stack: ${caps[0].supportingSkills.join(', ')}`);
+      passedTests++;
+    } else {
+      throw new Error('Capability mapping compilation incomplete');
+    }
+  } catch (err: any) {
+    console.error('   ❌ Failed:', err.message);
+  }
+
+  // -------------------------------------------------------------
+  // Test 11: Verification Confidence & Integrity Engine (Phase 29)
+  // -------------------------------------------------------------
+  console.log('\n🛡️ [11/12] Testing Verification Confidence & Integrity Engine...');
+  try {
+    const { VerificationIntegrityEngine } = await import('../services/verification/integrity');
+    const integrity = await VerificationIntegrityEngine.getVerificationIntegritySummary(DUMMY_DEVELOPER_ID);
+    if (integrity && integrity.integrityScore > 0 && integrity.freshnessDistribution) {
+      console.log(`   ✅ Passed: Verification Integrity calculated:`);
+      console.log(`      - Integrity Score: ${integrity.integrityScore}/100`);
+      console.log(`      - Freshness Distribution: ${integrity.freshnessDistribution.current} Current, ${integrity.freshnessDistribution.aging} Aging, ${integrity.freshnessDistribution.stale} Stale`);
+      console.log(`      - Average Evidence Score: ${integrity.averageEvidenceScore}/100`);
+      passedTests++;
+    } else {
+      throw new Error('Verification integrity compilation incomplete');
+    }
+  } catch (err: any) {
+    console.error('   ❌ Failed:', err.message);
+  }
+
+  // -------------------------------------------------------------
+  // Test 12: Company & Recruiter Workspace Foundation (Phase 30)
+  // -------------------------------------------------------------
+  console.log('\n🏢 [12/13] Testing Company & Recruiter Workspace Foundation...');
+  try {
+    const { CompanyWorkspaceService, DEFAULT_COMPANY_ID } = await import('../services/company/workspace');
+    const profile = await CompanyWorkspaceService.getCompanyProfile(DEFAULT_COMPANY_ID);
+    const members = await CompanyWorkspaceService.getCompanyMembers(DEFAULT_COMPANY_ID);
+    const saved = await CompanyWorkspaceService.getSavedDevelopers(DEFAULT_COMPANY_ID);
+    if (profile && members.length > 0 && Array.isArray(saved)) {
+      console.log(`   ✅ Passed: Company Workspace initialized:`);
+      console.log(`      - Workspace: ${profile.name} (Status: ${profile.verificationStatus})`);
+      console.log(`      - Team Members: ${members.length} authorized member(s)`);
+      console.log(`      - Shortlisted Talent: ${saved.length} candidate(s)`);
+      passedTests++;
+    } else {
+      throw new Error('Company workspace initialization incomplete');
+    }
+  } catch (err: any) {
+    console.error('   ❌ Failed:', err.message);
+  }
+
+  // -------------------------------------------------------------
+  // Test 13: Job & Opportunity Engine (Phase 31)
+  // -------------------------------------------------------------
+  console.log('\n💼 [13/15] Testing Job & Opportunity Engine...');
+  try {
+    const { OpportunityEngine } = await import('../services/opportunity/engine');
+    const opps = await OpportunityEngine.getOpportunities({ q: 'Cloud' }, DUMMY_DEVELOPER_ID);
+    if (opps && opps.opportunities.length > 0) {
+      const topOpp = opps.opportunities[0];
+      console.log(`   ✅ Passed: Opportunity Discovery & Deterministic Match:`);
+      console.log(`      - Role: ${topOpp.title} (${topOpp.type})`);
+      console.log(`      - Company: ${topOpp.company.name}`);
+      console.log(`      - DCC Match Tier: ${topOpp.matchEvaluation?.matchTier} (${topOpp.matchEvaluation?.matchPercentage}%)`);
+      passedTests++;
+    } else {
+      throw new Error('Opportunity engine initialization incomplete');
+    }
+  } catch (err: any) {
+    console.error('   ❌ Failed:', err.message);
+  }
+
+  // -------------------------------------------------------------
+  // Test 14: Verification Challenges & Competitions Engine (Phase 32)
+  // -------------------------------------------------------------
+  console.log('\n🏆 [14/15] Testing Verification Challenges & Competitions Engine...');
+  try {
+    const { ChallengeEngine } = await import('../services/challenge/engine');
+    const challenges = await ChallengeEngine.getChallenges({}, DUMMY_DEVELOPER_ID);
+    if (challenges && challenges.challenges.length > 0) {
+      const topCh = challenges.challenges[0];
+      console.log(`   ✅ Passed: Verification Challenges Engine:`);
+      console.log(`      - Challenge: ${topCh.title} (${topCh.difficulty})`);
+      console.log(`      - Organizer: ${topCh.organizer.name}`);
+      console.log(`      - AST Weights: ${topCh.criteriaWeights.functionality}% Func, ${topCh.criteriaWeights.codeQuality}% Quality, ${topCh.criteriaWeights.architecture}% Arch`);
+      passedTests++;
+    } else {
+      throw new Error('Challenge engine initialization incomplete');
+    }
+  } catch (err: any) {
+    console.error('   ❌ Failed:', err.message);
+  }
+
+  // -------------------------------------------------------------
+  // Test 15: Team Formation & Collaboration Engine (Phase 33)
+  // -------------------------------------------------------------
+  console.log('\n👥 [15/16] Testing Team Formation & Collaboration Engine...');
+  try {
+    const { TeamEngine } = await import('../services/team/engine');
+    const teams = await TeamEngine.getTeams({}, DUMMY_DEVELOPER_ID);
+    if (teams && teams.teams.length > 0) {
+      const topTeam = teams.teams[0];
+      console.log(`   ✅ Passed: Team Formation & Granular Attribution Engine:`);
+      console.log(`      - Team: ${topTeam.name} (${topTeam.slug})`);
+      console.log(`      - Active Members: ${topTeam.membersCount} member(s)`);
+      console.log(`      - Granular Contributions: ${topTeam.contributions?.length || 0} developer record(s)`);
+      passedTests++;
+    } else {
+      throw new Error('Team engine initialization incomplete');
+    }
+  } catch (err: any) {
+    console.error('   ❌ Failed:', err.message);
+  }
+
+  // -------------------------------------------------------------
+  // Test 16: Developer Community & Knowledge Network (Phase 34)
+  // -------------------------------------------------------------
+  console.log('\n💬 [16/17] Testing Developer Community & Knowledge Network Engine...');
+  try {
+    const { CommunityEngine } = await import('../services/community/engine');
+    const feed = await CommunityEngine.getFeed({}, DUMMY_DEVELOPER_ID);
+    const rep = await CommunityEngine.getCommunityReputation(DUMMY_DEVELOPER_ID);
+    if (feed && feed.posts.length > 0 && rep) {
+      const topPost = feed.posts[0];
+      console.log(`   ✅ Passed: Developer Community & Knowledge Network:`);
+      console.log(`      - Top Writeup: ${topPost.title} (${topPost.contentType})`);
+      console.log(`      - Author: ${topPost.author.name} (@${topPost.author.username})`);
+      console.log(`      - Community Reputation: ${rep.totalReputationPoints} pts (Badge: ${rep.badgeLevel})`);
+      passedTests++;
+    } else {
+      throw new Error('Community engine initialization incomplete');
+    }
+  } catch (err: any) {
+    console.error('   ❌ Failed:', err.message);
+  }
+
+  // -------------------------------------------------------------
+  // Test 17: AI Career & Learning Intelligence Engine (Phase 35)
+  // -------------------------------------------------------------
+  console.log('\n🎯 [17/18] Testing AI Career & Learning Intelligence Engine...');
+  try {
+    const { CareerEngine } = await import('../services/career/engine');
+    const overview = await CareerEngine.getCareerOverview(DUMMY_DEVELOPER_ID);
+    if (overview && overview.allRoleFits.length === 10 && overview.roadmap) {
+      const topFit = overview.activeRoleFit || overview.allRoleFits[0];
+      console.log(`   ✅ Passed: AI Career & Learning Intelligence Engine:`);
+      console.log(`      - Target Role: ${overview.goal?.targetRoleName} (${topFit.readinessTier}, Fit: ${topFit.fitScore}%)`);
+      console.log(`      - Roadmap Stages: ${overview.roadmap.stages.length} structured progression stages`);
+      console.log(`      - Action Plan: ${overview.tasks.length} cadenced learning tasks`);
+      console.log(`      - Gaps Identified: ${overview.topGaps.length} evidence-supported gap(s)`);
+      passedTests++;
+    } else {
+      throw new Error('Career engine initialization incomplete');
+    }
+  } catch (err: any) {
+    console.error('   ❌ Failed:', err.message);
+  }
+
+  // -------------------------------------------------------------
+  // Test 18: SkillVerse VS Code IDE Integration (Phase 37)
+  // -------------------------------------------------------------
+  console.log('\n🛡️ [18/18] Testing SkillVerse VS Code IDE Integration Engine...');
+  try {
+    const { POST: authPost } = await import('../app/api/ide/auth/route');
+    const { GET: statusGet } = await import('../app/api/ide/status/route');
+    const { POST: inspectPost } = await import('../app/api/ide/inspect-file/route');
+
+    const authRes = await authPost({
+      json: async () => ({ apiKey: 'sk_demo_token', username: 'siddharthkadbhane-pixel' }),
+    } as any);
+    const authData = (await authRes.json()).data;
+
+    const statusRes = await statusGet({
+      url: 'http://localhost:3000/api/ide/status?repo=Sillverse',
+    } as any);
+    const statusData = (await statusRes.json()).data;
+
+    const inspectRes = await inspectPost({
+      json: async () => ({
+        filePath: 'services/testService.ts',
+        language: 'typescript',
+        code: 'interface User { id: string; } export async function test(): Promise<void> {}',
+        action: 'review',
+      }),
+    } as any);
+    const inspectData = (await inspectRes.json()).data;
+
+    if (authData?.token && statusData?.dcc && inspectData?.score >= 70) {
+      console.log(`   ✅ Passed: SkillVerse VS Code IDE Integration:`);
+      console.log(`      - Session Token: ${authData.token.slice(0, 20)}... (Developer: @${authData.user.username})`);
+      console.log(`      - DCC Status: ${statusData.dcc.overallScore}/1000 (${statusData.dcc.level}, ${statusData.dcc.verifiedSkills.length} verified skills)`);
+      console.log(`      - Workspace Repo: ${statusData.repository?.name} (${statusData.repository?.verificationState})`);
+      console.log(`      - AST File Inspector: Quality ${inspectData.score}/100, Complexity: ${inspectData.complexity}`);
+      passedTests++;
+    } else {
+      throw new Error('IDE integration verification incomplete');
+    }
+  } catch (err: any) {
+    console.error('   ❌ Failed:', err.message);
+  }
+
+  // -------------------------------------------------------------
   // Summary
   // -------------------------------------------------------------
   console.log('\n================================================================');
-  console.log(`  🎉 SUMMARY: ${passedTests}/${totalTests} TESTS PASSED WITH DUMMY DATA!`);
+  console.log(`  🎉 SUMMARY: ${passedTests}/18 TESTS PASSED WITH DUMMY DATA!`);
   console.log('================================================================\n');
 }
 

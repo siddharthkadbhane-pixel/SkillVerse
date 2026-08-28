@@ -33,15 +33,19 @@ export async function getSessionUser() {
   try {
     const cookieStore = await cookies();
     
-    // 1. Try real Supabase auth session
+    // 1. Try real Supabase auth session (with 100ms race timeout to avoid blocking page transitions)
     try {
       const supabase = await createSupabaseServerClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const authPromise = supabase.auth.getUser();
+      const timeoutPromise = new Promise<any>((_, reject) =>
+        setTimeout(() => reject(new Error('Supabase auth timeout')), 100)
+      );
+      const { data: { user } } = await Promise.race([authPromise, timeoutPromise]);
       if (user) {
         return user;
       }
     } catch {
-      // Supabase connection unavailable or not configured, continue to demo user
+      // Supabase connection unavailable or timed out, continue instantly to demo user
     }
 
     // 2. Check for active demo test user cookie

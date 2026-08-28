@@ -5,6 +5,7 @@ export type SkillVerificationStatus =
   | 'supported' 
   | 'detected' 
   | 'insufficient_evidence' 
+  | 'stale'
   | 'inferred' 
   | 'not_enough_evidence';
 
@@ -267,6 +268,9 @@ export interface DCCFullData {
   timeline: GrowthTimelineItem[];
   growthChart: GrowthChartPoint[];
   publicUrl: string;
+  activityContext?: import('./activity').ContributionIntelligenceSummary;
+  engineeringCapabilities?: import('./capability').DeveloperCapabilityItem[];
+  integritySummary?: import('./verification').VerificationIntegritySummary;
 }
 
 export interface DCCPublicData {
@@ -292,4 +296,10 @@ export interface DCCPublicData {
   timeline?: GrowthTimelineItem[];
   growthChart?: GrowthChartPoint[];
   lastUpdated: string;
+  activityContext?: import('./activity').ContributionIntelligenceSummary;
+  engineeringCapabilities?: import('./capability').DeveloperCapabilityItem[];
+  integritySummary?: import('./verification').VerificationIntegritySummary;
 }
+
+
+

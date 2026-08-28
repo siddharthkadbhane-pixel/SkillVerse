@@ -1,51 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/drizzle';
-import { collabTeams, collabTeamMembers } from '@/database/schema';
+import { TeamEngine } from '@/services/team/engine';
 import { getSessionUser } from '@/services/supabase';
+import { TeamFilter } from '@/types/team';
+import { Logger } from '@/lib/logger';
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const sessionUser = await getSessionUser();
+    const userId = sessionUser?.id || '00000000-0000-0000-0000-000000000000';
+
+    const filter: TeamFilter = {
+      q: searchParams.get('q') || undefined,
+      skill: searchParams.get('skill') || undefined,
+      visibility: (searchParams.get('visibility') as any) || undefined,
+    };
+
+    const result = await TeamEngine.getTeams(filter, userId);
+
+    return NextResponse.json({
+      success: true,
+      data: result.teams,
+      totalCount: result.totalCount,
+    });
+  } catch (error: any) {
+    Logger.error('API Error in GET /api/teams:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'An unexpected error occurred while fetching teams.',
+    }, { status: 500 });
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getSessionUser();
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const body = await req.json();
+    const sessionUser = await getSessionUser();
+    const ownerId = sessionUser?.id || '00000000-0000-0000-0000-000000000000';
 
-    const { name, description, repoUrl } = await req.json();
+    const result = await TeamEngine.createTeam(ownerId, body);
 
-    try {
-      const [newTeam] = await db
-        .insert(collabTeams)
-        .values({
-          name,
-          description,
-          repoUrl,
-        })
-        .returning();
-
-      // Owner membership link
-      await db.insert(collabTeamMembers).values({
-        teamId: newTeam.id,
-        userId: user.id,
-        role: 'owner',
-      });
-
-      return NextResponse.json({
-        success: true,
-        data: newTeam,
-      });
-    } catch {
-      // Fallback
-      return NextResponse.json({
-        success: true,
-        data: {
-          id: 'team_mock_created',
-          name,
-          description,
-          repoUrl,
-        }
-      });
-    }
+    return NextResponse.json(result);
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 550 });
+    Logger.error('API Error in POST /api/teams:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'An unexpected error occurred while creating team.',
+    }, { status: 500 });
   }
 }

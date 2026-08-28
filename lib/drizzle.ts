@@ -45,16 +45,74 @@ const client = postgres(connectionString, {
 
 export const db = drizzle(client, { schema });
 
+// High-speed Database Circuit Breaker
+let isDbOnline = true;
+let lastDbFailure = 0;
+const DB_RETRY_INTERVAL_MS = 15000; // After 15 seconds, attempt one probe query
+
+export function recordDbSuccess() {
+  isDbOnline = true;
+  lastDbFailure = 0;
+}
+
+export function recordDbFailure() {
+  isDbOnline = false;
+  lastDbFailure = Date.now();
+}
+
+export function checkDbAvailability(): boolean {
+  if (isDbOnline) return true;
+  if (Date.now() - lastDbFailure > DB_RETRY_INTERVAL_MS) {
+    // Retry interval elapsed, allow 1 probe query through
+    return true;
+  }
+  return false;
+}
+
 /**
- * Executes a database query with a strict timeout to prevent slow blocking responses
+ * Executes a database query with circuit breaker and strict timeout to prevent slow blocking responses
  */
-export async function withDbTimeout<T>(promise: Promise<T>, timeoutMs = 300): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`DB operation timed out after ${timeoutMs}ms`)), timeoutMs)
-    ),
-  ]);
+export async function withDbTimeout<T>(promise: Promise<T>, timeoutMs = 150): Promise<T> {
+  // If DB circuit breaker is open (known offline/timing out), reject instantly (0ms)
+  if (!checkDbAvailability()) {
+    return Promise.reject(new Error('DB currently offline (circuit breaker open)'));
+  }
+
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        recordDbFailure();
+        reject(new Error(`DB operation timed out after ${timeoutMs}ms`));
+      }
+    }, timeoutMs);
+
+    promise
+      .then((res) => {
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          recordDbSuccess();
+          resolve(res);
+        }
+      })
+      .catch((err) => {
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          if (
+            err?.code === 'CONNECT_TIMEOUT' ||
+            err?.message?.includes('TIMEOUT') ||
+            err?.message?.includes('timeout') ||
+            err?.message?.includes('Connection')
+          ) {
+            recordDbFailure();
+          }
+          reject(err);
+        }
+      });
+  });
 }
 
 // Idempotent database schema sync helper
@@ -559,7 +617,321 @@ export async function syncDatabaseSchema() {
       `);
     }
 
-    console.log('✅ Database schema verified and synced.');
+    // Developer Discovery & Search Optimization Indexes
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_privacy_settings_user_visibility ON privacy_settings(user_id, profile_visibility);`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_passports_user_visibility ON passports(user_id, visibility);`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_dcc_user_score ON developer_capability_cards(user_id, overall_score);`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_dcc_level ON developer_capability_cards(level);`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_skills_name ON skills(name);`);
+    // Phase 27: Contribution Intelligence Table
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS contribution_activities (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        repository_id uuid REFERENCES repositories(id) ON DELETE SET NULL,
+        repository_name varchar(255) NOT NULL,
+        activity_type varchar(50) NOT NULL,
+        source_id varchar(255) NOT NULL,
+        title varchar(255) NOT NULL,
+        description text,
+        activity_date timestamp NOT NULL DEFAULT now(),
+        metadata jsonb,
+        is_public boolean NOT NULL DEFAULT true,
+        created_at timestamp NOT NULL DEFAULT now()
+      );
+    `);
+
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_contrib_user_type_source ON contribution_activities(user_id, activity_type, source_id);`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_contrib_user_date ON contribution_activities(user_id, activity_date);`);
+
+    // Phase 28: Developer Capabilities Table
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS developer_capabilities (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        capability_name varchar(100) NOT NULL,
+        category varchar(100) NOT NULL,
+        level varchar(50) NOT NULL,
+        verification_state varchar(50) NOT NULL,
+        confidence_score integer NOT NULL DEFAULT 0,
+        analyzed_projects_count integer NOT NULL DEFAULT 0,
+        supporting_skills jsonb,
+        why_explanation text,
+        evidence_repos jsonb,
+        updated_at timestamp NOT NULL DEFAULT now()
+      );
+    `);
+
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_dev_capabilities_user_name ON developer_capabilities(user_id, capability_name);`);
+
+    // Phase 29: Verification Evidence Freshness & Weight Migration
+    await db.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'verification_evidence' AND column_name = 'freshness_state') THEN
+          ALTER TABLE verification_evidence ADD COLUMN freshness_state varchar(50) NOT NULL DEFAULT 'current';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'verification_evidence' AND column_name = 'evidence_weight') THEN
+          ALTER TABLE verification_evidence ADD COLUMN evidence_weight varchar(50) NOT NULL DEFAULT 'moderate';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'verification_evidence' AND column_name = 'source_identifier') THEN
+          ALTER TABLE verification_evidence ADD COLUMN source_identifier varchar(255);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'verification_evidence' AND column_name = 'last_audited_at') THEN
+          ALTER TABLE verification_evidence ADD COLUMN last_audited_at timestamp NOT NULL DEFAULT now();
+        END IF;
+      END $$;
+    `);
+
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_verif_evidence_user_freshness ON verification_evidence(user_id, freshness_state);`);
+
+    // Phase 30: Company & Recruiter Workspace Migration
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS company_members (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        company_id uuid NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        role varchar(50) NOT NULL DEFAULT 'recruiter',
+        status varchar(50) NOT NULL DEFAULT 'active',
+        invited_by uuid REFERENCES users(id) ON DELETE SET NULL,
+        joined_at timestamp NOT NULL DEFAULT now()
+      );
+
+      CREATE TABLE IF NOT EXISTS saved_developers (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        company_id uuid NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+        recruiter_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        developer_user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        notes text,
+        tags jsonb,
+        created_at timestamp NOT NULL DEFAULT now(),
+        updated_at timestamp NOT NULL DEFAULT now()
+      );
+
+      CREATE TABLE IF NOT EXISTS recruiter_notes (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        company_id uuid NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+        recruiter_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        developer_user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        content text NOT NULL,
+        is_private boolean NOT NULL DEFAULT true,
+        created_at timestamp NOT NULL DEFAULT now(),
+        updated_at timestamp NOT NULL DEFAULT now()
+      );
+
+      CREATE TABLE IF NOT EXISTS recently_viewed_developers (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        company_id uuid NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+        recruiter_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        developer_user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        viewed_at timestamp NOT NULL DEFAULT now()
+      );
+    `);
+
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_company_members_unique ON company_members(company_id, user_id);`);
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_saved_developers_unique ON saved_developers(company_id, developer_user_id);`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_recruiter_notes_company_dev ON recruiter_notes(company_id, developer_user_id);`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_recent_views_company_recruiter ON recently_viewed_developers(company_id, recruiter_id);`);
+
+    // Phase 31: Job & Opportunity Engine Migration
+    await db.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'jobs' AND column_name = 'workplace_type') THEN
+          ALTER TABLE jobs ADD COLUMN workplace_type varchar(50) NOT NULL DEFAULT 'remote';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'jobs' AND column_name = 'required_skills') THEN
+          ALTER TABLE jobs ADD COLUMN required_skills jsonb;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'jobs' AND column_name = 'preferred_skills') THEN
+          ALTER TABLE jobs ADD COLUMN preferred_skills jsonb;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'jobs' AND column_name = 'required_capabilities') THEN
+          ALTER TABLE jobs ADD COLUMN required_capabilities jsonb;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'jobs' AND column_name = 'preferred_capabilities') THEN
+          ALTER TABLE jobs ADD COLUMN preferred_capabilities jsonb;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'jobs' AND column_name = 'experience_level') THEN
+          ALTER TABLE jobs ADD COLUMN experience_level varchar(50) NOT NULL DEFAULT 'Mid-Level';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'jobs' AND column_name = 'status') THEN
+          ALTER TABLE jobs ADD COLUMN status varchar(50) NOT NULL DEFAULT 'published';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'jobs' AND column_name = 'deadline') THEN
+          ALTER TABLE jobs ADD COLUMN deadline timestamp;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'jobs' AND column_name = 'views_count') THEN
+          ALTER TABLE jobs ADD COLUMN views_count integer NOT NULL DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'jobs' AND column_name = 'applications_count') THEN
+          ALTER TABLE jobs ADD COLUMN applications_count integer NOT NULL DEFAULT 0;
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'applications' AND column_name = 'match_score') THEN
+          ALTER TABLE applications ADD COLUMN match_score integer NOT NULL DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'applications' AND column_name = 'match_details') THEN
+          ALTER TABLE applications ADD COLUMN match_details jsonb;
+        END IF;
+      END $$;
+
+      CREATE TABLE IF NOT EXISTS saved_opportunities (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        opportunity_id uuid NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+        created_at timestamp NOT NULL DEFAULT now()
+      );
+    `);
+
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_saved_opportunities_unique ON saved_opportunities(user_id, opportunity_id);`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_jobs_status_type ON jobs(status, type);`);
+
+    // Phase 32 & Phase 33: Challenges & Teams Engine Migration
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS challenges (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        organizer_id uuid NOT NULL,
+        organizer_type varchar(50) NOT NULL DEFAULT 'company',
+        title varchar(255) NOT NULL,
+        description text NOT NULL,
+        type varchar(50) NOT NULL DEFAULT 'coding',
+        difficulty varchar(50) NOT NULL DEFAULT 'Intermediate',
+        required_skills jsonb,
+        preferred_skills jsonb,
+        start_date timestamp NOT NULL DEFAULT now(),
+        end_date timestamp NOT NULL DEFAULT (now() + interval '30 days'),
+        submission_deadline timestamp NOT NULL DEFAULT (now() + interval '25 days'),
+        max_participants integer,
+        visibility varchar(20) NOT NULL DEFAULT 'public',
+        status varchar(50) NOT NULL DEFAULT 'published',
+        criteria_weights jsonb,
+        prize_pool varchar(100),
+        is_hiring_opportunity boolean NOT NULL DEFAULT false,
+        created_at timestamp NOT NULL DEFAULT now()
+      );
+
+      CREATE TABLE IF NOT EXISTS challenge_participants (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        challenge_id uuid NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        team_id uuid,
+        joined_at timestamp NOT NULL DEFAULT now()
+      );
+
+      CREATE TABLE IF NOT EXISTS challenge_submissions (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        challenge_id uuid NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        team_id uuid,
+        repository_url text NOT NULL,
+        live_demo_url text,
+        description text,
+        submitted_at timestamp NOT NULL DEFAULT now()
+      );
+
+      CREATE TABLE IF NOT EXISTS challenge_evaluations (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        submission_id uuid NOT NULL REFERENCES challenge_submissions(id) ON DELETE CASCADE,
+        composite_score integer NOT NULL,
+        functionality_score integer NOT NULL,
+        code_quality_score integer NOT NULL,
+        architecture_score integer NOT NULL,
+        testing_score integer NOT NULL,
+        documentation_score integer NOT NULL,
+        ast_quality_tier varchar(50) NOT NULL DEFAULT 'Verified Expert',
+        verified_capabilities jsonb,
+        feedback_notes text,
+        evaluated_at timestamp NOT NULL DEFAULT now()
+      );
+
+      CREATE TABLE IF NOT EXISTS challenge_judges (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        challenge_id uuid NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        role varchar(50) NOT NULL DEFAULT 'judge',
+        created_at timestamp NOT NULL DEFAULT now()
+      );
+
+      CREATE TABLE IF NOT EXISTS teams (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        name varchar(255) NOT NULL,
+        slug varchar(255) NOT NULL UNIQUE,
+        description text NOT NULL,
+        avatar_url text,
+        owner_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        visibility varchar(20) NOT NULL DEFAULT 'public',
+        skills jsonb,
+        created_at timestamp NOT NULL DEFAULT now(),
+        updated_at timestamp NOT NULL DEFAULT now()
+      );
+
+      CREATE TABLE IF NOT EXISTS team_members (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        team_id uuid NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        role varchar(50) NOT NULL DEFAULT 'member',
+        joined_at timestamp NOT NULL DEFAULT now()
+      );
+
+      CREATE TABLE IF NOT EXISTS team_invites (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        team_id uuid NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+        inviter_user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        invitee_user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        invitee_email varchar(255),
+        status varchar(50) NOT NULL DEFAULT 'pending',
+        created_at timestamp NOT NULL DEFAULT now()
+      );
+
+      CREATE TABLE IF NOT EXISTS team_projects (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        team_id uuid NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+        name varchar(255) NOT NULL,
+        description text,
+        repository_url text NOT NULL,
+        challenge_id uuid,
+        created_at timestamp NOT NULL DEFAULT now()
+      );
+
+      CREATE TABLE IF NOT EXISTS team_tasks (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        team_id uuid NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+        title varchar(255) NOT NULL,
+        description text,
+        assignee_user_id uuid,
+        status varchar(50) NOT NULL DEFAULT 'todo',
+        due_date timestamp,
+        created_at timestamp NOT NULL DEFAULT now()
+      );
+
+      CREATE TABLE IF NOT EXISTS team_milestones (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        team_id uuid NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+        title varchar(255) NOT NULL,
+        target_date timestamp NOT NULL,
+        completed boolean NOT NULL DEFAULT false,
+        created_at timestamp NOT NULL DEFAULT now()
+      );
+
+      CREATE TABLE IF NOT EXISTS team_activity (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        team_id uuid NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        action varchar(255) NOT NULL,
+        details text,
+        created_at timestamp NOT NULL DEFAULT now()
+      );
+    `);
+
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_challenge_participants_unique ON challenge_participants(challenge_id, user_id);`);
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_challenge_submissions_unique ON challenge_submissions(challenge_id, user_id);`);
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_team_members_unique ON team_members(team_id, user_id);`);
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_team_invites_unique ON team_invites(team_id, invitee_user_id);`);
+
+    console.log('✅ Database schema, challenges & competitions engine, and team collaboration engine synced.');
   } catch (err) {
     console.error('❌ Database schema sync failed:', err);
   }

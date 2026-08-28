@@ -189,23 +189,35 @@ export const competitions = pgTable('competitions', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// 11. Teams Table
+// 11. Teams Table (Phase 33 Team Formation & Collaboration Engine)
 export const teams = pgTable('teams', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 255 }).notNull(),
-  competitionId: uuid('competition_id').references(() => competitions.id, { onDelete: 'cascade' }).notNull(),
-  leaderId: uuid('leader_id').references(() => users.id, { onDelete: 'set null' }).notNull(),
+  slug: varchar('slug', { length: 255 }),
+  description: text('description'),
+  avatarUrl: text('avatar_url'),
+  repoUrl: text('repo_url'),
+  competitionId: uuid('competition_id').references(() => competitions.id, { onDelete: 'cascade' }),
+  leaderId: uuid('leader_id').references(() => users.id, { onDelete: 'set null' }),
+  ownerId: uuid('owner_id').references(() => users.id, { onDelete: 'cascade' }),
+  visibility: varchar('visibility', { length: 20 }).default('public').notNull(),
+  skills: jsonb('skills'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 // 12. Team Members Table
 export const teamMembers = pgTable('team_members', {
+  id: uuid('id').primaryKey().defaultRandom(),
   teamId: uuid('team_id').references(() => teams.id, { onDelete: 'cascade' }).notNull(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  role: varchar('role', { length: 50 }).default('member').notNull(),
   joinedAt: timestamp('joined_at').defaultNow().notNull(),
-}, (t) => ({
-  pk: primaryKey({ columns: [t.teamId, t.userId] })
-}));
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const collabTeams = teams;
+export const collabTeamMembers = teamMembers;
 
 // 13. Companies Table
 export const companies = pgTable('companies', {
@@ -218,7 +230,7 @@ export const companies = pgTable('companies', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// 14. Jobs Table
+// 14. Jobs / Opportunities Table (Phase 31 Job & Opportunity Engine)
 export const jobs = pgTable('jobs', {
   id: uuid('id').primaryKey().defaultRandom(),
   companyId: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }).notNull(),
@@ -226,21 +238,33 @@ export const jobs = pgTable('jobs', {
   description: text('description').notNull(),
   requirements: text('requirements'),
   location: varchar('location', { length: 255 }),
-  type: jobTypeEnum('type').default('full_time').notNull(),
+  type: varchar('type', { length: 50 }).default('full_time').notNull(), // 'full_time', 'part_time', 'internship', 'contract', 'freelance', 'project'
+  workplaceType: varchar('workplace_type', { length: 50 }).default('remote').notNull(), // 'remote', 'hybrid', 'onsite'
+  requiredSkills: jsonb('required_skills'), // array of skill names
+  preferredSkills: jsonb('preferred_skills'), // array of skill names
+  requiredCapabilities: jsonb('required_capabilities'), // array of capability names
+  preferredCapabilities: jsonb('preferred_capabilities'), // array of capability names
+  experienceLevel: varchar('experience_level', { length: 50 }).default('Mid-Level').notNull(),
   salaryRange: varchar('salary_range', { length: 100 }),
   minTrustScore: integer('min_trust_score').default(0).notNull(),
+  status: varchar('status', { length: 50 }).default('published').notNull(), // 'draft', 'published', 'closed'
+  deadline: timestamp('deadline'),
+  viewsCount: integer('views_count').default(0).notNull(),
+  applicationsCount: integer('applications_count').default(0).notNull(),
   active: boolean('active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// 15. Job Applications Table
+// 15. Job Applications Table (Phase 31 Job & Opportunity Engine)
 export const applications = pgTable('applications', {
   id: uuid('id').primaryKey().defaultRandom(),
   jobId: uuid('job_id').references(() => jobs.id, { onDelete: 'cascade' }).notNull(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   resumeUrl: text('resume_url'),
   coverLetter: text('cover_letter'),
-  status: appStatusEnum('status').default('applied').notNull(),
+  status: varchar('status', { length: 50 }).default('applied').notNull(), // 'applied', 'reviewing', 'shortlisted', 'interview', 'rejected', 'accepted'
+  matchScore: integer('match_score').default(0).notNull(),
+  matchDetails: jsonb('match_details'), // OpportunityMatchEvaluation snapshot
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -353,17 +377,30 @@ export const dashboardPreferences = pgTable('dashboard_preferences', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// 27. Challenges Table
+// 27. Challenges Table (Phase 32 Verification Challenges & Competitions)
 export const challenges = pgTable('challenges', {
   id: uuid('id').primaryKey().defaultRandom(),
-  companyId: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }).notNull(),
+  organizerId: uuid('organizer_id'),
+  companyId: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }),
+  organizerType: varchar('organizer_type', { length: 50 }).default('company').notNull(),
   title: varchar('title', { length: 255 }).notNull(),
   description: text('description').notNull(),
-  difficulty: varchar('difficulty', { length: 50 }).default('Medium').notNull(),
-  technologies: jsonb('technologies').notNull(),
+  type: varchar('type', { length: 50 }).default('coding').notNull(),
+  difficulty: varchar('difficulty', { length: 50 }).default('Intermediate').notNull(),
+  requiredSkills: jsonb('required_skills'),
+  preferredSkills: jsonb('preferred_skills'),
+  technologies: jsonb('technologies'),
   timeLimit: varchar('time_limit', { length: 100 }),
+  startDate: timestamp('start_date').defaultNow().notNull(),
+  endDate: timestamp('end_date').defaultNow().notNull(),
+  submissionDeadline: timestamp('submission_deadline').defaultNow().notNull(),
   maxParticipants: integer('max_participants'),
+  visibility: varchar('visibility', { length: 20 }).default('public').notNull(),
+  status: varchar('status', { length: 50 }).default('published').notNull(),
+  criteriaWeights: jsonb('criteria_weights'),
+  prizePool: varchar('prize_pool', { length: 100 }),
   reward: varchar('reward', { length: 255 }),
+  isHiringOpportunity: boolean('is_hiring_opportunity').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -371,35 +408,72 @@ export const challenges = pgTable('challenges', {
 export const challengeSubmissions = pgTable('challenge_submissions', {
   id: uuid('id').primaryKey().defaultRandom(),
   challengeId: uuid('challenge_id').references(() => challenges.id, { onDelete: 'cascade' }).notNull(),
-  developerId: uuid('developer_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
+  developerId: uuid('developer_id').references(() => users.id, { onDelete: 'cascade' }),
+  teamId: uuid('team_id'),
   repositoryUrl: text('repository_url').notNull(),
+  liveDemoUrl: text('live_demo_url'),
+  description: text('description'),
   status: varchar('status', { length: 50 }).default('submitted').notNull(),
   score: integer('score').default(0).notNull(),
+  submittedAt: timestamp('submitted_at').defaultNow().notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// 29. Challenge Reviews Table
-export const challengeReviews = pgTable('challenge_reviews', {
+// 29. Challenge Evaluations / Reviews Table
+export const challengeEvaluations = pgTable('challenge_evaluations', {
   id: uuid('id').primaryKey().defaultRandom(),
   submissionId: uuid('submission_id').references(() => challengeSubmissions.id, { onDelete: 'cascade' }).notNull(),
-  codeQuality: integer('code_quality').notNull(),
-  security: integer('security').notNull(),
-  documentation: integer('documentation').notNull(),
-  completeness: integer('completeness').notNull(),
-  aiSummary: text('ai_summary'),
+  compositeScore: integer('composite_score').notNull(),
+  functionalityScore: integer('functionality_score').notNull(),
+  codeQualityScore: integer('code_quality_score').notNull(),
+  architectureScore: integer('architecture_score').notNull(),
+  testingScore: integer('testing_score').notNull(),
+  documentationScore: integer('documentation_score').notNull(),
+  astQualityTier: varchar('ast_quality_tier', { length: 50 }).default('Verified Expert').notNull(),
+  verifiedCapabilities: jsonb('verified_capabilities'),
+  feedbackNotes: text('feedback_notes'),
+  evaluatedAt: timestamp('evaluated_at').defaultNow().notNull(),
+});
+
+export const challengeReviews = challengeEvaluations;
+
+export const challengeParticipants = pgTable('challenge_participants', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  challengeId: uuid('challenge_id').references(() => challenges.id, { onDelete: 'cascade' }).notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  teamId: uuid('team_id'),
+  joinedAt: timestamp('joined_at').defaultNow().notNull(),
+});
+
+export const challengeJudges = pgTable('challenge_judges', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  challengeId: uuid('challenge_id').references(() => challenges.id, { onDelete: 'cascade' }).notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  role: varchar('role', { length: 50 }).default('judge').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// 30. Community Posts Table
+// 30. Community Posts Table (Phase 34 Developer Community & Knowledge Network)
 export const posts = pgTable('posts', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   title: varchar('title', { length: 255 }).notNull(),
   content: text('content').notNull(),
+  contentType: varchar('content_type', { length: 50 }).default('technical_discussion').notNull(),
   category: varchar('category', { length: 50 }).default('General').notNull(),
-  githubLink: text('github_link'),
+  tags: jsonb('tags'), // array of topic strings
   codeSnippet: text('code_snippet'),
+  githubLink: text('github_link'),
+  repositoryUrl: text('repository_url'),
+  liveDemoUrl: text('live_demo_url'),
+  challengeId: uuid('challenge_id'),
+  upvotesCount: integer('upvotes_count').default(0).notNull(),
+  commentsCount: integer('comments_count').default(0).notNull(),
+  viewsCount: integer('views_count').default(0).notNull(),
+  isPinned: boolean('is_pinned').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 // 31. Post Comments Table
@@ -408,17 +482,25 @@ export const postComments = pgTable('post_comments', {
   postId: uuid('post_id').references(() => posts.id, { onDelete: 'cascade' }).notNull(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   content: text('content').notNull(),
+  codeSnippet: text('code_snippet'),
+  upvotesCount: integer('upvotes_count').default(0).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// 32. Coding Questions Table
+// 32. Coding Questions Table (Phase 34 Q&A)
 export const questions = pgTable('questions', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   title: varchar('title', { length: 255 }).notNull(),
   content: text('content').notNull(),
   tags: jsonb('tags'),
+  codeSnippet: text('code_snippet'),
+  status: varchar('status', { length: 50 }).default('open').notNull(), // 'open' | 'answered' | 'closed'
+  acceptedAnswerId: uuid('accepted_answer_id'),
+  upvotesCount: integer('upvotes_count').default(0).notNull(),
+  answersCount: integer('answers_count').default(0).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 // 33. Answers Table
@@ -427,45 +509,158 @@ export const answers = pgTable('answers', {
   questionId: uuid('question_id').references(() => questions.id, { onDelete: 'cascade' }).notNull(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   content: text('content').notNull(),
+  codeSnippet: text('code_snippet'),
   isAccepted: boolean('is_accepted').default(false).notNull(),
+  upvotesCount: integer('upvotes_count').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+
+export const teamInvites = pgTable('team_invites', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  teamId: uuid('team_id').references(() => teams.id, { onDelete: 'cascade' }).notNull(),
+  inviterUserId: uuid('inviter_user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  inviteeUserId: uuid('invitee_user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  inviteeEmail: varchar('invitee_email', { length: 255 }),
+  status: varchar('status', { length: 50 }).default('pending').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// 34. Collaborative Teams Table
-export const collabTeams = pgTable('collab_teams', {
+export const teamProjects = pgTable('team_projects', {
   id: uuid('id').primaryKey().defaultRandom(),
+  teamId: uuid('team_id').references(() => teams.id, { onDelete: 'cascade' }).notNull(),
   name: varchar('name', { length: 255 }).notNull(),
   description: text('description'),
-  repoUrl: text('repo_url'),
+  repositoryUrl: text('repository_url').notNull(),
+  challengeId: uuid('challenge_id'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// 35. Collaborative Team Members Table
-export const collabTeamMembers = pgTable('collab_team_members', {
+export const teamTasks = pgTable('team_tasks', {
   id: uuid('id').primaryKey().defaultRandom(),
-  teamId: uuid('team_id').references(() => collabTeams.id, { onDelete: 'cascade' }).notNull(),
+  teamId: uuid('team_id').references(() => teams.id, { onDelete: 'cascade' }).notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description'),
+  assigneeUserId: uuid('assignee_user_id'),
+  status: varchar('status', { length: 50 }).default('todo').notNull(),
+  dueDate: timestamp('due_date'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const teamMilestones = pgTable('team_milestones', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  teamId: uuid('team_id').references(() => teams.id, { onDelete: 'cascade' }).notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  targetDate: timestamp('target_date').notNull(),
+  completed: boolean('completed').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const teamActivity = pgTable('team_activity', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  teamId: uuid('team_id').references(() => teams.id, { onDelete: 'cascade' }).notNull(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
-  role: varchar('role', { length: 50 }).default('member').notNull(),
+  action: varchar('action', { length: 255 }).notNull(),
+  details: text('details'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// 36. Peer Reviews Table
-export const peerReviews = pgTable('peer_reviews', {
+// 36. Peer Review Requests Table (Phase 34 Peer Code Reviews)
+export const peerReviewRequests = pgTable('peer_review_requests', {
   id: uuid('id').primaryKey().defaultRandom(),
-  reviewerId: uuid('reviewer_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
-  repositoryId: uuid('repository_id').references(() => repositories.id, { onDelete: 'cascade' }).notNull(),
-  score: integer('score').notNull(),
-  notes: text('notes').notNull(),
+  requesterId: uuid('requester_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description').notNull(),
+  repositoryUrl: text('repository_url').notNull(),
+  branchOrCommit: varchar('branch_or_commit', { length: 100 }),
+  focusAreas: jsonb('focus_areas'), // array of strings
+  status: varchar('status', { length: 50 }).default('requested').notNull(), // 'requested', 'reviewing', 'completed', 'closed'
+  responsesCount: integer('responses_count').default(0).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// 37. Career Goals Table
+// 36b. Peer Review Responses Table
+export const peerReviewResponses = pgTable('peer_review_responses', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  requestId: uuid('request_id').references(() => peerReviewRequests.id, { onDelete: 'cascade' }).notNull(),
+  reviewerId: uuid('reviewer_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  architectureScore: integer('architecture_score').notNull(), // 0-100
+  codeQualityScore: integer('code_quality_score').notNull(),
+  securityScore: integer('security_score').notNull(),
+  testingScore: integer('testing_score').notNull(),
+  feedbackNotes: text('feedback_notes').notNull(),
+  suggestedImprovements: jsonb('suggested_improvements'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const peerReviews = peerReviewResponses;
+
+// 36c. Community Votes Table (Composite unique on userId + targetType + targetId)
+export const communityVotes = pgTable('community_votes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  targetType: varchar('target_type', { length: 50 }).notNull(), // 'post' | 'comment' | 'question' | 'answer'
+  targetId: uuid('target_id').notNull(),
+  voteType: varchar('vote_type', { length: 20 }).default('upvote').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 36d. Community Follows Table (Follow developer, topic, project, team)
+export const communityFollows = pgTable('community_follows', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  targetType: varchar('target_type', { length: 50 }).notNull(), // 'developer' | 'topic' | 'project' | 'team'
+  targetId: varchar('target_id', { length: 255 }).notNull(), // userId, topic name, or projectId
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 36e. Community Content Reports Table (Moderation)
+export const communityReports = pgTable('community_reports', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  reporterId: uuid('reporter_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  targetType: varchar('target_type', { length: 50 }).notNull(), // 'post' | 'comment' | 'question' | 'answer' | 'user'
+  targetId: varchar('target_id', { length: 255 }).notNull(),
+  reason: text('reason').notNull(),
+  status: varchar('status', { length: 50 }).default('pending').notNull(), // 'pending' | 'reviewed' | 'dismissed'
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 36f. Community User Blocks Table
+export const communityBlocks = pgTable('community_blocks', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  blockedUserId: uuid('blocked_user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 36g. Community Reputation Table (Separate from DCC capability score)
+export const communityReputation = pgTable('community_reputation', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull().unique(),
+  points: integer('points').default(0).notNull(),
+  acceptedAnswersCount: integer('accepted_answers_count').default(0).notNull(),
+  helpfulReviewsCount: integer('helpful_reviews_count').default(0).notNull(),
+  technicalWriteupsCount: integer('technical_writeups_count').default(0).notNull(),
+  verifiedContributionsCount: integer('verified_contributions_count').default(0).notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// 37. Career Goals Table (Enhanced Phase 35 AI Career & Learning Intelligence)
 export const careerGoals = pgTable('career_goals', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   title: varchar('title', { length: 255 }).notNull(),
-  status: varchar('status', { length: 50 }).default('active').notNull(),
+  targetRole: varchar('target_role', { length: 100 }).default('backend_developer'),
+  customGoal: text('custom_goal'),
+  milestoneIntent: varchar('milestone_intent', { length: 100 }).default('Prepare for First Job'),
+  timeframe: varchar('timeframe', { length: 50 }).default('3 Months'),
+  targetLevel: varchar('target_level', { length: 50 }).default('Proficient'),
+  focusSkills: jsonb('focus_skills'),
+  isPublic: boolean('is_public').default(false).notNull(),
+  status: varchar('status', { length: 50 }).default('active').notNull(), // 'active', 'achieved', 'paused', 'archived'
   createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 // 38. Mentor Sessions Table
@@ -915,7 +1110,7 @@ export const capabilityInsights = pgTable('capability_insights', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// 82. Verification Evidence Table
+// 82. Verification Evidence Table (Phase 29 Integrity Engine)
 export const verificationEvidence = pgTable('verification_evidence', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
@@ -923,6 +1118,10 @@ export const verificationEvidence = pgTable('verification_evidence', {
   sourceRepo: varchar('source_repo', { length: 255 }).notNull(),
   verificationMethod: varchar('verification_method', { length: 100 }).notNull(), // 'AI Agent Audit' | 'CI Build Pipeline'
   confidence: integer('confidence').notNull(),
+  freshnessState: varchar('freshness_state', { length: 50 }).default('current').notNull(), // 'current' | 'aging' | 'stale'
+  evidenceWeight: varchar('evidence_weight', { length: 50 }).default('moderate').notNull(), // 'strong' | 'moderate' | 'weak'
+  sourceIdentifier: varchar('source_identifier', { length: 255 }),
+  lastAuditedAt: timestamp('last_audited_at').defaultNow().notNull(),
   verifiedAt: timestamp('verified_at').defaultNow().notNull(),
 });
 
@@ -934,6 +1133,145 @@ export const comparisonCache = pgTable('comparison_cache', {
   comparisonData: jsonb('comparison_data').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
+
+// 84. Contribution Activities Table (Phase 27 Contribution Intelligence)
+export const contributionActivities = pgTable('contribution_activities', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  repositoryId: uuid('repository_id').references(() => repositories.id, { onDelete: 'set null' }),
+  repositoryName: varchar('repository_name', { length: 255 }).notNull(),
+  activityType: varchar('activity_type', { length: 50 }).notNull(), // 'commit' | 'pull_request' | 'issue' | 'code_review' | 'release'
+  sourceId: varchar('source_id', { length: 255 }).notNull(), // commit sha, PR number, issue id
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description'),
+  activityDate: timestamp('activity_date').defaultNow().notNull(),
+  metadata: jsonb('metadata'),
+  isPublic: boolean('is_public').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 85. Developer Capabilities Table (Phase 28 Skill Intelligence & Capability Mapping)
+export const developerCapabilities = pgTable('developer_capabilities', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  capabilityName: varchar('capability_name', { length: 100 }).notNull(),
+  category: varchar('category', { length: 100 }).notNull(),
+  level: varchar('level', { length: 50 }).notNull(), // 'Strong' | 'Proficient' | 'Developing' | 'Emerging'
+  verificationState: varchar('verification_state', { length: 50 }).notNull(), // 'verified' | 'supported' | 'detected' | 'insufficient_evidence'
+  confidenceScore: integer('confidence_score').default(0).notNull(),
+  analyzedProjectsCount: integer('analyzed_projects_count').default(0).notNull(),
+  supportingSkills: jsonb('supporting_skills'), // array of string skill names
+  whyExplanation: text('why_explanation'),
+  evidenceRepos: jsonb('evidence_repos'), // array of repo names
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// 86. Company Members Table (Phase 30 Company & Recruiter Workspace)
+export const companyMembers = pgTable('company_members', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyId: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }).notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  role: varchar('role', { length: 50 }).default('recruiter').notNull(), // 'company_admin' | 'recruiter'
+  status: varchar('status', { length: 50 }).default('active').notNull(), // 'active' | 'invited' | 'suspended'
+  invitedBy: uuid('invited_by').references(() => users.id, { onDelete: 'set null' }),
+  joinedAt: timestamp('joined_at').defaultNow().notNull(),
+});
+
+// 87. Saved Developers Table (Phase 30 Company & Recruiter Workspace)
+export const savedDevelopers = pgTable('saved_developers', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyId: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }).notNull(),
+  recruiterId: uuid('recruiter_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  developerUserId: uuid('developer_user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  notes: text('notes'),
+  tags: jsonb('tags'), // array of string tags
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// 88. Recruiter Private Notes Table (Phase 30 Company & Recruiter Workspace)
+export const recruiterNotes = pgTable('recruiter_notes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyId: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }).notNull(),
+  recruiterId: uuid('recruiter_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  developerUserId: uuid('developer_user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  content: text('content').notNull(),
+  isPrivate: boolean('is_private').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// 89. Recently Viewed Developers Table (Phase 30 Company & Recruiter Workspace)
+export const recentlyViewedDevelopers = pgTable('recently_viewed_developers', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyId: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }).notNull(),
+  recruiterId: uuid('recruiter_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  developerUserId: uuid('developer_user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  viewedAt: timestamp('viewed_at').defaultNow().notNull(),
+});
+
+// 90. Saved Opportunities Table (Phase 31 Job & Opportunity Engine)
+export const savedOpportunities = pgTable('saved_opportunities', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  opportunityId: uuid('opportunity_id').references(() => jobs.id, { onDelete: 'cascade' }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 91. Learning Roadmaps Table (Phase 35 AI Career & Learning Intelligence)
+export const learningRoadmaps = pgTable('learning_roadmaps', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  goalId: uuid('goal_id').references(() => careerGoals.id, { onDelete: 'set null' }),
+  targetRole: varchar('target_role', { length: 100 }).notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  overviewSummary: text('overview_summary'),
+  overallFitPercent: integer('overall_fit_percent').default(0).notNull(),
+  readinessTier: varchar('readiness_tier', { length: 50 }).default('Developing').notNull(),
+  stages: jsonb('stages').notNull(), // Array of RoadmapStage objects
+  stateHash: varchar('state_hash', { length: 100 }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const careerRoadmaps = learningRoadmaps;
+
+// 92. Learning Tasks Table (Phase 35 Actionable Daily/Weekly/Monthly Tasks)
+export const learningTasks = pgTable('learning_tasks', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  goalId: uuid('goal_id').references(() => careerGoals.id, { onDelete: 'set null' }),
+  roadmapId: uuid('roadmap_id'),
+  stageNumber: integer('stage_number').default(1).notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description'),
+  cadence: varchar('cadence', { length: 20 }).default('daily').notNull(), // 'daily' | 'weekly' | 'monthly'
+  taskType: varchar('task_type', { length: 50 }).default('skill_practice').notNull(), // 'skill_practice' | 'project_build' | 'challenge' | 'architecture_study'
+  targetSkill: varchar('target_skill', { length: 100 }),
+  targetCapability: varchar('target_capability', { length: 100 }),
+  status: varchar('status', { length: 20 }).default('todo').notNull(), // 'todo' | 'in_progress' | 'completed'
+  completedAt: timestamp('completed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 93. Career Recommendations Cache Table (Phase 35 AI & Structured Recs Cache)
+export const careerRecommendationsCache = pgTable('career_recommendations_cache', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  targetRole: varchar('target_role', { length: 100 }).notNull(),
+  roleFitData: jsonb('role_fit_data'),
+  gapsData: jsonb('gaps_data'),
+  projectRecs: jsonb('project_recs'),
+  challengeRecs: jsonb('challenge_recs'),
+  opportunityRecs: jsonb('opportunity_recs'),
+  aiGuidance: jsonb('ai_guidance'),
+  stateHash: varchar('state_hash', { length: 100 }).notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+
+
+
 
 
 

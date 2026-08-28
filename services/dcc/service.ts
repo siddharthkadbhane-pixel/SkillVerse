@@ -8,7 +8,11 @@ import { Logger } from '@/lib/logger';
 import { DCCEvidenceService } from './evidence';
 import { DCCInsightsService } from './insights';
 import { CapabilityGrowthService } from './growth';
+import { ContributionIntelligenceService } from '@/services/activity/intelligence';
+import { SkillIntelligenceService } from '@/services/capability/engine';
+import { VerificationIntegrityEngine } from '@/services/verification/integrity';
 import { DCCFullData, DCCPublicData, CapabilityLevel, VerifiedSkill } from '@/types/dcc';
+import { CachingService } from '@/lib/caching/service';
 
 export class DeveloperCapabilityCardService {
 
@@ -229,6 +233,10 @@ export class DeveloperCapabilityCardService {
    * Retrieves full DCC data payload for the authenticated user or public profile
    */
   static async getFullDCC(userId: string): Promise<DCCFullData> {
+    const cacheKey = `dcc_full_${userId}`;
+    const cached = CachingService.get<DCCFullData>(cacheKey);
+    if (cached) return cached;
+
     let cardRecord: any = null;
     let dimsRecord: any = null;
     let userRecord: any = null;
@@ -386,7 +394,13 @@ export class DeveloperCapabilityCardService {
       timeline: await CapabilityGrowthService.getGrowthTimeline(userId),
       growthChart: await CapabilityGrowthService.getCapabilityTrendChartData(userId),
       publicUrl: `/developer/${username}`,
+      activityContext: await ContributionIntelligenceService.getContributionIntelligence(userId),
+      engineeringCapabilities: await SkillIntelligenceService.getDeveloperCapabilities(userId),
+      integritySummary: await VerificationIntegrityEngine.getVerificationIntegritySummary(userId),
     };
+
+    CachingService.set(cacheKey, fullDcc, 60);
+    return fullDcc;
   }
 
   /**
@@ -458,6 +472,9 @@ export class DeveloperCapabilityCardService {
       timeline: publicTimeline,
       growthChart: fullDCC.growthChart,
       lastUpdated: fullDCC.card.lastUpdated,
+      activityContext: fullDCC.activityContext,
+      engineeringCapabilities: fullDCC.engineeringCapabilities,
+      integritySummary: fullDCC.integritySummary,
     };
 
     return { isPrivate: false, notFound: false, data: publicData };

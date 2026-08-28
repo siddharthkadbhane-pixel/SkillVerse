@@ -2,251 +2,372 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/shared/Navbar';
 import Sidebar from '@/components/shared/Sidebar';
-import PageHeader from '@/components/ui/PageHeader';
-import CandidateCard from '@/components/ui/CandidateCard';
-import EmptyState from '@/components/ui/EmptyState';
 import {
   Search,
   Filter,
-  SlidersHorizontal,
+  Bookmark,
+  BookmarkCheck,
   ShieldCheck,
+  ExternalLink,
+  Code2,
+  FileText,
   Sparkles,
-  RefreshCw,
+  ArrowRight,
+  Layers,
   CheckCircle2,
+  Plus
 } from 'lucide-react';
-import { DUMMY_USERS } from '@/lib/dummyData';
+import { DeveloperSearchResultItem } from '@/types/discovery';
 
-export default function FindDevelopersPage() {
-  const [profile, setProfile] = useState<any>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSkill, setSelectedSkill] = useState('All');
-  const [selectedLevel, setSelectedLevel] = useState('All');
-  const [minScore, setMinScore] = useState(70);
-  const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(new Set(['00000000-0000-0000-0000-000000000001']));
+export default function RecruiterFindDevelopersPage() {
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get('q') || '';
 
-  useEffect(() => {
-    fetch('/api/profile')
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.success) setProfile(json.data.profile);
-      })
-      .catch(() => {});
-  }, []);
+  const [query, setQuery] = useState(initialQuery);
+  const [selectedSkill, setSelectedSkill] = useState('');
+  const [selectedCapability, setSelectedCapability] = useState('');
+  const [developers, setDevelopers] = useState<DeveloperSearchResultItem[]>([]);
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [activeNoteDev, setActiveNoteDev] = useState<DeveloperSearchResultItem | null>(null);
+  const [noteContent, setNoteContent] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
 
-  const handleToggleShortlist = (id: string) => {
-    setShortlistedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const skillFilters = ['All', 'TypeScript', 'React', 'Rust', 'Python', 'Next.js', 'PostgreSQL'];
-  const levelFilters = ['All', 'Elite (900+)', 'Expert (800+)', 'Advanced (700+)'];
-
-  const candidatePool = [
-    {
-      id: '00000000-0000-0000-0000-000000000001',
-      name: 'Siddharth Kadbhane',
-      title: 'Lead Full-Stack Architect',
-      avatarUrl: 'https://avatars.githubusercontent.com/u/84218321?v=4',
-      matchScore: 96,
-      skillScore: 94.0,
-      topSkills: [
-        { name: 'TypeScript', level: 98 },
-        { name: 'Next.js 15', level: 96 },
-        { name: 'Rust', level: 94 },
-        { name: 'PostgreSQL', level: 92 },
-      ],
-      projectCount: 14,
-      commitCount: '3.8k',
-      prCount: 148,
-      growth: 18.4,
-      level: 'Elite (900+)',
-    },
-    {
-      id: '00000000-0000-0000-0000-000000000002',
-      name: 'Alex Chen',
-      title: 'Principal Frontend & Design Systems Engineer',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face',
-      matchScore: 92,
-      skillScore: 82.0,
-      topSkills: [
-        { name: 'React', level: 95 },
-        { name: 'Tailwind CSS', level: 96 },
-        { name: 'WebGL', level: 88 },
-        { name: 'TypeScript', level: 90 },
-      ],
-      projectCount: 9,
-      commitCount: '2.1k',
-      prCount: 94,
-      growth: 15.2,
-      level: 'Expert (800+)',
-    },
-    {
-      id: '00000000-0000-0000-0000-000000000003',
-      name: 'Sarah Connor',
-      title: 'Distributed Systems & ML Platform Engineer',
-      avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&h=150&fit=crop&crop=face',
-      matchScore: 88,
-      skillScore: 76.0,
-      topSkills: [
-        { name: 'Python', level: 94 },
-        { name: 'FastAPI', level: 91 },
-        { name: 'PyTorch', level: 88 },
-        { name: 'Redis', level: 89 },
-      ],
-      projectCount: 8,
-      commitCount: '1.8k',
-      prCount: 62,
-      growth: 22.0,
-      level: 'Advanced (700+)',
-    },
+  const capabilityCategories = [
+    'All Capabilities',
+    'Frontend Engineering',
+    'Backend Engineering',
+    'Full-Stack Development',
+    'Database Engineering',
+    'DevOps & Infrastructure',
+    'Software Architecture',
+    'API Development',
   ];
 
-  const filteredCandidates = candidatePool.filter((c) => {
-    const matchesSkill =
-      selectedSkill === 'All' || c.topSkills.some((s) => s.name.toLowerCase().includes(selectedSkill.toLowerCase()));
-    const matchesLevel = selectedLevel === 'All' || c.level === selectedLevel;
-    const matchesScore = c.skillScore >= minScore;
-    const matchesSearch =
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.title.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSkill && matchesLevel && matchesScore && matchesSearch;
-  });
+  const quickSkills = ['All Skills', 'TypeScript', 'React', 'Next.js', 'Node.js', 'PostgreSQL', 'Docker', 'Python', 'Rust'];
+
+  async function fetchDevelopers() {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (query.trim()) params.set('q', query.trim());
+      if (selectedSkill && selectedSkill !== 'All Skills') params.set('skills', selectedSkill);
+
+      const [searchRes, savedRes] = await Promise.all([
+        fetch(`/api/developers?${params.toString()}`).then(r => r.json()),
+        fetch('/api/company/saved').then(r => r.json()),
+      ]);
+
+      if (searchRes.success && Array.isArray(searchRes.data?.developers)) {
+        setDevelopers(searchRes.data.developers);
+      }
+      if (savedRes.success && Array.isArray(savedRes.data)) {
+        setSavedIds(new Set(savedRes.data.map((s: any) => s.developerUserId)));
+      }
+    } catch (err) {
+      console.error('Failed to search developers:', err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchDevelopers();
+  }, [selectedSkill, selectedCapability]);
+
+  const handleToggleSave = async (dev: DeveloperSearchResultItem) => {
+    const isSaved = savedIds.has(dev.id);
+    if (isSaved) {
+      setSavedIds(prev => {
+        const next = new Set(prev);
+        next.delete(dev.id);
+        return next;
+      });
+      await fetch(`/api/company/saved?developerUserId=${dev.id}`, { method: 'DELETE' });
+    } else {
+      setSavedIds(prev => new Set(prev).add(dev.id));
+      await fetch('/api/company/saved', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          developerUserId: dev.id,
+          tags: ['Candidate Pool', dev.dccLevel],
+          notes: `Discovered with ${dev.topVerifiedSkills.length} verified skills and level ${dev.dccLevel}.`,
+        }),
+      });
+    }
+  };
+
+  const handleSaveNote = async () => {
+    if (!activeNoteDev || !noteContent.trim()) return;
+    setSavingNote(true);
+    try {
+      await fetch('/api/company/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          developerUserId: activeNoteDev.id,
+          content: noteContent.trim(),
+        }),
+      });
+      setActiveNoteDev(null);
+      setNoteContent('');
+    } catch (err) {
+      console.error('Failed to save note:', err);
+    } finally {
+      setSavingNote(false);
+    }
+  };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#070A0F] text-[#F8FAFC]">
-      <Sidebar user={profile} />
+    <div className="flex h-screen bg-[#070A0F] text-[#F8FAFC]">
+      <Sidebar />
 
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <Navbar user={profile} breadcrumb="Find Developers" />
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <Navbar />
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
-          <PageHeader
-            title="Find Verified Developers"
-            description="Discover elite engineers with cryptographic proof of skills, AST audit scores, and project telemetry."
-            badge={{ text: `${filteredCandidates.length} Matches`, variant: 'cyan' }}
-          />
-
-          {/* Search & Faceted Filter Panel */}
-          <div className="bg-[#0D121A] border border-white/[0.08] rounded-xl p-5 shadow-sm space-y-4">
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="w-4 h-4 text-[#64748B] absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search candidates by name, job title, keywords (e.g. Lead Architect, Distributed Systems)..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#111722] border border-white/[0.08] hover:border-white/[0.14] focus:border-[#7C3AED]/50 rounded-lg pl-10 pr-4 py-2.5 text-xs text-[#F8FAFC] placeholder-[#64748B] outline-none transition-all"
-              />
+        <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-8 space-y-6 max-w-[1400px] w-full mx-auto">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                  Discover Verified Developers
+                </h1>
+                <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-[#7C3AED]/20 text-[#C4B5FD] border border-[#7C3AED]/30">
+                  Recruiter Workspace
+                </span>
+              </div>
+              <p className="text-xs text-[#94A3B8] mt-1">
+                Evaluate candidates directly through verified AST codebase proofs, capability mapping, and real Git contributions.
+              </p>
             </div>
 
-            {/* Faceted Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-white/[0.06]">
-              {/* Skill Filter */}
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B] block mb-2">
-                  Required Skill
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {skillFilters.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => setSelectedSkill(s)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${
-                        selectedSkill === s
-                          ? 'bg-[#7C3AED] text-white'
-                          : 'bg-[#111722] border border-white/[0.06] text-[#94A3B8] hover:text-[#F8FAFC]'
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Developer Tier Filter */}
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B] block mb-2">
-                  Developer Tier
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {levelFilters.map((lvl) => (
-                    <button
-                      key={lvl}
-                      onClick={() => setSelectedLevel(lvl)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${
-                        selectedLevel === lvl
-                          ? 'bg-[#38BDF8] text-[#070A0F]'
-                          : 'bg-[#111722] border border-white/[0.06] text-[#94A3B8] hover:text-[#F8FAFC]'
-                      }`}
-                    >
-                      {lvl}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Minimum Skill Score Range */}
-              <div>
-                <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-[#64748B] mb-2">
-                  <span>Min Skill Score</span>
-                  <span className="font-mono text-xs text-[#10B981]">{minScore}+</span>
-                </div>
-                <input
-                  type="range"
-                  min="50"
-                  max="95"
-                  value={minScore}
-                  onChange={(e) => setMinScore(Number(e.target.value))}
-                  className="w-full accent-[#7C3AED]"
-                />
-              </div>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/company/saved"
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#111722] hover:bg-[#1A2234] border border-white/[0.08] text-xs font-semibold text-[#94A3B8] hover:text-white transition-colors"
+              >
+                <Bookmark className="w-3.5 h-3.5 text-[#7C3AED]" />
+                <span>Saved Shortlist ({savedIds.size})</span>
+              </Link>
             </div>
           </div>
 
-          {/* Results Grid */}
-          {filteredCandidates.length === 0 ? (
-            <EmptyState
-              icon={Search}
-              title="No candidates match your filters"
-              description="Try broadening your skill requirements or lowering the minimum score threshold."
-              action={{
-                label: 'Reset All Filters',
-                onClick: () => {
-                  setSearchQuery('');
-                  setSelectedSkill('All');
-                  setSelectedLevel('All');
-                  setMinScore(70);
-                },
-              }}
-            />
+          {/* Search & Filter Bar */}
+          <div className="bg-[#0D121A] border border-white/[0.08] p-4 rounded-2xl space-y-3">
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <div className="relative flex-1 w-full">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" />
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') fetchDevelopers();
+                  }}
+                  placeholder="Search by skill, capability, or developer username..."
+                  className="w-full bg-[#111722] border border-white/[0.08] rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#7C3AED] transition-colors"
+                />
+              </div>
+
+              <button
+                onClick={fetchDevelopers}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-xs font-semibold shadow-lg shadow-[#7C3AED]/25 transition-all"
+              >
+                Search
+              </button>
+            </div>
+
+            {/* Quick Skill Filters */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+              <span className="text-[11px] font-mono text-[#64748B] shrink-0">Filter Skill:</span>
+              {quickSkills.map((sk) => {
+                const active = (selectedSkill === '' && sk === 'All Skills') || selectedSkill === sk;
+                return (
+                  <button
+                    key={sk}
+                    onClick={() => setSelectedSkill(sk === 'All Skills' ? '' : sk)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-mono transition-colors shrink-0 ${
+                      active
+                        ? 'bg-[#7C3AED] text-white font-bold'
+                        : 'bg-[#111722] text-[#94A3B8] hover:text-white border border-white/[0.06]'
+                    }`}
+                  >
+                    {sk}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Developer Results Grid */}
+          {loading ? (
+            <div className="text-center py-16 text-xs text-[#64748B]">
+              Scanning verified developer capability cards...
+            </div>
+          ) : developers.length === 0 ? (
+            <div className="bg-[#0D121A] border border-white/[0.08] rounded-2xl p-12 text-center space-y-3">
+              <Search className="w-8 h-8 text-[#64748B] mx-auto" />
+              <h3 className="text-sm font-bold text-white">No developers matched your query</h3>
+              <p className="text-xs text-[#94A3B8] max-w-sm mx-auto">
+                Try searching for broader skills like TypeScript, React, Next.js, or PostgreSQL.
+              </p>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredCandidates.map((candidate) => (
-                <CandidateCard
-                  key={candidate.id}
-                  id={candidate.id}
-                  name={candidate.name}
-                  title={candidate.title}
-                  avatarUrl={candidate.avatarUrl}
-                  matchScore={candidate.matchScore}
-                  skillScore={candidate.skillScore}
-                  topSkills={candidate.topSkills}
-                  projectCount={candidate.projectCount}
-                  commitCount={candidate.commitCount}
-                  prCount={candidate.prCount}
-                  growth={candidate.growth}
-                  verified={true}
-                  onShortlist={handleToggleShortlist}
-                  isShortlisted={shortlistedIds.has(candidate.id)}
+              {developers.map((dev) => {
+                const isSaved = savedIds.has(dev.id);
+                return (
+                  <div
+                    key={dev.id}
+                    className="bg-[#0D121A] border border-white/[0.08] hover:border-white/[0.16] rounded-2xl p-5 space-y-4 flex flex-col justify-between transition-all"
+                  >
+                    <div className="space-y-3">
+                      {/* Top Header */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={dev.avatarUrl || 'https://avatars.githubusercontent.com/u/84218321?v=4'}
+                            alt={dev.name || dev.username}
+                            className="w-12 h-12 rounded-full border border-white/[0.1] shrink-0"
+                          />
+                          <div>
+                            <h3 className="text-sm font-bold text-white leading-snug">
+                              {dev.name || dev.username}
+                            </h3>
+                            <span className="text-xs text-[#38BDF8] font-mono">@{dev.username}</span>
+                          </div>
+                        </div>
+
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#7C3AED]/20 text-[#C4B5FD] border border-[#7C3AED]/30 shrink-0">
+                          {dev.dccLevel}
+                        </span>
+                      </div>
+
+                      {/* Bio */}
+                      {dev.bio && (
+                        <p className="text-xs text-[#94A3B8] line-clamp-2 leading-relaxed">
+                          {dev.bio}
+                        </p>
+                      )}
+
+                      {/* Verified Skills */}
+                      <div className="space-y-1.5 pt-1">
+                        <span className="text-[10px] font-mono text-[#64748B] uppercase tracking-wider block">
+                          Verified Skills ({dev.topVerifiedSkills.length})
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {dev.topVerifiedSkills.slice(0, 5).map((skill, idx) => (
+                            <span
+                              key={idx}
+                              className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-[#111722] border border-white/[0.06] text-[#E2E8F0]"
+                            >
+                              ✓ {skill.name}
+                            </span>
+                          ))}
+                          {dev.topVerifiedSkills.length > 5 && (
+                            <span className="text-[10px] font-mono text-[#64748B] self-center">
+                              +{dev.topVerifiedSkills.length - 5} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom Actions */}
+                    <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => handleToggleSave(dev)}
+                          className={`p-2 rounded-xl border text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                            isSaved
+                              ? 'bg-[#7C3AED]/20 border-[#7C3AED]/40 text-[#C4B5FD]'
+                              : 'bg-[#111722] border-white/[0.08] text-[#94A3B8] hover:text-white'
+                          }`}
+                          title={isSaved ? 'Remove from Shortlist' : 'Save to Shortlist'}
+                        >
+                          {isSaved ? (
+                            <BookmarkCheck className="w-3.5 h-3.5 text-[#A78BFA]" />
+                          ) : (
+                            <Bookmark className="w-3.5 h-3.5" />
+                          )}
+                          <span className="text-[11px]">{isSaved ? 'Saved' : 'Save'}</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setActiveNoteDev(dev);
+                            setNoteContent('');
+                          }}
+                          className="p-2 rounded-xl bg-[#111722] border border-white/[0.08] hover:border-white/[0.15] text-[#94A3B8] hover:text-white text-xs transition-colors flex items-center gap-1.5"
+                          title="Add Private Recruiter Note"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span className="text-[11px]">Note</span>
+                        </button>
+                      </div>
+
+                      <Link
+                        href={dev.dccUrl || `/developer/${dev.username}`}
+                        target="_blank"
+                        className="px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-xs font-semibold text-[#38BDF8] border border-white/[0.08] flex items-center gap-1.5 transition-colors shrink-0"
+                      >
+                        <span>View DCC</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Private Recruiter Note Modal */}
+          {activeNoteDev && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+              <div className="bg-[#0D121A] border border-white/[0.1] rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-[#7C3AED]" />
+                    <h3 className="text-sm font-bold text-white">Private Recruiter Note</h3>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#111722] text-[#10B981] border border-[#10B981]/20">
+                    Shielded from Candidate
+                  </span>
+                </div>
+
+                <p className="text-xs text-[#94A3B8]">
+                  Add internal notes regarding <strong className="text-white">@{activeNoteDev.username}</strong>. Only authorized members of your company workspace can read this note.
+                </p>
+
+                <textarea
+                  value={noteContent}
+                  onChange={(e) => setNoteContent(e.target.value)}
+                  placeholder="e.g. Strong AST modularity, recommended for senior backend role. Interview scheduled next week..."
+                  rows={4}
+                  className="w-full bg-[#111722] border border-white/[0.08] rounded-xl p-3 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#7C3AED]"
                 />
-              ))}
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    onClick={() => setActiveNoteDev(null)}
+                    className="px-3.5 py-2 rounded-xl bg-transparent hover:bg-white/[0.04] text-xs text-[#94A3B8] transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveNote}
+                    disabled={savingNote || !noteContent.trim()}
+                    className="px-4 py-2 rounded-xl bg-[#7C3AED] hover:bg-[#6D28D9] disabled:opacity-50 text-white text-xs font-semibold transition-all"
+                  >
+                    {savingNote ? 'Saving...' : 'Save Note'}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </main>

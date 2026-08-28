@@ -9,6 +9,7 @@ import MultiLineChart from '@/components/charts/MultiLineChart';
 import ActivityItem from '@/components/ui/ActivityItem';
 import SkillChip from '@/components/ui/SkillChip';
 import DashboardGrowthSection from '@/components/dashboard/DashboardGrowthSection';
+import CareerWidget from '@/components/dashboard/CareerWidget';
 import {
   ShieldCheck,
   Activity,
@@ -347,10 +348,10 @@ export default function DeveloperOverviewPage() {
           {/* CAPABILITY GROWTH SECTION (Phase 23) */}
           <DashboardGrowthSection />
 
-          {/* THIRD SECTION (3-Column Desktop Grid: Recent Projects + Achievements + AI Insight) */}
+          {/* THIRD SECTION (3-Column Desktop Grid: Recent Projects + Achievements + Career & Learning Intelligence) */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Left: Recent Projects */}
-            <div className="lg:col-span-5 bg-[#0D121A] border border-white/[0.08] rounded-xl p-4 shadow-sm space-y-3">
+            <div className="lg:col-span-4 bg-[#0D121A] border border-white/[0.08] rounded-xl p-4 shadow-sm space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
                 <h3 className="font-bold text-xs uppercase tracking-wider text-[#F8FAFC]">
                   Recent Verified Projects
@@ -440,29 +441,9 @@ export default function DeveloperOverviewPage() {
               </div>
             </div>
 
-            {/* Right: AI Insight */}
-            <div className="lg:col-span-3 bg-gradient-to-br from-[#7C3AED]/15 via-[#0D121A] to-[#0D121A] border border-[#7C3AED]/30 rounded-xl p-4 shadow-sm space-y-3 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-1.5 pb-2 border-b border-white/[0.06]">
-                  <Sparkles className="w-3.5 h-3.5 text-[#A78BFA]" />
-                  <h3 className="font-bold text-xs uppercase tracking-wider text-[#F8FAFC]">
-                    AI Insight
-                  </h3>
-                </div>
-                <p className="text-xs text-[#94A3B8] leading-relaxed mt-2.5">
-                  Your codebase demonstrates <strong className="text-white">Elite modular architecture</strong> in Next.js 15. Adding Playwright end-to-end integration tests to your UI will push your test reliability score past 95%.
-                </p>
-              </div>
-
-              <div className="pt-2">
-                <Link
-                  href="/challenges"
-                  className="w-full flex items-center justify-center gap-1 text-xs font-semibold px-3 py-2 rounded-lg bg-[#7C3AED] hover:bg-[#8B5CF6] text-white transition-colors"
-                >
-                  <span>Start Test Sprint (+15 pts)</span>
-                  <ArrowRight className="w-3 h-3" />
-                </Link>
-              </div>
+            {/* Right: Career & Learning Intelligence Widget */}
+            <div className="lg:col-span-4">
+              <CareerWidget />
             </div>
           </div>
         </main>

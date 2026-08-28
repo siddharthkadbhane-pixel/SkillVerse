@@ -3,9 +3,12 @@
 import React, { useState } from 'react';
 import DCCHeader from '@/components/dcc/DCCHeader';
 import DCCCapabilityOverview from '@/components/dcc/DCCCapabilityOverview';
+import DCCVerificationIntegrity from '@/components/dcc/DCCVerificationIntegrity';
 import DCCVerifiedSkills from '@/components/dcc/DCCVerifiedSkills';
+import DCCEngineeringCapabilities from '@/components/dcc/DCCEngineeringCapabilities';
 import DCCEngineeringCapability from '@/components/dcc/DCCEngineeringCapability';
 import DCCProjectEvidence from '@/components/dcc/DCCProjectEvidence';
+import DCCActivityIntelligence from '@/components/dcc/DCCActivityIntelligence';
 import DCCGrowthHistory from '@/components/dcc/DCCGrowthHistory';
 import DCCShareModal from '@/components/dcc/DCCShareModal';
 import { DCCPublicData } from '@/types/dcc';
@@ -123,16 +126,25 @@ export default function DCCPublicView({ data }: DCCPublicViewProps) {
           insights={data.insights}
         />
 
+        {/* 2b. Verification Integrity & Evidence Quality */}
+        <DCCVerificationIntegrity integritySummary={data.integritySummary} />
+
         {/* 3. Verified Skills & Proofs */}
         <DCCVerifiedSkills skills={data.verifiedSkills} />
 
-        {/* 4. Engineering Capability & Rigor */}
+        {/* 4. Engineering Capabilities & Skill Intelligence */}
+        <DCCEngineeringCapabilities capabilities={data.engineeringCapabilities} />
+
+        {/* 5. Engineering Capability & Rigor */}
         <DCCEngineeringCapability metrics={data.engineeringMetrics} />
 
         {/* 5. Project Evidence & Audit Trails */}
         <DCCProjectEvidence projects={data.projectEvidence} />
 
-        {/* 6. Capability Growth & Milestone Trajectory */}
+        {/* 6. Engineering Activity & Contribution Intelligence */}
+        <DCCActivityIntelligence activityContext={data.activityContext} />
+
+        {/* 7. Capability Growth & Milestone Trajectory */}
         <DCCGrowthHistory 
           timeline={data.timeline || []} 
           growthChart={data.growthChart || []} 

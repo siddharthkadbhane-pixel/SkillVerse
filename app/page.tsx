@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Shield, ArrowRight, CheckCircle2, ChevronRight, Star, Terminal, Code2, Cpu, Globe, Check, X, ShieldCheck, Sparkles, Zap } from 'lucide-react';
+import { Shield, ArrowRight, CheckCircle2, ChevronRight, Star, Terminal, Code2, Cpu, Globe, Check, X, ShieldCheck, Sparkles, Zap, Search } from 'lucide-react';
 
 export default function LandingPage() {
   return (
@@ -26,6 +26,9 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-6">
+            <Link href="/developers" className="text-xs font-semibold text-[#A78BFA] hover:text-white transition-colors">
+              Discover Talent
+            </Link>
             <a href="#pipeline" className="text-xs font-semibold text-secondary hover:text-white transition-colors">
               How It Works
             </a>
@@ -73,13 +76,14 @@ export default function LandingPage() {
               Get Started with GitHub
               <ArrowRight className="h-4 w-4" />
             </Link>
-            <a
-              href="#comparison"
-              className="flex items-center justify-center gap-2 rounded-xl bg-elevated border text-secondary font-semibold px-7 py-3.5 text-xs hover:bg-hover hover:text-white hover:border-accent-muted transition-all active:scale-98"
+            <Link
+              href="/developers"
+              className="flex items-center justify-center gap-2 rounded-xl bg-elevated border text-[#F8FAFC] font-semibold px-7 py-3.5 text-xs hover:bg-hover hover:border-[#7C3AED]/40 transition-all active:scale-98"
               style={{ borderColor: 'rgba(255,255,255,0.08)' }}
             >
-              Compare Verification
-            </a>
+              <Search className="h-3.5 w-3.5 text-[#A78BFA]" />
+              Discover Developers
+            </Link>
           </div>
         </div>
 

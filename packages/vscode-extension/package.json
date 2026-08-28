@@ -1,0 +1,187 @@
+{
+  "name": "skillverse-vscode",
+  "displayName": "SkillVerse: Developer Capability & Verified Skills",
+  "description": "Official VS Code IDE Integration for SkillVerse — The Proof-of-Capability Platform. View your Developer Capability Card (DCC), verify codebases, and run AST reviews directly inside your editor.",
+  "version": "1.0.0",
+  "publisher": "skillverse",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "Programming Languages",
+    "Linters",
+    "Education"
+  ],
+  "keywords": [
+    "skillverse",
+    "capability",
+    "dcc",
+    "git",
+    "ast",
+    "code quality",
+    "developer profile"
+  ],
+  "main": "./dist/extension.js",
+  "icon": "media/icon.png",
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:skillverse.login",
+    "onCommand:skillverse.logout",
+    "onCommand:skillverse.analyzeRepo",
+    "onCommand:skillverse.viewDCC",
+    "onCommand:skillverse.viewSkills",
+    "onCommand:skillverse.explainFile",
+    "onCommand:skillverse.reviewFile",
+    "onCommand:skillverse.openDashboard",
+    "onView:skillverse-dcc-view",
+    "onView:skillverse-repo-view"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "skillverse-explorer",
+          "title": "SkillVerse",
+          "icon": "$(shield)"
+        }
+      ]
+    },
+    "views": {
+      "skillverse-explorer": [
+        {
+          "id": "skillverse-dcc-view",
+          "name": "Developer Capability Card (DCC)",
+          "visibility": "visible"
+        },
+        {
+          "id": "skillverse-repo-view",
+          "name": "Repository Verification & Quality",
+          "visibility": "visible"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "skillverse.login",
+        "title": "Login",
+        "category": "SkillVerse",
+        "icon": "$(sign-in)"
+      },
+      {
+        "command": "skillverse.logout",
+        "title": "Logout",
+        "category": "SkillVerse",
+        "icon": "$(sign-out)"
+      },
+      {
+        "command": "skillverse.refresh",
+        "title": "Refresh Capability Data",
+        "category": "SkillVerse",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "skillverse.viewDCC",
+        "title": "View Developer Capability Card (DCC)",
+        "category": "SkillVerse",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "skillverse.viewSkills",
+        "title": "View Verified Skills",
+        "category": "SkillVerse",
+        "icon": "$(code)"
+      },
+      {
+        "command": "skillverse.analyzeRepo",
+        "title": "Analyze Repository",
+        "category": "SkillVerse",
+        "icon": "$(play)"
+      },
+      {
+        "command": "skillverse.verifyRepo",
+        "title": "Verify Repository Status",
+        "category": "SkillVerse",
+        "icon": "$(check)"
+      },
+      {
+        "command": "skillverse.explainFile",
+        "title": "Explain Active File",
+        "category": "SkillVerse",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "skillverse.reviewFile",
+        "title": "Review Active File (AST Heuristics)",
+        "category": "SkillVerse",
+        "icon": "$(search)"
+      },
+      {
+        "command": "skillverse.openDashboard",
+        "title": "Open SkillVerse Dashboard",
+        "category": "SkillVerse",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "skillverse.openProfile",
+        "title": "Open Public Capability Passport",
+        "category": "SkillVerse",
+        "icon": "$(link-external)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "skillverse.refresh",
+          "when": "view == skillverse-dcc-view || view == skillverse-repo-view",
+          "group": "navigation"
+        },
+        {
+          "command": "skillverse.openDashboard",
+          "when": "view == skillverse-dcc-view",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "skillverse.explainFile",
+          "group": "SkillVerse@1"
+        },
+        {
+          "command": "skillverse.reviewFile",
+          "group": "SkillVerse@2"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "SkillVerse",
+      "properties": {
+        "skillverse.apiUrl": {
+          "type": "string",
+          "default": "http://localhost:3000",
+          "description": "URL of the SkillVerse instance API (default: http://localhost:3000)"
+        },
+        "skillverse.autoDetectRepo": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically detect and match workspace repository with SkillVerse"
+        },
+        "skillverse.showStatusBarScore": {
+          "type": "boolean",
+          "default": true,
+          "description": "Display current DCC score in VS Code status bar"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "node --import tsx test/extension.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.6.3"
+  }
+}

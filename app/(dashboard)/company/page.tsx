@@ -6,230 +6,345 @@ import Navbar from '@/components/shared/Navbar';
 import Sidebar from '@/components/shared/Sidebar';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
-import CandidateCard from '@/components/ui/CandidateCard';
 import {
   Building2,
   Users,
-  Briefcase,
-  GitPullRequest,
-  CheckCircle2,
   Search,
-  Sparkles,
+  Bookmark,
+  CheckCircle2,
+  Clock,
   ArrowRight,
-  TrendingUp,
-  Plus,
-  Filter,
+  ShieldCheck,
+  Sparkles,
+  ExternalLink,
+  Code2,
+  FileText,
+  ArrowLeftRight
 } from 'lucide-react';
-import { DUMMY_USERS, DUMMY_JOBS } from '@/lib/dummyData';
+import { CompanyProfile, SavedDeveloperItem, RecentlyViewedDeveloperItem } from '@/types/company';
 
 export default function CompanyOverviewPage() {
-  const [profile, setProfile] = useState<any>(null);
-  const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(new Set(['00000000-0000-0000-0000-000000000001']));
+  const [profile, setProfile] = useState<CompanyProfile | null>(null);
+  const [savedDevelopers, setSavedDevelopers] = useState<SavedDeveloperItem[]>([]);
+  const [recentlyViewed, setRecentlyViewed] = useState<RecentlyViewedDeveloperItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/profile')
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.success) setProfile(json.data.profile);
-      })
-      .catch(() => {});
+    async function loadWorkspace() {
+      try {
+        const [compRes, savedRes, recentRes] = await Promise.all([
+          fetch('/api/company').then(r => r.json()),
+          fetch('/api/company/saved').then(r => r.json()),
+          fetch('/api/company/recent').then(r => r.json()),
+        ]);
+
+        if (compRes.success && compRes.data?.profile) {
+          setProfile(compRes.data.profile);
+        }
+        if (savedRes.success && Array.isArray(savedRes.data)) {
+          setSavedDevelopers(savedRes.data);
+        }
+        if (recentRes.success && Array.isArray(recentRes.data)) {
+          setRecentlyViewed(recentRes.data);
+        }
+      } catch (err) {
+        console.error('Failed to load company workspace:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadWorkspace();
   }, []);
 
-  const handleToggleShortlist = (id: string) => {
-    setShortlistedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const pipelineStages = [
-    { label: 'Applied', count: 48, color: '#38BDF8' },
-    { label: 'Screening', count: 18, color: '#7C3AED' },
-    { label: 'Shortlisted', count: 8, color: '#A78BFA' },
-    { label: 'Interview', count: 4, color: '#F59E0B' },
-    { label: 'Offer', count: 2, color: '#06B6D4' },
-    { label: 'Hired', count: 3, color: '#10B981' },
-  ];
-
-  // Candidates for Recommendation
-  const recommendedCandidates = [
-    {
-      id: '00000000-0000-0000-0000-000000000001',
-      name: 'Siddharth Kadbhane',
-      title: 'Lead Full-Stack Architect',
-      avatarUrl: 'https://avatars.githubusercontent.com/u/84218321?v=4',
-      matchScore: 96,
-      skillScore: 94.0,
-      topSkills: [
-        { name: 'TypeScript', level: 98 },
-        { name: 'Next.js 15', level: 96 },
-        { name: 'Rust', level: 94 },
-        { name: 'PostgreSQL', level: 92 },
-      ],
-      projectCount: 14,
-      commitCount: '3.8k',
-      prCount: 148,
-      growth: 18.4,
-    },
-    {
-      id: '00000000-0000-0000-0000-000000000002',
-      name: 'Alex Chen',
-      title: 'Principal Frontend & Design Systems Engineer',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face',
-      matchScore: 92,
-      skillScore: 82.0,
-      topSkills: [
-        { name: 'React 19', level: 95 },
-        { name: 'Tailwind CSS', level: 96 },
-        { name: 'WebGL', level: 88 },
-        { name: 'TypeScript', level: 90 },
-      ],
-      projectCount: 9,
-      commitCount: '2.1k',
-      prCount: 94,
-      growth: 15.2,
-    },
-    {
-      id: '00000000-0000-0000-0000-000000000003',
-      name: 'Sarah Connor',
-      title: 'Distributed Systems & ML Platform Engineer',
-      avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&h=150&fit=crop&crop=face',
-      matchScore: 88,
-      skillScore: 76.0,
-      topSkills: [
-        { name: 'Python', level: 94 },
-        { name: 'FastAPI', level: 91 },
-        { name: 'PyTorch', level: 88 },
-        { name: 'Redis', level: 89 },
-      ],
-      projectCount: 8,
-      commitCount: '1.8k',
-      prCount: 62,
-      growth: 22.0,
-    },
-  ];
-
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#070A0F] text-[#F8FAFC]">
-      <Sidebar user={profile} />
+    <div className="flex h-screen bg-[#070A0F] text-[#F8FAFC]">
+      <Sidebar />
 
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <Navbar user={profile} breadcrumb="Hiring Command Center" />
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <Navbar />
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
-          <PageHeader
-            title="Hiring Command Center"
-            description="Discover, verify, and match top-tier engineering talent with cryptographic AST evidence. Proof over claims."
-            badge={{ text: 'Hyperion AI &bull; Enterprise', variant: 'cyan' }}
-          >
-            <Link
-              href="/company/jobs"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#111722] hover:bg-[#151B26] border border-white/[0.08] text-[#94A3B8] hover:text-[#F8FAFC] transition-colors"
-            >
-              <Briefcase className="w-3.5 h-3.5" />
-              Manage Jobs
-            </Link>
-            <Link
-              href="/company/developers"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#7C3AED] hover:bg-[#8B5CF6] text-white transition-colors"
-            >
-              <Search className="w-3.5 h-3.5" />
-              Find Developers
-            </Link>
-          </PageHeader>
-
-          {/* Hiring KPI Metrics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
-            <StatCard label="Active Positions" value="5 Jobs" icon={Briefcase} iconColor="text-[#38BDF8]" />
-            <StatCard label="Total Candidates" value="48" icon={Users} iconColor="text-[#7C3AED]" />
-            <StatCard label="Shortlisted" value={shortlistedIds.size} icon={Sparkles} iconColor="text-[#A78BFA]" />
-            <StatCard label="Interviews" value="4" icon={GitPullRequest} iconColor="text-[#F59E0B]" />
-            <StatCard label="Offers Out" value="2" icon={CheckCircle2} iconColor="text-[#06B6D4]" />
-            <StatCard label="Total Hires" value="3" icon={CheckCircle2} iconColor="text-[#10B981]" subtitle="Avg match: 94%" />
-          </div>
-
-          {/* Hiring Pipeline Funnel Card */}
-          <div className="bg-[#0D121A] border border-white/[0.08] rounded-xl p-5 sm:p-6 shadow-sm space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
-              <div className="flex items-center gap-2">
-                <GitPullRequest className="w-4 h-4 text-[#7C3AED]" />
-                <h3 className="font-semibold text-sm text-[#F8FAFC]">
-                  Hiring Pipeline Overview
-                </h3>
+        <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-8 space-y-8 max-w-[1400px] w-full mx-auto">
+          {/* Workspace Header */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#0D121A] border border-white/[0.08] p-6 rounded-2xl">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#7C3AED]/20 to-[#38BDF8]/20 border border-white/[0.1] flex items-center justify-center text-[#38BDF8]">
+                <Building2 className="w-7 h-7" />
               </div>
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                    {profile?.name || 'Acme Engineering Labs'}
+                  </h1>
+                  <span className="flex items-center gap-1 text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/30">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    Verified Workspace
+                  </span>
+                </div>
+                <p className="text-xs text-[#94A3B8] mt-1 line-clamp-1 max-w-xl">
+                  {profile?.description || 'Building high-performance distributed systems and developer tools.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
               <Link
-                href="/company/pipeline"
-                className="text-xs font-semibold text-[#A78BFA] hover:underline"
+                href="/company/developers"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-xs font-semibold shadow-lg shadow-[#7C3AED]/25 transition-all"
               >
-                Open Kanban Pipeline &rarr;
+                <Search className="w-4 h-4" />
+                <span>Search Verified Talent</span>
               </Link>
             </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              {pipelineStages.map((st, i) => (
-                <div key={i} className="p-3.5 bg-[#111722] border border-white/[0.04] rounded-lg">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B] block mb-1">
-                    {st.label}
-                  </span>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="font-mono text-xl font-bold text-[#F8FAFC]">
-                      {st.count}
-                    </span>
-                    <span className="text-[10px] text-[#94A3B8]">candidates</span>
-                  </div>
-                  <div className="w-full h-1 bg-[#151B26] rounded-full overflow-hidden mt-2">
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${Math.min(100, st.count * 15)}%`, backgroundColor: st.color }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
 
-          {/* Recommended Developers for Active Positions */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
+          {/* Key Workspace Stats */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              title="Saved Talent"
+              value={savedDevelopers.length.toString()}
+              change="Shortlisted candidates"
+              icon={Bookmark}
+              trend="up"
+            />
+            <StatCard
+              title="Recently Evaluated"
+              value={recentlyViewed.length.toString()}
+              change="Profiles reviewed"
+              icon={Clock}
+              trend="neutral"
+            />
+            <StatCard
+              title="Team Recruiters"
+              value="2"
+              change="Active members"
+              icon={Users}
+              trend="up"
+            />
+            <StatCard
+              title="Verification Status"
+              value="Verified"
+              change="Enterprise tier"
+              icon={ShieldCheck}
+              trend="up"
+            />
+          </div>
+
+          {/* Quick Talent Search & Discovery Gateway */}
+          <div className="bg-[#0D121A] border border-white/[0.08] p-6 rounded-2xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <h3 className="font-bold text-sm text-[#F8FAFC]">
-                  AI Recommended Developers for Open Roles
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                  Discover Candidates via Verified DCCs
                 </h3>
                 <p className="text-xs text-[#94A3B8]">
-                  Ranked by AST compatibility against your active Principal Full-Stack and Backend vacancies.
+                  Search public developers by verified engineering skills, capability tiers, and AST codebase audits.
                 </p>
               </div>
               <Link
                 href="/company/developers"
-                className="text-xs font-semibold text-[#A78BFA] hover:underline"
+                className="text-xs font-semibold text-[#38BDF8] hover:text-[#7DD3FC] flex items-center gap-1 shrink-0"
               >
-                Explore All 340+ Candidates &rarr;
+                <span>Advanced Search</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {recommendedCandidates.map((candidate) => (
-                <CandidateCard
-                  key={candidate.id}
-                  id={candidate.id}
-                  name={candidate.name}
-                  title={candidate.title}
-                  avatarUrl={candidate.avatarUrl}
-                  matchScore={candidate.matchScore}
-                  skillScore={candidate.skillScore}
-                  topSkills={candidate.topSkills}
-                  projectCount={candidate.projectCount}
-                  commitCount={candidate.commitCount}
-                  prCount={candidate.prCount}
-                  growth={candidate.growth}
-                  verified={true}
-                  onShortlist={handleToggleShortlist}
-                  isShortlisted={shortlistedIds.has(candidate.id)}
-                />
-              ))}
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchQuery.trim()) {
+                    window.location.href = `/company/developers?q=${encodeURIComponent(searchQuery)}`;
+                  }
+                }}
+                placeholder="Search by skill (e.g. TypeScript, Rust, Next.js) or capability (e.g. Backend Engineering)..."
+                className="w-full bg-[#111722] border border-white/[0.08] rounded-xl pl-11 pr-28 py-3 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#7C3AED] transition-colors"
+              />
+              <button
+                onClick={() => {
+                  if (searchQuery.trim()) {
+                    window.location.href = `/company/developers?q=${encodeURIComponent(searchQuery)}`;
+                  }
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 px-3.5 py-1.5 rounded-lg bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-xs font-semibold transition-colors"
+              >
+                Search
+              </button>
             </div>
+          </div>
+
+          {/* Two-Column Grid: Saved Candidates & Recently Viewed */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left: Saved Developers */}
+            <div className="bg-[#0D121A] border border-white/[0.08] p-6 rounded-2xl space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bookmark className="w-4 h-4 text-[#7C3AED]" />
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                    Shortlisted Talent ({savedDevelopers.length})
+                  </h3>
+                </div>
+                <Link
+                  href="/company/saved"
+                  className="text-xs font-semibold text-[#94A3B8] hover:text-white transition-colors"
+                >
+                  View All
+                </Link>
+              </div>
+
+              {savedDevelopers.length === 0 ? (
+                <div className="text-center py-10 text-xs text-[#64748B] border border-dashed border-white/[0.06] rounded-xl">
+                  No saved developers yet. Search and shortlist developers to track them here.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {savedDevelopers.slice(0, 3).map((item) => (
+                    <div
+                      key={item.id}
+                      className="bg-[#111722] border border-white/[0.06] hover:border-white/[0.12] p-4 rounded-xl flex items-center justify-between gap-3 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <img
+                          src={item.developer?.avatarUrl || 'https://avatars.githubusercontent.com/u/84218321?v=4'}
+                          alt={item.developer?.name || item.developer?.username}
+                          className="w-10 h-10 rounded-full border border-white/[0.1] shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-xs font-bold text-white truncate">
+                              {item.developer?.name || item.developer?.username}
+                            </h4>
+                            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#7C3AED]/20 text-[#C4B5FD]">
+                              {item.developer?.dccLevel || 'Expert'}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-[#64748B] truncate">
+                            {item.developer?.topVerifiedSkills?.slice(0, 3).map(s => s.name).join(', ')}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Link
+                          href={`/developer/${item.developer?.username}`}
+                          target="_blank"
+                          className="p-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[#38BDF8] border border-white/[0.06] transition-colors"
+                          title="View Verified DCC"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Right: Recently Viewed */}
+            <div className="bg-[#0D121A] border border-white/[0.08] p-6 rounded-2xl space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#38BDF8]" />
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                    Recently Evaluated
+                  </h3>
+                </div>
+                <Link
+                  href="/company/developers"
+                  className="text-xs font-semibold text-[#94A3B8] hover:text-white transition-colors"
+                >
+                  Explore More
+                </Link>
+              </div>
+
+              {recentlyViewed.length === 0 ? (
+                <div className="text-center py-10 text-xs text-[#64748B] border border-dashed border-white/[0.06] rounded-xl">
+                  No recently viewed profiles.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {recentlyViewed.slice(0, 3).map((item) => (
+                    <div
+                      key={item.id}
+                      className="bg-[#111722] border border-white/[0.06] hover:border-white/[0.12] p-4 rounded-xl flex items-center justify-between gap-3 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <img
+                          src={item.developer?.avatarUrl || 'https://avatars.githubusercontent.com/u/84218321?v=4'}
+                          alt={item.developer?.name || item.developer?.username}
+                          className="w-10 h-10 rounded-full border border-white/[0.1] shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <h4 className="text-xs font-bold text-white truncate">
+                            {item.developer?.name || item.developer?.username}
+                          </h4>
+                          <span className="text-[10px] font-mono text-[#10B981]">
+                            ✓ {item.developer?.dccLevel || 'Expert'} • {item.developer?.topVerifiedSkills?.length || 4} verified skills
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Link
+                          href={`/developer/${item.developer?.username}`}
+                          target="_blank"
+                          className="px-2.5 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs font-semibold text-white border border-white/[0.06] transition-colors"
+                        >
+                          View DCC
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Actions Footer */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Link
+              href="/company/compare"
+              className="p-4 rounded-xl bg-[#0D121A] border border-white/[0.08] hover:border-[#7C3AED]/50 flex items-center gap-3 transition-all"
+            >
+              <div className="p-2.5 rounded-lg bg-[#7C3AED]/10 text-[#7C3AED]">
+                <ArrowLeftRight className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-white">Compare Candidates</h4>
+                <p className="text-[11px] text-[#64748B]">Side-by-side DCC 2.0 evaluation</p>
+              </div>
+            </Link>
+
+            <Link
+              href="/company/members"
+              className="p-4 rounded-xl bg-[#0D121A] border border-white/[0.08] hover:border-[#38BDF8]/50 flex items-center gap-3 transition-all"
+            >
+              <div className="p-2.5 rounded-lg bg-[#38BDF8]/10 text-[#38BDF8]">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-white">Manage Recruiters</h4>
+                <p className="text-[11px] text-[#64748B]">Invite team members</p>
+              </div>
+            </Link>
+
+            <Link
+              href="/company/profile"
+              className="p-4 rounded-xl bg-[#0D121A] border border-white/[0.08] hover:border-[#10B981]/50 flex items-center gap-3 transition-all"
+            >
+              <div className="p-2.5 rounded-lg bg-[#10B981]/10 text-[#10B981]">
+                <Building2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-white">Company Profile</h4>
+                <p className="text-[11px] text-[#64748B]">Workspace verification status</p>
+              </div>
+            </Link>
           </div>
         </main>
       </div>

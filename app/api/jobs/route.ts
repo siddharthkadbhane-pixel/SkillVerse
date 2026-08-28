@@ -1,100 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/drizzle';
-import { jobs, companies } from '@/database/schema';
+import { OpportunityEngine } from '@/services/opportunity/engine';
 import { getSessionUser } from '@/services/supabase';
-import { DUMMY_JOBS, DUMMY_COMPANIES } from '@/lib/dummyData';
-import { eq } from 'drizzle-orm';
+import { OpportunityFilter, OpportunityType, WorkplaceType } from '@/types/opportunity';
+import { Logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   try {
-    let allJobs: any[] = [];
-    try {
-      allJobs = await db.query.jobs.findMany({
-        orderBy: (jobs, { desc }) => [desc(jobs.createdAt)],
-      });
-    } catch {}
+    const { searchParams } = new URL(req.url);
+    const sessionUser = await getSessionUser();
+    const userId = sessionUser?.id || '00000000-0000-0000-0000-000000000000';
 
-    if (allJobs.length === 0) {
-      return NextResponse.json({
-        success: true,
-        data: DUMMY_JOBS,
-      });
-    }
+    const filter: OpportunityFilter = {
+      q: searchParams.get('q') || undefined,
+      skill: searchParams.get('skill') || undefined,
+      capability: searchParams.get('capability') || undefined,
+      type: (searchParams.get('type') as OpportunityType) || undefined,
+      workplaceType: (searchParams.get('workplaceType') as WorkplaceType) || undefined,
+      location: searchParams.get('location') || undefined,
+      companyId: searchParams.get('companyId') || undefined,
+    };
+
+    const result = await OpportunityEngine.getOpportunities(filter, userId);
 
     return NextResponse.json({
       success: true,
-      data: allJobs,
+      data: result.opportunities,
+      totalCount: result.totalCount,
     });
   } catch (error: any) {
+    Logger.error('API Error in GET /api/jobs:', error);
     return NextResponse.json({
-      success: true,
-      data: DUMMY_JOBS,
-    });
+      success: false,
+      error: 'An unexpected error occurred while fetching opportunities.',
+    }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getSessionUser();
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const body = await req.json();
+    const sessionUser = await getSessionUser();
+    const recruiterId = sessionUser?.id || '00000000-0000-0000-0000-000000000002';
+    const companyId = body.companyId || '00000000-0000-0000-0000-000000000001';
 
-    const { title, description, requiredSkills, minTrustScore, salary, locationType } = await req.json();
+    const result = await OpportunityEngine.createOpportunity(companyId, recruiterId, body);
 
-    try {
-      let company = await db.query.companies.findFirst({
-        where: eq(companies.name, 'Hyperion AI'),
-      });
-
-      if (!company) {
-        const [newCompany] = await db
-          .insert(companies)
-          .values({
-            name: 'Hyperion AI',
-            description: 'Next-generation frontier AI infrastructure & systems.',
-            website: 'https://hyperion.ai',
-            verified: true,
-          })
-          .returning();
-        company = newCompany;
-      }
-
-      const [newJob] = await db
-        .insert(jobs)
-        .values({
-          companyId: company.id,
-          title,
-          description,
-          requirements: Array.isArray(requiredSkills) ? requiredSkills.join(', ') : requiredSkills || '',
-          minTrustScore: minTrustScore || 0,
-          salaryRange: salary,
-          location: locationType || 'remote',
-        })
-        .returning();
-
-      return NextResponse.json({
-        success: true,
-        data: newJob,
-      });
-    } catch {
-      return NextResponse.json({
-        success: true,
-        data: {
-          id: `job_mock_${Date.now()}`,
-          companyId: DUMMY_COMPANIES[0].id,
-          companyName: DUMMY_COMPANIES[0].name,
-          title,
-          description,
-          requirements: requiredSkills || ['TypeScript', 'Next.js'],
-          minTrustScore: minTrustScore || 750,
-          salaryRange: salary || '$160,000 - $200,000',
-          location: locationType || 'Remote',
-          createdAt: new Date().toISOString(),
-        }
-      });
-    }
+    return NextResponse.json(result);
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    Logger.error('API Error in POST /api/jobs:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'An unexpected error occurred while creating opportunity.',
+    }, { status: 500 });
   }
 }

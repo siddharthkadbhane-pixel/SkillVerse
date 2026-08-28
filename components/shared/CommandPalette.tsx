@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Terminal, GitBranch, Settings, LayoutDashboard, ShieldCheck, Trophy, Sparkles, BarChart2, Command } from 'lucide-react';
+import { Search, Terminal, GitBranch, Settings, LayoutDashboard, ShieldCheck, Trophy, Sparkles, BarChart2, Command, Compass } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface CommandItem {
@@ -24,15 +24,15 @@ export default function CommandPalette() {
 
   // Fetch repositories list once loaded to allow direct searching
   useEffect(() => {
-    if (isOpen) {
-      fetch('/api/repositories')
-        .then(r => r.json())
-        .then(res => {
-          if (res.success) setRepos(res.data || []);
-        })
-        .catch(() => {});
-    }
-  }, [isOpen]);
+    fetch('/api/repositories')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success && Array.isArray(data.data)) {
+          setRepos(data.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Toggle Command Palette on Cmd+K / Ctrl+K
   useEffect(() => {
@@ -58,7 +58,8 @@ export default function CommandPalette() {
 
   // Compile static command options
   const defaultCommands: CommandItem[] = [
-    { label: 'Go to Dashboard', icon: LayoutDashboard, category: 'Navigation', action: () => router.push('/dashboard') },
+    { label: 'Go to Dashboard', icon: LayoutDashboard, category: 'Navigation', action: () => router.push('/overview') },
+    { label: 'Career & Learning Intelligence', icon: Compass, category: 'Navigation', action: () => router.push('/career') },
     { label: 'View Repositories List', icon: GitBranch, category: 'Navigation', action: () => router.push('/repositories') },
     { label: 'Compare Repositories', icon: Terminal, category: 'Navigation', action: () => router.push('/repositories/compare') },
     { label: 'Open Analytics Telemetry', icon: BarChart2, category: 'Navigation', action: () => router.push('/analytics') },
