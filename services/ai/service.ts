@@ -59,8 +59,14 @@ export class AiReviewService {
         }
       }
 
+      // Ground extracted skills against codebase context to avoid hallucinated claims (Phase 42)
+      const { groundedSkills, unsupportedClaims } = AiOutputValidator.groundExtractedSkills(
+        parsedReview.skills || [],
+        contextData
+      );
+
       // Map skills with confidence, evidence, and status (Module 2)
-      const mappedSkills = (parsedReview.skills || []).map((skill: any) => ({
+      const mappedSkills = groundedSkills.map((skill: any) => ({
         name: skill.name,
         category: skill.category,
         level: skill.level,

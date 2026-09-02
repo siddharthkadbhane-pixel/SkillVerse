@@ -99,7 +99,9 @@ export default function DeveloperDiscoveryCard({ developer }: DeveloperDiscovery
                 <h3 className="font-semibold text-sm text-[#F8FAFC] group-hover:text-[#A78BFA] transition-colors leading-tight">
                   {developer.name}
                 </h3>
-                <ShieldCheck className="w-4 h-4 text-[#10B981] shrink-0" title="Verified SkillVerse Developer" />
+                <span title="Verified SkillVerse Developer" className="inline-flex items-center">
+                  <ShieldCheck className="w-4 h-4 text-[#10B981] shrink-0" />
+                </span>
               </div>
               <p className="text-xs text-[#94A3B8] font-mono">@{developer.username}</p>
               {developer.location && (

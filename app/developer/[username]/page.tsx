@@ -59,34 +59,9 @@ export default async function PublicDeveloperDCCPage({
   const { username } = await params;
 
   // Retrieve public DCC data using dedicated service method with privacy protection
-  const result = await DeveloperCapabilityCardService.getPublicDCC(username);
+  const publicData = await DeveloperCapabilityCardService.getPublicDCC(username);
 
-  if (result.notFound || !result.data) {
-    if (result.isPrivate) {
-      return (
-        <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-[#070A0F] text-[#F8FAFC] p-4 text-center">
-          <div className="p-4 rounded-2xl bg-[#0D121A] border border-white/[0.08] max-w-md w-full space-y-4 shadow-xl">
-            <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
-              <Lock className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-white">Private Capability Profile</h2>
-              <p className="text-xs text-[#94A3B8] mt-1 leading-relaxed">
-                This developer (@{username}) has set their capability card and evidence audit history to private mode.
-              </p>
-            </div>
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-[#111722] hover:bg-[#151B26] border border-white/[0.08] text-[#F8FAFC] transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Return to SkillVerse
-            </Link>
-          </div>
-        </div>
-      );
-    }
-
+  if (!publicData) {
     return (
       <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-[#070A0F] text-[#F8FAFC] p-4 text-center">
         <div className="p-4 rounded-2xl bg-[#0D121A] border border-white/[0.08] max-w-md w-full space-y-4 shadow-xl">
@@ -111,8 +86,6 @@ export default async function PublicDeveloperDCCPage({
     );
   }
 
-  const publicData = result.data;
-
   // Compile Schema.org JSON-LD Structured Data
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -123,7 +96,7 @@ export default async function PublicDeveloperDCCPage({
       'alternateName': publicData.username,
       'description': publicData.bio,
       'image': publicData.avatarUrl,
-      'knowsAbout': publicData.verifiedSkills?.map(s => s.name) || [],
+      'knowsAbout': publicData.verifiedSkills?.map((s: any) => s.name) || [],
       'url': `https://skillverse.dev/developer/${publicData.username}`,
     }
   };

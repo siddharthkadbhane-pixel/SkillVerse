@@ -9,6 +9,7 @@ import {
   SkillVerificationStatus,
   EvidenceStrength,
   RepoContributionRole,
+  RepoProvenanceType,
   SkillVerificationDetail,
 } from '@/types/dcc';
 import { Logger } from '@/lib/logger';
@@ -45,25 +46,40 @@ export class DCCEvidenceService {
   }
 
   /**
-   * Calculates lightweight evidence strength tier
+   * Calculates deterministic evidence strength tier based on the Phase 42 hierarchy:
+   * - Strong: Analyzed codebase with AST score >= 75, multiple verified projects, or verified challenge.
+   * - Moderate: Analyzed codebase with score 60-74, active multi-commit history, or primary language across projects.
+   * - Weak: Package/dependency detection only, README mentions only, self-reported, or forked repo with minimal commits.
    */
   static calculateEvidenceStrength(
     analyzedCount: number,
     evidenceCount: number,
     avgScore: number,
-    isPrimary: boolean
+    isPrimary: boolean,
+    hasOnlyPackageJson: boolean = false
   ): EvidenceStrength {
-    if (analyzedCount >= 2 && avgScore >= 75) {
+    // Weak evidence: Package detection only can NEVER produce strong or moderate claims independently
+    if (hasOnlyPackageJson && analyzedCount === 0) {
+      return 'weak';
+    }
+
+    if (analyzedCount >= 1 && avgScore >= 75) {
       return 'strong';
     }
-    if (analyzedCount >= 1 || (evidenceCount >= 2 && isPrimary) || (evidenceCount >= 3)) {
+
+    if ((analyzedCount >= 1 && avgScore >= 60) || (evidenceCount >= 2 && isPrimary) || (evidenceCount >= 3)) {
       return 'moderate';
     }
+
     return 'weak';
   }
 
   /**
-   * Determines verified state from real evidence signals
+   * Determines verified state from real evidence signals according to the strict hierarchy:
+   * - Verified: Requires strong evidence (AST review >= 75 on analyzed code)
+   * - Supported: Requires moderate evidence (AST score 60-74 or primary language with real commits)
+   * - Detected: Weak evidence (package.json manifests, single mentions)
+   * - Insufficient Evidence: 0 evidence
    */
   static determineVerificationStatus(
     analyzedCount: number,
@@ -71,20 +87,32 @@ export class DCCEvidenceService {
     strength: EvidenceStrength,
     isPrimary: boolean
   ): SkillVerificationStatus {
-    if (analyzedCount >= 1 && (strength === 'strong' || strength === 'moderate')) {
+    if (evidenceCount === 0) {
+      return 'insufficient_evidence';
+    }
+
+    // Strict Rule: Weak evidence alone can NEVER produce Verified or Supported status
+    if (strength === 'weak') {
+      return 'detected';
+    }
+
+    if (analyzedCount >= 1 && strength === 'strong') {
       return 'verified';
     }
-    if (analyzedCount >= 1 || (isPrimary && evidenceCount >= 1) || evidenceCount >= 2) {
+
+    if ((analyzedCount >= 1 && strength === 'moderate') || (isPrimary && evidenceCount >= 2)) {
       return 'supported';
     }
+
     if (evidenceCount >= 1) {
       return 'detected';
     }
+
     return 'insufficient_evidence';
   }
 
   /**
-   * Generates technical, explainable "Why Verified?" reasoning string
+   * Generates technical, human-readable "Why Verified?" reasoning string (no mathematical jargon)
    */
   static generateWhyVerifiedExplanation(
     skillName: string,
@@ -97,9 +125,9 @@ export class DCCEvidenceService {
   ): string {
     if (status === 'verified') {
       if (analyzedCount >= 2) {
-        return `Demonstrated across ${analyzedCount} audited repositories with an average AST score of ${avgScore}/100 and clean architectural patterns.`;
+        return `Demonstrated across ${analyzedCount} audited repositories with verified AST code implementation and an average quality benchmark of ${avgScore}/100.`;
       }
-      return `Audited in codebase trees with verified AST modularity, strict typings, and ${avgScore}/100 quality benchmark.`;
+      return `Audited in codebase implementation with verified AST modularity, strict typings, and ${avgScore}/100 quality benchmark.`;
     }
 
     if (status === 'supported') {
@@ -110,14 +138,14 @@ export class DCCEvidenceService {
     }
 
     if (status === 'detected') {
-      return `Detected in package manifests and configuration trees. Codebase analysis is recommended to elevate to Verified.`;
+      return `Detected in package manifests or configuration trees. Codebase analysis is recommended to elevate to Verified.`;
     }
 
-    return `More engineering evidence is needed before ${skillName} can be verified. Analyze a repository with this skill to verify.`;
+    return `Not enough engineering evidence yet for ${skillName}. Analyze an implementation repository to verify.`;
   }
 
   /**
-   * Determines repository contribution role
+   * Determines repository provenance & contribution role
    */
   static determineContributionRole(repo: any, username?: string): RepoContributionRole {
     if (repo.fork || repo.isFork) return 'fork';
@@ -126,6 +154,19 @@ export class DCCEvidenceService {
     }
     if (repo.isCollaborator) return 'collaborator';
     return 'owner';
+  }
+
+  /**
+   * Determines repository provenance category
+   */
+  static determineProvenanceType(repo: any, username?: string): RepoProvenanceType {
+    if (repo.fork || repo.isFork) return 'fork';
+    if (repo.metadata?.commitsCount && repo.metadata.commitsCount <= 2) return 'limited_history';
+    if (username && repo.fullName && repo.fullName.toLowerCase().startsWith(username.toLowerCase() + '/')) {
+      return 'original';
+    }
+    if (repo.isCollaborator) return 'collaborative';
+    return 'original';
   }
 
   /**
@@ -151,7 +192,7 @@ export class DCCEvidenceService {
         where: eq(users.id, userId),
       });
     } catch (err: any) {
-      Logger.warn(`DB read error during skills evidence compilation: ${err.message}. Using baseline skills.`);
+      Logger.warn(`DB read error during skills evidence compilation: ${err.message}.`);
     }
 
     const username = userRecord?.username || 'developer';
@@ -168,6 +209,7 @@ export class DCCEvidenceService {
       sumScores: number;
       isPrimaryLanguage: boolean;
       manualProficiency: number;
+      hasCodebaseProof: boolean;
       latestDate?: string;
     }>();
 
@@ -184,6 +226,7 @@ export class DCCEvidenceService {
           sumScores: 0,
           isPrimaryLanguage: false,
           manualProficiency: 50,
+          hasCodebaseProof: false,
           latestDate: undefined,
         });
       }
@@ -199,9 +242,10 @@ export class DCCEvidenceService {
       }
     }
 
-    // Process repositories and AI reviews for evidence
+    // Process repositories and AI reviews for evidence (idempotent by repository fullName)
     for (const repo of userRepos) {
       const role = this.determineContributionRole(repo, username);
+      const isFork = role === 'fork';
       const repoDate = repo.analyzedAt ? repo.analyzedAt.toISOString() : repo.updatedAt?.toISOString() || new Date().toISOString();
 
       if (repo.language) {
@@ -210,15 +254,19 @@ export class DCCEvidenceService {
         if (!entry.repoNames.has(repo.fullName)) {
           entry.repoNames.add(repo.fullName);
           entry.latestDate = repoDate;
+          if (repo.isAnalyzed && !isFork) entry.hasCodebaseProof = true;
+          
           entry.evidenceList.push({
             repoName: repo.name,
             repoFullName: repo.fullName,
             isAnalyzed: repo.isAnalyzed,
             source: 'codebase',
             contributionRole: role,
-            verificationMethod: repo.isAnalyzed ? 'AI AST Code Review' : 'Primary Codebase Language',
+            verificationMethod: repo.isAnalyzed 
+              ? (isFork ? 'Forked Contribution Audit' : 'AI AST Code Review') 
+              : 'Primary Codebase Language',
             lastUsedDate: repoDate,
-            evidenceStrength: repo.isAnalyzed ? 'strong' : 'moderate',
+            evidenceStrength: (repo.isAnalyzed && !isFork) ? 'strong' : 'moderate',
             isPublic: true,
           });
         }
@@ -232,7 +280,7 @@ export class DCCEvidenceService {
 
           if (review) {
             const extracted = Array.isArray(review.skillsExtracted) 
-              ? (review.skillsExtracted as string[]) 
+              ? (review.skillsExtracted as any[]).map((s: any) => typeof s === 'string' ? s : s?.name).filter(Boolean)
               : [];
 
             const summaryMeta = repo.summary as any;
@@ -249,6 +297,11 @@ export class DCCEvidenceService {
                 entry.totalReviews += 1;
                 entry.sumScores += review.overallScore || 75;
                 entry.latestDate = repoDate;
+                if (!isFork) entry.hasCodebaseProof = true;
+
+                const score = review.overallScore || 75;
+                const isStrong = score >= 75 && !isFork;
+
                 entry.evidenceList.push({
                   repoName: repo.name,
                   repoFullName: repo.fullName,
@@ -256,10 +309,10 @@ export class DCCEvidenceService {
                   reviewScore: review.overallScore,
                   source: 'codebase',
                   contributionRole: role,
-                  verificationMethod: 'AI AST Code Review',
+                  verificationMethod: isFork ? 'Forked Contribution Audit' : 'AI AST Code Review',
                   highlights: Array.isArray(review.strengths) ? (review.strengths as string[]).slice(0, 2) : [],
                   lastUsedDate: repoDate,
-                  evidenceStrength: (review.overallScore || 75) >= 80 ? 'strong' : 'moderate',
+                  evidenceStrength: isStrong ? 'strong' : (score >= 60 ? 'moderate' : 'weak'),
                   isPublic: true,
                 });
               }
@@ -269,8 +322,14 @@ export class DCCEvidenceService {
       }
     }
 
-    // Baseline verified skills if empty
+    // If zero evidence found and user is a real empty user (Fresher State)
     if (evidenceMap.size === 0) {
+      // If demo user id requested and DB empty, provide standard baseline demo data
+      const isDemoUser = userId === '00000000-0000-0000-0000-000000000000' || userId === '00000000-0000-0000-0000-000000000001';
+      if (!isDemoUser && userRepos.length === 0) {
+        return [];
+      }
+
       const defaultSkills: Array<{ 
         name: string; 
         cat: VerifiedSkill['category']; 
@@ -390,19 +449,19 @@ export class DCCEvidenceService {
       const analyzedCount = entry.evidenceList.filter(e => e.isAnalyzed).length;
       const avgReviewScore = entry.totalReviews > 0 ? Math.round(entry.sumScores / entry.totalReviews) : 75;
 
-      const strength = this.calculateEvidenceStrength(analyzedCount, evidenceCount, avgReviewScore, entry.isPrimaryLanguage);
+      const strength = this.calculateEvidenceStrength(analyzedCount, evidenceCount, avgReviewScore, entry.isPrimaryLanguage, !entry.hasCodebaseProof);
       const status = this.determineVerificationStatus(analyzedCount, evidenceCount, strength, entry.isPrimaryLanguage);
       const whyVerified = this.generateWhyVerifiedExplanation(entry.name, status, strength, analyzedCount, evidenceCount, avgReviewScore, entry.isPrimaryLanguage);
 
-      let confidence = 50;
+      let confidence = 40;
       if (status === 'verified') {
-        confidence = Math.min(98, 80 + (analyzedCount * 6));
+        confidence = Math.min(98, 82 + (analyzedCount * 5));
       } else if (status === 'supported') {
         confidence = Math.min(84, 70 + (evidenceCount * 4));
       } else if (status === 'detected') {
-        confidence = 65;
+        confidence = 55;
       } else {
-        confidence = 40;
+        confidence = 30;
       }
 
       const calculatedLevel = Math.min(100, Math.max(30, Math.round((avgReviewScore * 0.7) + (entry.manualProficiency * 0.3))));
@@ -465,6 +524,7 @@ export class DCCEvidenceService {
         detected: 3,
         inferred: 2,
         insufficient_evidence: 1,
+        stale: 1,
         not_enough_evidence: 1,
       };
       if (statusWeight[b.status] !== statusWeight[a.status]) {
@@ -562,7 +622,7 @@ export class DCCEvidenceService {
       } catch {}
     }
 
-    if (repoEvidenceList.length === 0) {
+    if (repoEvidenceList.length === 0 && (userId === '00000000-0000-0000-0000-000000000000' || userId === '00000000-0000-0000-0000-000000000001')) {
       repoEvidenceList.push(
         {
           repoName: 'SkillVerse',
@@ -641,7 +701,7 @@ export class DCCEvidenceService {
   }
 
   /**
-   * Compiles project evidence summary cards
+   * Compiles project evidence summary cards with provenance tags
    */
   static async compileProjectEvidence(userId: string): Promise<ProjectEvidenceSummary[]> {
     let userRepos: any[] = [];
@@ -666,10 +726,12 @@ export class DCCEvidenceService {
         } catch {}
       }
 
+      const role = this.determineContributionRole(repo, username);
+      const isFork = role === 'fork';
       const strengths = review && Array.isArray(review.strengths) ? (review.strengths as string[]) : [];
       const weaknesses = review && Array.isArray(review.weaknesses) ? (review.weaknesses as string[]) : [];
       const demonstratedSkills = review && Array.isArray(review.skillsExtracted) 
-        ? (review.skillsExtracted as string[]) 
+        ? (review.skillsExtracted as any[]).map((s: any) => typeof s === 'string' ? s : s?.name).filter(Boolean) 
         : (repo.language ? [repo.language] : []);
 
       projectSummaries.push({
@@ -694,12 +756,14 @@ export class DCCEvidenceService {
         demonstratedSkills,
         activityLevel: repo.stars > 5 ? 'High' : 'Medium',
         commitsCount: 15,
-        contributionRole: this.determineContributionRole(repo, username),
-        verificationMethod: repo.isAnalyzed ? 'AI AST Code Review' : 'Codebase Metadata Scan',
+        contributionRole: role,
+        verificationMethod: repo.isAnalyzed 
+          ? (isFork ? 'Forked Contribution Audit' : 'AI AST Code Review') 
+          : 'Codebase Metadata Scan',
       });
     }
 
-    if (projectSummaries.length === 0) {
+    if (projectSummaries.length === 0 && (userId === '00000000-0000-0000-0000-000000000000' || userId === '00000000-0000-0000-0000-000000000001')) {
       projectSummaries.push(
         {
           id: 'repo-1',

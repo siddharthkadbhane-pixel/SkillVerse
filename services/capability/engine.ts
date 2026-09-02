@@ -78,8 +78,8 @@ export class SkillIntelligenceService {
       }));
       repoReviews = DUMMY_REPOSITORIES.map(r => ({
         repositoryId: r.id,
-        overallScore: r.qualityScore,
-        strengths: r.strengths,
+        overallScore: r.overallScore,
+        strengths: ['Modular Clean Architecture', 'Strong Type Safety'],
       }));
     }
 

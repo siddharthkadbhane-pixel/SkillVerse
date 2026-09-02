@@ -10,6 +10,9 @@ export interface RepositoryMetadata {
   createdAt: string;
   updatedAt: string;
   topics: string[];
+  isFork?: boolean;
+  parentRepo?: string | null;
+  provenance?: 'original' | 'fork' | 'organization' | 'collaborative' | 'limited_history';
 }
 
 export interface CommitActivityInfo {
@@ -113,6 +116,11 @@ export class RepositoryAnalyzerService {
       console.warn('Could not fetch language breakdown:', err);
     }
 
+    const isFork = Boolean(repoInfo.fork);
+    const parentRepo = repoInfo.parent?.full_name || null;
+    const isOrg = repoInfo.owner?.type === 'Organization';
+    const provenance: RepositoryMetadata['provenance'] = isFork ? 'fork' : (isOrg ? 'organization' : 'original');
+
     return {
       owner: repoInfo.owner?.login || owner,
       defaultBranch: repoInfo.default_branch || 'main',
@@ -121,6 +129,9 @@ export class RepositoryAnalyzerService {
       createdAt: repoInfo.created_at,
       updatedAt: repoInfo.updated_at,
       topics: repoInfo.topics || [],
+      isFork,
+      parentRepo,
+      provenance,
     };
   }
 

@@ -102,32 +102,35 @@ export default function CompanyOverviewPage() {
           {/* Key Workspace Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
-              title="Saved Talent"
+              label="Saved Talent"
               value={savedDevelopers.length.toString()}
-              change="Shortlisted candidates"
+              subtitle="Shortlisted candidates"
               icon={Bookmark}
-              trend="up"
+              iconColor="text-[#7C3AED]"
+              trend={{ value: 'Active', isPositive: true }}
             />
             <StatCard
-              title="Recently Evaluated"
+              label="Recently Evaluated"
               value={recentlyViewed.length.toString()}
-              change="Profiles reviewed"
+              subtitle="Profiles reviewed"
               icon={Clock}
-              trend="neutral"
+              iconColor="text-[#38BDF8]"
             />
             <StatCard
-              title="Team Recruiters"
+              label="Team Recruiters"
               value="2"
-              change="Active members"
+              subtitle="Active members"
               icon={Users}
-              trend="up"
+              iconColor="text-[#10B981]"
+              trend={{ value: 'Online', isPositive: true }}
             />
             <StatCard
-              title="Verification Status"
+              label="Verification Status"
               value="Verified"
-              change="Enterprise tier"
+              subtitle="Enterprise tier"
               icon={ShieldCheck}
-              trend="up"
+              iconColor="text-[#10B981]"
+              trend={{ value: 'Active', isPositive: true }}
             />
           </div>
 

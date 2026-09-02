@@ -1,77 +1,149 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/drizzle';
-import { webhooks } from '@/database/schema';
-import { getSessionUser } from '@/services/supabase';
+import { NextRequest } from 'next/server';
+import { ApiAuthService } from '@/services/api/auth';
+import { ApiRateLimiter } from '@/services/api/rateLimiter';
+import { ApiResponse } from '@/services/api/response';
+import { WebhookEngine } from '@/services/webhooks/engine';
+import { ApiAnalyticsService } from '@/services/api/analytics';
 
-export async function POST(req: NextRequest) {
+export async function GET(req: NextRequest) {
+  const startTime = Date.now();
+  const authResult = await ApiAuthService.authenticate(req);
+
+  if (!authResult.success) {
+    return ApiResponse.error(
+      authResult.errorCode || 'UNAUTHORIZED',
+      authResult.errorMessage || 'Unauthorized',
+      { status: authResult.errorStatus || 401, requestId: authResult.context.requestId }
+    );
+  }
+
+  const { context } = authResult;
+
+  if (!ApiAuthService.hasScope(context, 'write:webhooks')) {
+    return ApiResponse.error('FORBIDDEN_INSUFFICIENT_SCOPE', 'Missing required scope: write:webhooks', {
+      status: 403,
+      requestId: context.requestId,
+    });
+  }
+
+  const rateLimit = ApiRateLimiter.check(context.user.id, 'management');
+  if (rateLimit.isExceeded) {
+    return ApiResponse.error('RATE_LIMIT_EXCEEDED', 'Rate limit exceeded. Please slow down your requests.', {
+      status: 429,
+      requestId: context.requestId,
+      headers: rateLimit.headers,
+    });
+  }
+
   try {
-    const user = await getSessionUser();
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const webhooksList = await WebhookEngine.listWebhooks(context.user.id);
 
-    const { url, events } = await req.json();
+    ApiAnalyticsService.record({
+      requestId: context.requestId,
+      endpoint: '/api/v1/webhooks',
+      method: 'GET',
+      statusCode: 200,
+      durationMs: Date.now() - startTime,
+      clientType: context.clientType,
+      userId: context.user.id,
+    });
 
-    try {
-      const [newWebhook] = await db
-        .insert(webhooks)
-        .values({
-          userId: user.id,
-          url,
-          events: events || [],
-          secret: 'whsec_' + Math.random().toString(36).slice(2),
-        })
-        .returning();
-
-      return NextResponse.json({
-        version: 'v1',
-        success: true,
-        data: newWebhook,
-      });
-    } catch {
-      // Fallback
-      return NextResponse.json({
-        version: 'v1',
-        success: true,
-        data: {
-          id: 'wh_mock_created',
-          url,
-          events,
-          secret: 'whsec_mock',
-          createdAt: new Date().toISOString(),
-        }
-      });
-    }
+    return ApiResponse.success(webhooksList, {
+      requestId: context.requestId,
+      headers: rateLimit.headers,
+    });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return ApiResponse.error('INTERNAL_SERVER_ERROR', 'Failed to retrieve webhook subscriptions', {
+      status: 500,
+      requestId: context.requestId,
+      headers: rateLimit.headers,
+    });
   }
 }
-export async function GET(req: NextRequest) {
+
+export async function POST(req: NextRequest) {
+  const startTime = Date.now();
+  const authResult = await ApiAuthService.authenticate(req);
+
+  if (!authResult.success) {
+    return ApiResponse.error(
+      authResult.errorCode || 'UNAUTHORIZED',
+      authResult.errorMessage || 'Unauthorized',
+      { status: authResult.errorStatus || 401, requestId: authResult.context.requestId }
+    );
+  }
+
+  const { context } = authResult;
+
+  if (!ApiAuthService.hasScope(context, 'write:webhooks')) {
+    return ApiResponse.error('FORBIDDEN_INSUFFICIENT_SCOPE', 'Missing required scope: write:webhooks', {
+      status: 403,
+      requestId: context.requestId,
+    });
+  }
+
+  const rateLimit = ApiRateLimiter.check(context.user.id, 'management');
+  if (rateLimit.isExceeded) {
+    return ApiResponse.error('RATE_LIMIT_EXCEEDED', 'Rate limit exceeded. Please slow down your requests.', {
+      status: 429,
+      requestId: context.requestId,
+      headers: rateLimit.headers,
+    });
+  }
+
   try {
-    const user = await getSessionUser();
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    const body = await req.json().catch(() => ({}));
+    const { url, events, description } = body;
+
+    if (!url || typeof url !== 'string') {
+      return ApiResponse.error('BAD_REQUEST', 'A valid destination URL is required.', {
+        status: 400,
+        requestId: context.requestId,
+        headers: rateLimit.headers,
+      });
     }
 
-    try {
-      const list = await db.query.webhooks.findMany({
-        where: (webhooks, { eq }) => eq(webhooks.userId, user.id),
-      });
-
-      return NextResponse.json({
-        version: 'v1',
-        success: true,
-        data: list,
-      });
-    } catch {
-      // Fallback
-      return NextResponse.json({
-        version: 'v1',
-        success: true,
-        data: []
+    if (!Array.isArray(events) || events.length === 0) {
+      return ApiResponse.error('BAD_REQUEST', 'At least one event type must be specified.', {
+        status: 400,
+        requestId: context.requestId,
+        headers: rateLimit.headers,
       });
     }
+
+    const newSub = await WebhookEngine.subscribe(
+      context.user.id,
+      url.trim(),
+      events,
+      description
+    );
+
+    ApiAnalyticsService.record({
+      requestId: context.requestId,
+      endpoint: '/api/v1/webhooks',
+      method: 'POST',
+      statusCode: 201,
+      durationMs: Date.now() - startTime,
+      clientType: context.clientType,
+      userId: context.user.id,
+    });
+
+    return ApiResponse.success(
+      {
+        message: 'Webhook subscription created successfully. Store the secret to verify HMAC-SHA256 signatures.',
+        webhook: newSub,
+      },
+      {
+        status: 201,
+        requestId: context.requestId,
+        headers: rateLimit.headers,
+      }
+    );
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return ApiResponse.error('INTERNAL_SERVER_ERROR', error.message || 'Failed to create webhook subscription', {
+      status: 500,
+      requestId: context.requestId,
+      headers: rateLimit.headers,
+    });
   }
 }

@@ -216,10 +216,12 @@ export default function LandingPage() {
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent-muted to-transparent" />
         <div className="mx-auto max-w-7xl px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <span>© 2026 SkillVerse Inc. All rights reserved.</span>
-          <div className="flex gap-4">
-            <span className="hover:text-secondary cursor-pointer transition-colors">Security Audits</span>
-            <span className="hover:text-secondary cursor-pointer transition-colors">Terms of Service</span>
-            <span className="hover:text-secondary cursor-pointer transition-colors">API Docs</span>
+          <div className="flex flex-wrap items-center gap-4">
+            <Link href="/privacy" className="hover:text-secondary cursor-pointer transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-secondary cursor-pointer transition-colors">Terms of Service</Link>
+            <Link href="/cookies" className="hover:text-secondary cursor-pointer transition-colors">Cookie Policy</Link>
+            <Link href="/contact/privacy" className="hover:text-secondary cursor-pointer transition-colors">Privacy Request</Link>
+            <Link href="/api/health" className="hover:text-secondary cursor-pointer transition-colors">System Health</Link>
           </div>
         </div>
       </footer>

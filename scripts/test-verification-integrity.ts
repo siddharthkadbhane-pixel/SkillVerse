@@ -135,11 +135,11 @@ async function runVerificationIntegrityTests() {
     assert(!!fullDCC.integritySummary, 'DCC includes integritySummary');
 
     const publicDCC = await DeveloperCapabilityCardService.getPublicDCC('siddharthkadbhane-pixel');
-    assert(!publicDCC.isPrivate && !!publicDCC.data?.integritySummary, 'Public DCC includes sanitized integritySummary');
-    if (publicDCC.data?.integritySummary) {
+    assert(publicDCC !== null && !!publicDCC.integritySummary, 'Public DCC includes sanitized integritySummary');
+    if (publicDCC?.integritySummary) {
       assert(
-        publicDCC.data.integritySummary.integrityScore > 0,
-        `Public integrity confidence: ${publicDCC.data.integritySummary.integrityScore}/100`
+        publicDCC.integritySummary.integrityScore > 0,
+        `Public integrity confidence: ${publicDCC.integritySummary.integrityScore}/100`
       );
     }
 

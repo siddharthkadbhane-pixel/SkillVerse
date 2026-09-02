@@ -9,14 +9,16 @@ export class ExtensionLogger {
     }
   }
 
-  public static info(message: string): void {
+  public static info(message: string, error?: any): void {
     const time = new Date().toLocaleTimeString();
-    this.outputChannel?.appendLine(`[${time}] [INFO] ${message}`);
+    const extra = error ? ` - ${error.message || error}` : '';
+    this.outputChannel?.appendLine(`[${time}] [INFO] ${message}${extra}`);
   }
 
-  public static warn(message: string): void {
+  public static warn(message: string, error?: any): void {
     const time = new Date().toLocaleTimeString();
-    this.outputChannel?.appendLine(`[${time}] [WARN] ${message}`);
+    const extra = error ? ` - ${error.message || error}` : '';
+    this.outputChannel?.appendLine(`[${time}] [WARN] ${message}${extra}`);
   }
 
   public static error(message: string, error?: any): void {

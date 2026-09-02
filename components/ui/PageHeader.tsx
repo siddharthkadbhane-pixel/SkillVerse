@@ -25,45 +25,44 @@ export default function PageHeader({
   badge,
   children,
 }: PageHeaderProps) {
-  const badgeColors = {
-    primary: 'bg-[#7C3AED]/15 text-[#A78BFA] border-[#7C3AED]/30',
-    success: 'bg-[#10B981]/15 text-[#34D399] border-[#10B981]/30',
-    cyan: 'bg-[#06B6D4]/15 text-[#67E8F9] border-[#06B6D4]/30',
-    amber: 'bg-[#F59E0B]/15 text-[#FBBF24] border-[#F59E0B]/30',
-    neutral: 'bg-white/[0.06] text-[#94A3B8] border-white/[0.10]',
+  const badgeStyles: Record<string, string> = {
+    primary: 'bg-[rgba(124,58,237,0.10)] text-[#A78BFA]',
+    success: 'bg-[rgba(16,185,129,0.10)] text-[#10B981]',
+    cyan:    'bg-[rgba(6,182,212,0.10)] text-[#06B6D4]',
+    amber:   'bg-[rgba(245,158,11,0.10)] text-[#F59E0B]',
+    neutral: 'bg-white/[0.06] text-[#94A3B8]',
   };
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-6 border-b border-white/[0.08]">
-      <div className="space-y-1">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 mb-6 border-b border-white/[0.07]">
+      <div className="space-y-1 min-w-0">
+        {/* Breadcrumbs */}
         {breadcrumbs && breadcrumbs.length > 0 && (
-          <nav className="flex items-center gap-1.5 text-xs text-[#64748B] mb-2 font-medium">
+          <nav className="flex items-center gap-1 text-[11.5px] text-[#475569] mb-2">
             {breadcrumbs.map((b, i) => (
               <React.Fragment key={i}>
-                {i > 0 && <ChevronRight className="w-3.5 h-3.5 text-[#475569]" />}
+                {i > 0 && <ChevronRight className="w-3 h-3 text-[#364154]" />}
                 {b.href ? (
-                  <Link
-                    href={b.href}
-                    className="hover:text-[#F8FAFC] transition-colors"
-                  >
+                  <Link href={b.href} className="hover:text-[#94A3B8] transition-colors">
                     {b.label}
                   </Link>
                 ) : (
-                  <span className="text-[#94A3B8]">{b.label}</span>
+                  <span className="text-[#64748B]">{b.label}</span>
                 )}
               </React.Fragment>
             ))}
           </nav>
         )}
 
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#F8FAFC]">
+        {/* Title + badge */}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <h1 className="text-[18px] font-semibold tracking-[-0.025em] text-[#F1F5F9] leading-tight">
             {title}
           </h1>
           {badge && (
             <span
-              className={`text-xs font-mono font-medium px-2.5 py-0.5 rounded-full border ${
-                badgeColors[badge.variant || 'primary']
+              className={`text-[11px] font-medium px-2 py-0.5 rounded-md ${
+                badgeStyles[badge.variant || 'primary']
               }`}
             >
               {badge.text}
@@ -71,15 +70,17 @@ export default function PageHeader({
           )}
         </div>
 
+        {/* Description */}
         {description && (
-          <p className="text-xs sm:text-sm text-[#94A3B8] max-w-2xl">
+          <p className="text-[12.5px] text-[#64748B] max-w-2xl leading-relaxed mt-0.5">
             {description}
           </p>
         )}
       </div>
 
+      {/* Actions */}
       {children && (
-        <div className="flex items-center gap-2.5 shrink-0">{children}</div>
+        <div className="flex items-center gap-2 shrink-0">{children}</div>
       )}
     </div>
   );

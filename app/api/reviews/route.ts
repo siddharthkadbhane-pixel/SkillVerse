@@ -13,13 +13,17 @@ export async function POST(req: NextRequest) {
     const { repositoryId, score, notes } = await req.json();
 
     try {
+      const reviewScore = Number(score) || 85;
       const [newReview] = await db
         .insert(peerReviews)
         .values({
+          requestId: repositoryId || '00000000-0000-0000-0000-000000000000',
           reviewerId: user.id,
-          repositoryId,
-          score: score || 85,
-          notes,
+          architectureScore: reviewScore,
+          codeQualityScore: reviewScore,
+          securityScore: reviewScore,
+          testingScore: reviewScore,
+          feedbackNotes: notes || 'Peer review evaluation notes',
         })
         .returning();
 

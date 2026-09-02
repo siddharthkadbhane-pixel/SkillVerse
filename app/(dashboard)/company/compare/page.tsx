@@ -189,6 +189,17 @@ export default function CandidateComparePage() {
                 ))}
               </div>
 
+              {/* Comparison Safety Notice */}
+              <div className="bg-[#131720] border border-white/[0.07] rounded-xl p-4 flex items-start gap-3">
+                <ShieldCheck className="w-4 h-4 text-[#7C3AED] shrink-0 mt-0.5" />
+                <div className="text-xs text-[#94A3B8] space-y-0.5">
+                  <strong className="text-white font-medium block">Dimensional Capability Evaluation</strong>
+                  <p>
+                    SkillVerse compares candidates across concrete engineering dimensions (Engineering Rigor, Code Quality, Architecture, Testing) rather than a single number. Different strengths align with different organizational roles.
+                  </p>
+                </div>
+              </div>
+
               {/* Shared Verified Skills Comparison Matrix */}
               <div className="bg-[#0D121A] border border-white/[0.08] rounded-2xl p-6 space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">

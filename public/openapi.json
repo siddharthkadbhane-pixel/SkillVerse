@@ -1,0 +1,348 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SkillVerse Developer Platform API",
+    "version": "1.0.0",
+    "description": "Unified, versioned Public & Internal REST API Platform for SkillVerse Proof-of-Skill Reputation, Developer Capability Cards (DCC 2.0), AST Code Verification, and Event Webhooks.",
+    "contact": {
+      "name": "SkillVerse Platform Engineering",
+      "url": "https://skillverse.dev"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api/v1",
+      "description": "Local Development Server"
+    },
+    {
+      "url": "https://api.skillverse.dev/api/v1",
+      "description": "Production Cloud Gateway"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "PAT",
+        "description": "SkillVerse Personal Access Token (e.g. sk_live_...)"
+      },
+      "CookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "skillverse_session",
+        "description": "First-party web application session cookie"
+      }
+    },
+    "schemas": {
+      "ApiError": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "example": "RESOURCE_NOT_FOUND" },
+              "message": { "type": "string", "example": "Developer profile not found" },
+              "requestId": { "type": "string", "example": "req_1724839200_a8f9c1" }
+            }
+          }
+        }
+      },
+      "DeveloperProfile": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "username": { "type": "string", "example": "siddharthkadbhane-pixel" },
+          "name": { "type": "string", "example": "Siddharth Kadbhane" },
+          "role": { "type": "string", "example": "developer" },
+          "avatarUrl": { "type": "string", "format": "uri" },
+          "overallScore": { "type": "integer", "example": 940 },
+          "level": { "type": "string", "example": "Expert" }
+        }
+      },
+      "VerifiedSkill": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "example": "TypeScript" },
+          "category": { "type": "string", "example": "Languages" },
+          "level": { "type": "integer", "example": 94 },
+          "status": { "type": "string", "example": "verified" },
+          "confidence": { "type": "integer", "example": 96 },
+          "evidenceCount": { "type": "integer", "example": 4 }
+        }
+      },
+      "PersonalAccessToken": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "example": "VS Code Extension Token" },
+          "tokenPrefix": { "type": "string", "example": "sk_live_...481" },
+          "scopes": { "type": "array", "items": { "type": "string" } },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "lastUsedAt": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "WebhookSubscription": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "url": { "type": "string", "format": "uri" },
+          "events": { "type": "array", "items": { "type": "string" } },
+          "secret": { "type": "string", "example": "whsec_..." },
+          "status": { "type": "string", "enum": ["active", "disabled", "failing"] }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/me": {
+      "get": {
+        "summary": "Get authenticated developer profile & DCC summary",
+        "security": [{ "BearerAuth": [] }, { "CookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Authenticated developer profile returned successfully" },
+          "401": { "description": "Unauthorized or invalid credentials" }
+        }
+      }
+    },
+    "/me/dcc": {
+      "get": {
+        "summary": "Get full Developer Capability Card (DCC) with evidence breakdown",
+        "security": [{ "BearerAuth": [] }, { "CookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Full DCC data returned" },
+          "403": { "description": "Missing read:dcc scope" }
+        }
+      }
+    },
+    "/developers": {
+      "get": {
+        "summary": "Search and discover verified developers",
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" } },
+          { "name": "skill", "in": "query", "schema": { "type": "string" } },
+          { "name": "level", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 12 } }
+        ],
+        "responses": {
+          "200": { "description": "Paginated developer discovery results" }
+        }
+      }
+    },
+    "/developers/{username}": {
+      "get": {
+        "summary": "Get public developer profile by username",
+        "parameters": [
+          { "name": "username", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Public developer profile" },
+          "404": { "description": "Developer not found" }
+        }
+      }
+    },
+    "/developers/{username}/dcc": {
+      "get": {
+        "summary": "Get public Developer Capability Card by username",
+        "parameters": [
+          { "name": "username", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Public DCC record" },
+          "404": { "description": "Developer not found" }
+        }
+      }
+    },
+    "/skills": {
+      "get": {
+        "summary": "Get authenticated developer's verified and supported skills",
+        "security": [{ "BearerAuth": [] }, { "CookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Verified skills list" }
+        }
+      }
+    },
+    "/skills/categories": {
+      "get": {
+        "summary": "Get all SkillVerse skill taxonomies and capability domains",
+        "responses": {
+          "200": { "description": "Taxonomies and categories" }
+        }
+      }
+    },
+    "/evidence": {
+      "get": {
+        "summary": "Get developer evidence audit trail and verification freshness status",
+        "security": [{ "BearerAuth": [] }, { "CookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Evidence audit records" }
+        }
+      }
+    },
+    "/repositories": {
+      "get": {
+        "summary": "Get connected developer repositories",
+        "security": [{ "BearerAuth": [] }, { "CookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Safe repository metadata list" }
+        }
+      }
+    },
+    "/repositories/{id}/analyze": {
+      "post": {
+        "summary": "Trigger AST codebase re-analysis (strictly rate-limited)",
+        "security": [{ "BearerAuth": [] }, { "CookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Analysis completed and results returned" },
+          "429": { "description": "Analysis rate limit exceeded" }
+        }
+      }
+    },
+    "/opportunities": {
+      "get": {
+        "summary": "Browse career opportunities and job listings",
+        "security": [{ "BearerAuth": [] }, { "CookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Opportunities list" }
+        }
+      }
+    },
+    "/challenges": {
+      "get": {
+        "summary": "List active verification challenges and hackathons",
+        "responses": {
+          "200": { "description": "Challenges list" }
+        }
+      }
+    },
+    "/challenges/{id}/submit": {
+      "post": {
+        "summary": "Submit repository solution to challenge",
+        "security": [{ "BearerAuth": [] }, { "CookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["repositoryUrl"],
+                "properties": {
+                  "repositoryUrl": { "type": "string" },
+                  "commitHash": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Solution submitted and queued for AST audit" }
+        }
+      }
+    },
+    "/keys": {
+      "get": {
+        "summary": "List Personal Access Tokens",
+        "security": [{ "BearerAuth": [] }, { "CookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Personal Access Tokens list" }
+        }
+      },
+      "post": {
+        "summary": "Create new Personal Access Token with granular scopes",
+        "security": [{ "BearerAuth": [] }, { "CookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "scopes"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "scopes": { "type": "array", "items": { "type": "string" } },
+                  "expiresInDays": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Token created (raw token displayed once)" }
+        }
+      }
+    },
+    "/keys/{id}": {
+      "delete": {
+        "summary": "Revoke a Personal Access Token",
+        "security": [{ "BearerAuth": [] }, { "CookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Token revoked successfully" }
+        }
+      }
+    },
+    "/webhooks": {
+      "get": {
+        "summary": "List webhook subscriptions",
+        "security": [{ "BearerAuth": [] }, { "CookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Webhook subscriptions list" }
+        }
+      },
+      "post": {
+        "summary": "Create a new event webhook subscription",
+        "security": [{ "BearerAuth": [] }, { "CookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["url", "events"],
+                "properties": {
+                  "url": { "type": "string", "format": "uri" },
+                  "events": { "type": "array", "items": { "type": "string" } },
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Webhook registered with secret" }
+        }
+      }
+    },
+    "/webhooks/{id}/test": {
+      "post": {
+        "summary": "Trigger a signed test webhook delivery",
+        "security": [{ "BearerAuth": [] }, { "CookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Test delivery dispatched and signed" }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "API Platform Health & Gateway Metrics",
+        "responses": {
+          "200": { "description": "Health status and runtime metrics" }
+        }
+      }
+    }
+  }
+}

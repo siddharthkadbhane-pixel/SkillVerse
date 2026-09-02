@@ -42,6 +42,7 @@ export class SkillVerseApiClient {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       Accept: 'application/json',
+      'X-Client-Type': 'vscode',
     };
 
     if (auth.token) {
@@ -66,7 +67,7 @@ export class SkillVerseApiClient {
         try {
           const errData = await response.json();
           if (errData && errData.error) {
-            errMessage = errData.error;
+            errMessage = typeof errData.error === 'string' ? errData.error : (errData.error.message || errData.error.code);
           }
         } catch {}
         throw new Error(errMessage);

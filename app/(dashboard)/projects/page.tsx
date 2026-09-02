@@ -65,28 +65,28 @@ export default function ProjectsPage() {
   });
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#070A0F] text-[#F8FAFC]">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#08090D] text-[#F1F5F9]">
       <Sidebar user={profile} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <Navbar user={profile} breadcrumb="Projects" />
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+        <main className="flex-1 overflow-y-auto px-5 sm:px-6 py-5 max-w-7xl w-full mx-auto space-y-6">
           <PageHeader
-            title="Projects Portfolio"
+            title="Projects"
             description="All verified repositories analyzed by the SkillVerse AI and AST heuristics engine."
-            badge={{ text: `${filteredRepos.length} Repositories`, variant: 'primary' }}
+            badge={{ text: `${filteredRepos.length} repos`, variant: 'primary' }}
           >
             <button
               onClick={loadData}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#111722] hover:bg-[#151B26] border border-white/[0.08] text-[#94A3B8] hover:text-[#F8FAFC] transition-colors"
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-medium bg-[#131720] hover:bg-[#181F2C] border border-white/[0.07] text-[#94A3B8] hover:text-[#F1F5F9] transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               Sync GitHub
             </button>
             <button
               onClick={() => alert('Connect your GitHub account in Settings to import more repos.')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#7C3AED] hover:bg-[#8B5CF6] text-white transition-colors"
+              className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg text-[12px] font-medium bg-[#7C3AED] hover:bg-[#8B5CF6] text-white transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               Import Repository
@@ -94,64 +94,66 @@ export default function ProjectsPage() {
           </PageHeader>
 
           {/* Top Metrics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <StatCard
-              label="Analyzed Codebases"
+              label="Analyzed codebases"
               value={filteredRepos.length}
               icon={FolderGit2}
               iconColor="text-[#7C3AED]"
-              subtitle="100% AST Passed"
+              subtitle="100% AST passed"
             />
             <StatCard
-              label="Average Health Score"
+              label="Average health score"
               value="94.2%"
               trend={{ value: 'Elite', isPositive: true }}
               icon={ShieldCheck}
               iconColor="text-[#10B981]"
-              subtitle="Zero high severity flaws"
+              subtitle="Zero high-severity flaws"
             />
             <StatCard
-              label="Total Stars"
+              label="Total stars"
               value={filteredRepos.reduce((acc, r) => acc + (r.stars || 0), 0)}
               icon={Star}
               iconColor="text-[#F59E0B]"
               subtitle="Open-source engagement"
             />
             <StatCard
-              label="Active Languages"
-              value="3 Major"
+              label="Active languages"
+              value="3 major"
               icon={GitBranch}
-              iconColor="text-[#38BDF8]"
+              iconColor="text-[#06B6D4]"
               subtitle="TypeScript, Rust, Python"
             />
           </div>
 
-          {/* Search & Filter Toolbar */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#0D121A] border border-white/[0.08] p-3 rounded-xl">
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+          {/* Search & Filter Toolbar — no wrapper container */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-1 overflow-x-auto">
               {languages.map((lang) => (
                 <button
                   key={lang}
                   onClick={() => setSelectedLanguage(lang)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                  className={[
+                    'h-8 px-3 rounded-lg text-[12px] font-medium whitespace-nowrap transition-colors',
                     selectedLanguage === lang
                       ? 'bg-[#7C3AED] text-white'
-                      : 'text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/[0.04]'
-                  }`}
+                      : 'text-[#64748B] hover:text-[#F1F5F9] hover:bg-[#181F2C]',
+                  ].join(' ')}
                 >
                   {lang}
                 </button>
               ))}
             </div>
 
-            <div className="relative w-full sm:w-64">
-              <Search className="w-3.5 h-3.5 text-[#64748B] absolute left-3 top-1/2 -translate-y-1/2" />
+            <div className="relative w-full sm:w-56">
+              <Search className="w-3.5 h-3.5 text-[#475569] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Search projects..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#111722] border border-white/[0.08] hover:border-white/[0.14] focus:border-[#7C3AED]/50 rounded-lg pl-8 pr-3 py-1.5 text-xs text-[#F8FAFC] placeholder-[#64748B] outline-none transition-all"
+                aria-label="Search projects"
+                className="w-full h-8 bg-[#131720] border border-white/[0.07] hover:border-white/[0.12] focus:border-[#7C3AED]/40 rounded-lg pl-8 pr-3 text-[12.5px] text-[#F1F5F9] placeholder-[#475569] outline-none transition-colors"
               />
             </div>
           </div>

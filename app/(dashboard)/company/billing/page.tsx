@@ -15,25 +15,85 @@ import {
   Download,
   Calendar,
   ShieldCheck,
+  Check,
+  ArrowRight,
+  AlertCircle
 } from 'lucide-react';
 
 export default function CompanyBillingPage() {
   const [profile, setProfile] = useState<any>(null);
+  const [billingPlan, setBillingPlan] = useState<any>(null);
+  const [usageSummary, setUsageSummary] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [switching, setSwitching] = useState(false);
+  const [switchMsg, setSwitchMsg] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [profRes, planRes, usageRes] = await Promise.allSettled([
+        fetch('/api/profile').then((r) => r.json()),
+        fetch('/api/billing/plan?targetType=company').then((r) => r.json()),
+        fetch('/api/billing/usage?targetType=company').then((r) => r.json()),
+      ]);
+      if (profRes.status === 'fulfilled' && profRes.value.success) {
+        setProfile(profRes.value.data.profile);
+      }
+      if (planRes.status === 'fulfilled' && planRes.value.data) {
+        setBillingPlan(planRes.value.data);
+      }
+      if (usageRes.status === 'fulfilled' && usageRes.value.data) {
+        setUsageSummary(usageRes.value.data);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetch('/api/profile')
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.success) setProfile(json.data.profile);
-      })
-      .catch(() => {});
+    loadData();
   }, []);
 
+  const handlePlanChange = async (planId: string) => {
+    setSwitching(true);
+    setSwitchMsg(null);
+    try {
+      const res = await fetch('/api/billing/subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId, action: 'upgrade', targetType: 'company' }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setSwitchMsg({ ok: true, msg: json.data?.message || 'Plan updated successfully' });
+        await loadData();
+      } else {
+        setSwitchMsg({ ok: false, msg: json.error || 'Failed to update plan' });
+      }
+    } catch {
+      setSwitchMsg({ ok: false, msg: 'Network error updating plan' });
+    } finally {
+      setSwitching(false);
+    }
+  };
+
   const invoices = [
-    { id: 'INV-2026-003', date: 'Feb 1, 2026', amount: '$499.00', status: 'Paid', plan: 'Enterprise Hiring Suite' },
-    { id: 'INV-2026-002', date: 'Jan 1, 2026', amount: '$499.00', status: 'Paid', plan: 'Enterprise Hiring Suite' },
-    { id: 'INV-2025-012', date: 'Dec 1, 2025', amount: '$499.00', status: 'Paid', plan: 'Enterprise Hiring Suite' },
+    { id: 'INV-2026-003', date: 'Feb 1, 2026', amount: '$199.00', status: 'Paid', plan: 'Company Hiring Workspace' },
+    { id: 'INV-2026-002', date: 'Jan 1, 2026', amount: '$199.00', status: 'Paid', plan: 'Company Hiring Workspace' },
+    { id: 'INV-2025-012', date: 'Dec 1, 2025', amount: '$199.00', status: 'Paid', plan: 'Company Hiring Workspace' },
   ];
+
+  const currentPlan = billingPlan?.currentPlan || {
+    name: 'Company Hiring Workspace',
+    priceMonthly: 199,
+    features: [
+      'Unlimited Developer DCC & Trust Score Search',
+      '500 Direct Candidate Evidence Audits / mo',
+      'Side-by-Side Candidate AST Capability Comparison',
+      'Host up to 5 Technical Verification Challenges / mo',
+      '5 Recruiter & Hiring Manager Seats',
+    ],
+  };
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#070A0F] text-[#F8FAFC]">
@@ -44,40 +104,53 @@ export default function CompanyBillingPage() {
 
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-5xl w-full mx-auto space-y-6">
           <PageHeader
-            title="Billing & Subscription Plans"
-            description="Manage company recruiting tier, seat allocations, and verified talent search credits."
-            badge={{ text: 'Active Subscription', variant: 'cyan' }}
+            title="Company Billing & Entitlements"
+            description="Manage your enterprise recruiting tier, seat allocations, challenge hosting, and candidate search limits."
+            badge={{ text: 'Company Subscription Active', variant: 'cyan' }}
           />
+
+          {switchMsg && (
+            <div
+              className={`p-3.5 rounded-xl flex items-center gap-2.5 text-xs border ${
+                switchMsg.ok
+                  ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/25'
+                  : 'bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/25'
+              }`}
+            >
+              {switchMsg.ok ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+              <span>{switchMsg.msg}</span>
+            </div>
+          )}
 
           {/* Metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               label="Current Plan"
-              value="Enterprise AI"
+              value={currentPlan.name}
               icon={Sparkles}
               iconColor="text-[#7C3AED]"
-              subtitle="Renews Mar 1, 2026"
+              subtitle={`Resets in ${usageSummary?.period?.daysRemaining ?? 30} days`}
             />
             <StatCard
-              label="Talent Search Credits"
-              value="Unlimited"
+              label="Candidate Searches"
+              value={`${usageSummary?.metrics?.candidate_searches?.used ?? 45} / 500`}
               icon={Zap}
               iconColor="text-[#10B981]"
-              subtitle="Full AST access"
+              subtitle="Direct candidate audits"
             />
             <StatCard
               label="Active Seats"
-              value="8 / 15 Seats"
+              value="5 Recruiter Seats"
               icon={Building2}
               iconColor="text-[#38BDF8]"
-              subtitle="7 available invites"
+              subtitle="Full team collaboration"
             />
             <StatCard
-              label="Monthly Spend"
-              value="$499 / mo"
+              label="Monthly Billing"
+              value={`$${currentPlan.priceMonthly} / mo`}
               icon={CreditCard}
               iconColor="text-[#FBBF24]"
-              subtitle="Billed via Stripe"
+              subtitle="Billed via Mock ($0 Dev)"
             />
           </div>
 
@@ -89,30 +162,28 @@ export default function CompanyBillingPage() {
                   Active Plan Tier
                 </span>
                 <h2 className="text-xl font-bold text-[#F8FAFC]">
-                  Enterprise AI Talent Platform
+                  {currentPlan.name}
                 </h2>
               </div>
               <span className="font-mono text-2xl font-bold text-[#10B981]">
-                $499<span className="text-xs text-[#64748B] font-normal"> / month</span>
+                ${currentPlan.priceMonthly}<span className="text-xs text-[#64748B] font-normal"> / month</span>
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-[#94A3B8]">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-[#10B981]" />
-                <span>Unlimited candidate profile AST audits</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-[#10B981]" />
-                <span>Automated AI Match score breakdowns</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-[#10B981]" />
-                <span>Unlimited Kanban hiring pipeline candidates</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-[#10B981]" />
-                <span>Priority fast-track recruiter referral matching</span>
+              {currentPlan.features?.map((feat: string, idx: number) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
+                  <span>{feat}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Zero-Inflation Notice */}
+            <div className="p-3.5 rounded-xl bg-[#38BDF8]/5 border border-[#38BDF8]/20 flex items-center gap-3">
+              <ShieldCheck className="w-5 h-5 text-[#38BDF8] shrink-0" />
+              <div className="text-xs text-[#94A3B8] leading-relaxed">
+                <strong className="text-[#F8FAFC]">Integrity Guarantee:</strong> Company subscriptions unlock hiring workflow automation and search filters. They do not alter developer scores, rankings, or evidence verification.
               </div>
             </div>
           </div>
@@ -177,3 +248,4 @@ export default function CompanyBillingPage() {
     </div>
   );
 }
+

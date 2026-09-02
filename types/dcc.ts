@@ -10,6 +10,21 @@ export type SkillVerificationStatus =
   | 'not_enough_evidence';
 
 export type EvidenceStrength = 'strong' | 'moderate' | 'weak';
+export type EvidenceTier = 'strong' | 'moderate' | 'weak';
+
+export type ConfidenceLevel = 
+  | 'High Confidence' 
+  | 'Moderate Confidence' 
+  | 'Limited Evidence' 
+  | 'Insufficient Evidence';
+
+export type RepoProvenanceType = 
+  | 'original' 
+  | 'fork' 
+  | 'collaborative' 
+  | 'organization' 
+  | 'public_contribution' 
+  | 'limited_history';
 
 export type RepoContributionRole = 'owner' | 'contributor' | 'fork' | 'collaborator';
 
@@ -21,6 +36,31 @@ export type CapabilityLevel =
   | 'Advanced' 
   | 'Expert' 
   | 'Elite';
+
+export interface DccAuditEntry {
+  id: string;
+  userId: string;
+  previousScore: number;
+  newScore: number;
+  previousLevel: CapabilityLevel | string;
+  newLevel: CapabilityLevel | string;
+  confidenceTier: ConfidenceLevel;
+  triggeringEvidence: string;
+  sourceRepo?: string;
+  reviewReference?: string;
+  timestamp: string;
+}
+
+export interface CapabilityDelta {
+  userId: string;
+  sinceDate: string;
+  hasChanges: boolean;
+  strengthenedSkills: string[];
+  newProjectsAnalyzed: string[];
+  updatedCapabilities: string[];
+  unchangedCapabilities: string[];
+  summaryMessage: string;
+}
 
 export type CapabilityChangeType = 
   | 'skill_verified' 
@@ -268,6 +308,16 @@ export interface DCCFullData {
   timeline: GrowthTimelineItem[];
   growthChart: GrowthChartPoint[];
   publicUrl: string;
+  confidenceTier?: ConfidenceLevel;
+  fresherState?: boolean;
+  provenanceSummary?: {
+    originalCount: number;
+    forkCount: number;
+    collabCount: number;
+    limitedHistoryCount: number;
+  };
+  auditTrail?: DccAuditEntry[];
+  recentDelta?: CapabilityDelta;
   activityContext?: import('./activity').ContributionIntelligenceSummary;
   engineeringCapabilities?: import('./capability').DeveloperCapabilityItem[];
   integritySummary?: import('./verification').VerificationIntegritySummary;
@@ -284,6 +334,8 @@ export interface DCCPublicData {
   summary: string | null;
   verificationStatus: 'verified' | 'unverified';
   confidenceScore: number;
+  confidenceTier?: ConfidenceLevel;
+  fresherState?: boolean;
   primaryTechnologies: string[];
   dimensions: CapabilityDimensionsData;
   verifiedSkills: VerifiedSkill[];

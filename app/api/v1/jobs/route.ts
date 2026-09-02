@@ -1,30 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/drizzle';
-import { jobs } from '@/database/schema';
+import { NextRequest } from 'next/server';
+import { JobEngine } from '@/services/opportunity/engine';
+import { ApiResponse } from '@/services/api/response';
 
 export async function GET(req: NextRequest) {
   try {
-    try {
-      const activeJobs = await db.query.jobs.findMany({
-        limit: 10,
-      });
-
-      return NextResponse.json({
-        version: 'v1',
-        success: true,
-        data: activeJobs,
-      });
-    } catch {
-      // Fallback
-      return NextResponse.json({
-        version: 'v1',
-        success: true,
-        data: [
-          { id: '1', title: 'Senior TypeScript Architect', minTrustScore: 750 }
-        ]
-      });
-    }
+    const data = await JobEngine.getJobs({ limit: 10 });
+    return ApiResponse.success(data.jobs);
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 550 });
+    return ApiResponse.error('INTERNAL_SERVER_ERROR', error.message || 'Failed to retrieve jobs', { status: 500 });
   }
 }

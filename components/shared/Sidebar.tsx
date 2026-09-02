@@ -19,18 +19,12 @@ import {
   Bookmark,
   Briefcase,
   GitPullRequest,
-  BarChart3,
   Building2,
   Settings,
-  CreditCard,
-  Bell,
   ChevronLeft,
   ChevronRight,
   ExternalLink,
   ArrowLeftRight,
-  ShieldCheck,
-  Sparkles,
-  Award,
   Compass,
   MessageSquare,
 } from 'lucide-react';
@@ -47,10 +41,24 @@ export default function Sidebar({ trustScore, user }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [activeUser, setActiveUser] = useState(DUMMY_USERS[0]);
 
-  // Determine if in Company Mode vs Developer Mode
   const isCompanyPath = pathname?.startsWith('/company');
   const isRecruiterOrAdmin = activeUser.role === 'recruiter' || activeUser.role === 'admin';
-  const isCompanyMode = isCompanyPath || (isRecruiterOrAdmin && !pathname?.startsWith('/overview') && !pathname?.startsWith('/skill-dna') && !pathname?.startsWith('/skills') && !pathname?.startsWith('/projects') && !pathname?.startsWith('/github') && !pathname?.startsWith('/activity') && !pathname?.startsWith('/network') && !pathname?.startsWith('/challenges') && !pathname?.startsWith('/community') && !pathname?.startsWith('/career') && !pathname?.startsWith('/profile') && !pathname?.startsWith('/developers') && !pathname?.startsWith('/developer'));
+  const isCompanyMode =
+    isCompanyPath ||
+    (isRecruiterOrAdmin &&
+      !pathname?.startsWith('/overview') &&
+      !pathname?.startsWith('/skill-dna') &&
+      !pathname?.startsWith('/skills') &&
+      !pathname?.startsWith('/projects') &&
+      !pathname?.startsWith('/github') &&
+      !pathname?.startsWith('/activity') &&
+      !pathname?.startsWith('/network') &&
+      !pathname?.startsWith('/challenges') &&
+      !pathname?.startsWith('/community') &&
+      !pathname?.startsWith('/career') &&
+      !pathname?.startsWith('/profile') &&
+      !pathname?.startsWith('/developers') &&
+      !pathname?.startsWith('/developer'));
 
   useEffect(() => {
     if (user?.username) {
@@ -107,32 +115,82 @@ export default function Sidebar({ trustScore, user }: SidebarProps) {
   };
 
   const currentScore = trustScore?.overallScore || activeUser.trustScore.overallScore || 940;
+  const scorePercent = Math.round((currentScore / 1000) * 100);
+
+  // Nav item renderer
+  const NavItem = ({ item, activeColor }: { item: { name: string; href: string; icon: any }; activeColor: string }) => {
+    const Icon = item.icon;
+    const active = isActive(item.href);
+    return (
+      <Link
+        href={item.href}
+        aria-current={active ? 'page' : undefined}
+        title={collapsed ? item.name : undefined}
+        className={[
+          'flex items-center gap-2.5 px-2.5 py-[7px] rounded-lg text-[13px] transition-colors duration-150 relative select-none',
+          collapsed ? 'justify-center' : '',
+          active
+            ? 'bg-[rgba(124,58,237,0.10)] text-[#A78BFA] font-medium'
+            : 'text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#181F2C]',
+          activeColor === 'cyan' && active
+            ? '!bg-[rgba(6,182,212,0.10)] !text-[#67E8F9]'
+            : '',
+        ].join(' ')}
+      >
+        {/* Active indicator bar */}
+        {active && (
+          <span
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full"
+            style={{ background: activeColor === 'cyan' ? '#06B6D4' : '#7C3AED' }}
+          />
+        )}
+        <Icon
+          className={[
+            'w-4 h-4 shrink-0 transition-opacity',
+            active
+              ? activeColor === 'cyan'
+                ? 'text-[#67E8F9] opacity-100'
+                : 'text-[#A78BFA] opacity-100'
+              : 'text-[#64748B] opacity-70',
+          ].join(' ')}
+        />
+        {!collapsed && <span className="truncate">{item.name}</span>}
+      </Link>
+    );
+  };
 
   return (
     <motion.aside
-      className="relative flex flex-col bg-[#0D121A] border-r border-white/[0.08] shrink-0 z-30 transition-all duration-200 select-none min-h-[calc(100vh-56px)]"
-      animate={{ width: collapsed ? 64 : 240 }}
+      className="relative flex flex-col bg-[#0E1117] border-r border-white/[0.07] shrink-0 z-30 select-none"
+      style={{ minHeight: 'calc(100vh - 56px)' }}
+      animate={{ width: collapsed ? 52 : 240 }}
       transition={{ duration: 0.18, ease: 'easeInOut' }}
     >
-      {/* Collapse Button */}
+      {/* Collapse toggle */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-5 z-20 flex items-center justify-center w-5 h-5 rounded-full bg-[#151B26] border border-white/[0.12] hover:border-[#7C3AED]/40 hover:bg-[#1C2433] text-[#94A3B8] hover:text-[#F8FAFC] transition-all shadow-sm"
-        title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        className="absolute -right-3 top-6 z-20 flex items-center justify-center w-[22px] h-[22px] rounded-full bg-[#131720] border border-white/[0.10] hover:border-white/[0.20] text-[#64748B] hover:text-[#F1F5F9] transition-all shadow-sm"
       >
         {collapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
       </button>
 
-      {/* Mode Switcher Pill */}
-      <div className="p-3 border-b border-white/[0.06]">
+      {/* Mode indicator strip */}
+      <div
+        className="px-3 pt-3 pb-2"
+        style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+      >
         <button
           onClick={toggleMode}
-          className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-semibold transition-all border ${
-            isCompanyMode
-              ? 'bg-[#38BDF8]/10 text-[#38BDF8] border-[#38BDF8]/20 hover:bg-[#38BDF8]/15'
-              : 'bg-[#7C3AED]/10 text-[#A78BFA] border-[#7C3AED]/20 hover:bg-[#7C3AED]/15'
-          } ${collapsed ? 'justify-center px-1.5' : ''}`}
+          aria-label={isCompanyMode ? 'Switch to Developer Workspace' : 'Switch to Company Workspace'}
           title={isCompanyMode ? 'Switch to Developer Workspace' : 'Switch to Company Workspace'}
+          className={[
+            'w-full flex items-center gap-2 px-2.5 py-[7px] rounded-lg text-[12px] font-medium transition-colors border',
+            collapsed ? 'justify-center' : '',
+            isCompanyMode
+              ? 'bg-[rgba(6,182,212,0.08)] text-[#67E8F9] border-[rgba(6,182,212,0.15)] hover:bg-[rgba(6,182,212,0.12)]'
+              : 'bg-[rgba(124,58,237,0.08)] text-[#A78BFA] border-[rgba(124,58,237,0.15)] hover:bg-[rgba(124,58,237,0.12)]',
+          ].join(' ')}
         >
           <ArrowLeftRight className="w-3.5 h-3.5 shrink-0" />
           {!collapsed && (
@@ -143,151 +201,105 @@ export default function Sidebar({ trustScore, user }: SidebarProps) {
         </button>
       </div>
 
-      {/* Developer Level Mini-Card (in Developer Mode when expanded) */}
+      {/* Score mini-card (developer mode, expanded) */}
       {!isCompanyMode && !collapsed && (
-        <div className="mx-3 mt-3 p-2.5 rounded-lg bg-[#111722] border border-white/[0.06] space-y-1.5">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
-              Verified Level
-            </span>
-            <span className="font-mono text-[10px] font-bold text-[#10B981] bg-[#10B981]/10 px-1.5 py-0.2 rounded">
+        <div className="mx-3 mt-3 p-3 rounded-lg bg-[#131720] border border-white/[0.06]">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] text-[#64748B] font-medium">Verified Score</span>
+            <span
+              className="text-[10px] font-medium px-1.5 py-0.5 rounded"
+              style={{
+                background: 'rgba(16,185,129,0.10)',
+                color: '#10B981',
+              }}
+            >
               Elite
             </span>
           </div>
-          <div className="flex items-baseline justify-between">
-            <span className="font-mono text-base font-bold text-[#F8FAFC]">
+          <div className="flex items-baseline gap-1.5 mb-2">
+            <span className="text-[18px] font-semibold text-[#F1F5F9] tracking-tight leading-none">
               {currentScore}
-              <span className="text-[10px] text-[#64748B] font-normal">/1000</span>
             </span>
-            <span className="text-[10px] text-[#A78BFA] font-medium">Top 1% Rank</span>
+            <span className="text-[11px] text-[#64748B]">/1000</span>
           </div>
-          <div className="w-full h-1 bg-[#151B26] rounded-full overflow-hidden">
+          <div className="w-full h-[2px] bg-[#181F2C] rounded-full overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[#7C3AED] to-[#06B6D4]"
-              style={{ width: `${(currentScore / 1000) * 100}%` }}
+              className="h-full rounded-full bg-[#7C3AED] transition-all"
+              style={{ width: `${scorePercent}%` }}
             />
           </div>
         </div>
       )}
 
-      {/* Navigation List */}
-      <div className="flex-1 overflow-y-auto py-2 px-2 space-y-4">
+      {/* Navigation */}
+      <div className="flex-1 overflow-y-auto py-2 px-2 space-y-3">
         {isCompanyMode ? (
           <>
             <div>
               {!collapsed && (
-                <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
+                <div className="px-2.5 py-1.5 text-[10.5px] font-medium uppercase tracking-[0.05em] text-[#475569]">
                   Hiring Platform
                 </div>
               )}
-              <div className="space-y-0.5 mt-1">
-                {COMPANY_HIRING_NAV.map((item) => {
-                  const Icon = item.icon;
-                  const active = isActive(item.href);
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors ${
-                        active
-                          ? 'bg-[#38BDF8]/10 text-[#38BDF8] font-semibold'
-                          : 'text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/[0.04]'
-                      } ${collapsed ? 'justify-center' : ''}`}
-                      title={collapsed ? item.name : undefined}
-                    >
-                      <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-[#38BDF8]' : 'text-[#64748B]'}`} />
-                      {!collapsed && <span>{item.name}</span>}
-                    </Link>
-                  );
-                })}
+              <div className="space-y-0.5 mt-0.5">
+                {COMPANY_HIRING_NAV.map((item) => (
+                  <NavItem key={item.name} item={item} activeColor="cyan" />
+                ))}
               </div>
             </div>
-
             <div>
               {!collapsed && (
-                <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
+                <div className="px-2.5 py-1.5 text-[10.5px] font-medium uppercase tracking-[0.05em] text-[#475569]">
                   Organization
                 </div>
               )}
-              <div className="space-y-0.5 mt-1">
-                {COMPANY_ORG_NAV.map((item) => {
-                  const Icon = item.icon;
-                  const active = isActive(item.href);
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors ${
-                        active
-                          ? 'bg-[#38BDF8]/10 text-[#38BDF8] font-semibold'
-                          : 'text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/[0.04]'
-                      } ${collapsed ? 'justify-center' : ''}`}
-                      title={collapsed ? item.name : undefined}
-                    >
-                      <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-[#38BDF8]' : 'text-[#64748B]'}`} />
-                      {!collapsed && <span>{item.name}</span>}
-                    </Link>
-                  );
-                })}
+              <div className="space-y-0.5 mt-0.5">
+                {COMPANY_ORG_NAV.map((item) => (
+                  <NavItem key={item.name} item={item} activeColor="cyan" />
+                ))}
               </div>
             </div>
           </>
         ) : (
           <div>
             {!collapsed && (
-              <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
-                Build &bull; Prove &bull; Grow
+              <div className="px-2.5 py-1.5 text-[10.5px] font-medium uppercase tracking-[0.05em] text-[#475569]">
+                Build · Prove · Grow
               </div>
             )}
-            <div className="space-y-0.5 mt-1">
-              {DEVELOPER_NAV.map((item) => {
-                const Icon = item.icon;
-                const active = isActive(item.href);
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors ${
-                      active
-                        ? 'bg-[#7C3AED]/15 text-[#A78BFA] font-semibold'
-                        : 'text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/[0.04]'
-                    } ${collapsed ? 'justify-center' : ''}`}
-                    title={collapsed ? item.name : undefined}
-                  >
-                    <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-[#A78BFA]' : 'text-[#64748B]'}`} />
-                    {!collapsed && <span>{item.name}</span>}
-                  </Link>
-                );
-              })}
+            <div className="space-y-0.5 mt-0.5">
+              {DEVELOPER_NAV.map((item) => (
+                <NavItem key={item.name} item={item} activeColor="purple" />
+              ))}
             </div>
           </div>
         )}
       </div>
 
-      {/* Footer Profile & Status */}
-      <div className="p-2 border-t border-white/[0.06]">
+      {/* Footer */}
+      <div className="p-2" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
         {!collapsed ? (
-          <div className="flex items-center justify-between p-2 rounded-lg bg-[#111722] border border-white/[0.04]">
-            <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-[#181F2C] transition-colors">
+            <div className="flex items-center gap-2.5 min-w-0">
               <img
                 src={activeUser.avatarUrl}
-                alt=""
-                className="w-7 h-7 rounded-full object-cover border border-white/10 shrink-0"
+                alt={activeUser.name}
+                className="w-7 h-7 rounded-full object-cover border border-white/[0.08] shrink-0"
               />
               <div className="min-w-0">
-                <span className="block text-xs font-semibold text-[#F8FAFC] truncate">
+                <span className="block text-[13px] font-medium text-[#F1F5F9] truncate leading-tight">
                   {activeUser.name}
                 </span>
-                <span className="block font-mono text-[10px] text-[#64748B] truncate">
+                <span className="block text-[11px] text-[#64748B] truncate leading-tight">
                   {activeUser.role === 'recruiter'
                     ? 'Recruiter'
-                    : `Score: ${activeUser.trustScore.overallScore}`}
+                    : `Score ${activeUser.trustScore.overallScore}`}
                 </span>
               </div>
             </div>
             <Link
               href={`/u/${activeUser.username}`}
-              className="text-[#64748B] hover:text-[#A78BFA] transition-colors p-1"
+              className="text-[#64748B] hover:text-[#A78BFA] transition-colors p-1 shrink-0"
               title="View Public Profile"
             >
               <ExternalLink className="w-3.5 h-3.5" />
@@ -297,8 +309,8 @@ export default function Sidebar({ trustScore, user }: SidebarProps) {
           <div className="flex justify-center py-1">
             <img
               src={activeUser.avatarUrl}
-              alt=""
-              className="w-7 h-7 rounded-full object-cover border border-white/10"
+              alt={activeUser.name}
+              className="w-7 h-7 rounded-full object-cover border border-white/[0.08]"
               title={activeUser.name}
             />
           </div>

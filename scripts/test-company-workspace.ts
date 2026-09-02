@@ -120,7 +120,7 @@ async function runCompanyWorkspaceTests() {
     // TEST 9: Privacy Shielding (Private Developer Protection)
     console.log('\n--- 9. Testing Private Developer Protection ---');
     const privateDCC = await DeveloperCapabilityCardService.getPublicDCC('private-developer-user');
-    assert(privateDCC.notFound || privateDCC.isPrivate, 'Private developer profile cannot be exposed in workspace');
+    assert(privateDCC === null, 'Private developer profile cannot be exposed in workspace');
 
     // TEST 10: Scoring Safety & Trust Score Stability
     console.log('\n--- 10. Testing Scoring Safety ---');

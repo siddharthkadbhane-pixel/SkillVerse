@@ -674,6 +674,63 @@ export class OpportunityEngine {
       message: 'Opportunity removed from bookmarks.',
     };
   }
+
+  /**
+   * Alias helper for API v1 jobs listing
+   */
+  static async getJobs(params: {
+    q?: string;
+    locationType?: string;
+    roleType?: string;
+    minDccScore?: number;
+    page?: number;
+    limit?: number;
+  } = {}): Promise<{ jobs: OpportunityItem[]; pagination: { page: number; limit: number; total: number } }> {
+    const filter: OpportunityFilter = {
+      q: params.q,
+      workplaceType: params.locationType as any,
+      type: params.roleType as any,
+    };
+    const res = await this.getOpportunities(filter);
+    const page = params.page || 1;
+    const limit = params.limit || 20;
+    const start = (page - 1) * limit;
+    const paginated = res.opportunities.slice(start, start + limit);
+
+    return {
+      jobs: paginated,
+      pagination: {
+        page,
+        limit,
+        total: res.totalCount,
+      },
+    };
+  }
+
+  /**
+   * Alias helper for API v1 single job retrieval
+   */
+  static async getJobById(id: string, userId?: string): Promise<OpportunityItem | null> {
+    return this.getOpportunityById(id, userId);
+  }
+
+  /**
+   * Alias helper for API v1 job application
+   */
+  static async applyToJob(
+    jobId: string,
+    userId: string,
+    note?: string
+  ): Promise<{ success: boolean; application?: ApplicationItem; error?: string }> {
+    const res = await this.applyToOpportunity(userId, jobId, note);
+    return {
+      success: res.success,
+      application: res.application,
+      error: res.success ? undefined : res.message,
+    };
+  }
 }
 
+export const JobEngine = OpportunityEngine;
 export default OpportunityEngine;
+

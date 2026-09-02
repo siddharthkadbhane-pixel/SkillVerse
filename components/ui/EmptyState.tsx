@@ -23,35 +23,36 @@ export default function EmptyState({
 }: EmptyStateProps) {
   return (
     <div
-      className={`bg-[#0D121A] border border-white/[0.08] border-dashed rounded-xl p-8 sm:p-12 text-center flex flex-col items-center justify-center max-w-lg mx-auto ${className}`}
+      className={`flex flex-col items-center justify-center text-center py-16 px-6 ${className}`}
     >
-      <div className="p-3.5 rounded-xl bg-[#111722] border border-white/[0.08] mb-4 text-[#A78BFA]">
-        <Icon className="w-6 h-6" />
+      {/* Icon — simple bordered box, no colored background */}
+      <div className="flex items-center justify-center w-10 h-10 rounded-xl border border-white/[0.08] bg-[#131720] text-[#64748B] mb-4">
+        <Icon className="w-5 h-5" />
       </div>
 
-      <h3 className="text-base font-semibold text-[#F8FAFC] mb-1.5">{title}</h3>
-      <p className="text-xs text-[#94A3B8] max-w-sm mb-6 leading-relaxed">
+      <h3 className="text-[13.5px] font-medium text-[#94A3B8] mb-1.5">{title}</h3>
+      <p className="text-[12px] text-[#475569] max-w-[280px] leading-relaxed mb-6">
         {description}
       </p>
 
       {action && (
-        <div>
+        <>
           {action.href ? (
             <Link
               href={action.href}
-              className="inline-flex items-center justify-center text-xs font-semibold px-4 py-2 rounded-lg bg-[#7C3AED] hover:bg-[#8B5CF6] text-white transition-colors"
+              className="inline-flex items-center justify-center text-[12.5px] font-medium px-4 py-2 rounded-lg bg-[#7C3AED] hover:bg-[#8B5CF6] text-white transition-colors"
             >
               {action.label}
             </Link>
           ) : (
             <button
               onClick={action.onClick}
-              className="inline-flex items-center justify-center text-xs font-semibold px-4 py-2 rounded-lg bg-[#7C3AED] hover:bg-[#8B5CF6] text-white transition-colors"
+              className="inline-flex items-center justify-center text-[12.5px] font-medium px-4 py-2 rounded-lg bg-[#131720] hover:bg-[#181F2C] border border-white/[0.08] text-[#94A3B8] hover:text-[#F1F5F9] transition-colors"
             >
               {action.label}
             </button>
           )}
-        </div>
+        </>
       )}
     </div>
   );

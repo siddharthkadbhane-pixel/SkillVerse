@@ -470,22 +470,21 @@ export class CompanyWorkspaceService {
 
     for (const username of cleanUsernames) {
       const publicDCC = await DeveloperCapabilityCardService.getPublicDCC(username);
-      if (publicDCC && !publicDCC.isPrivate && publicDCC.data) {
-        const d = publicDCC.data;
+      if (publicDCC) {
         candidates.push({
-          username: d.username,
-          name: d.name || d.username,
-          avatarUrl: d.avatarUrl || 'https://avatars.githubusercontent.com/u/84218321?v=4',
-          overallScore: d.overallScore,
-          dccLevel: d.level,
-          confidenceScore: d.confidenceScore,
-          publicProjectCount: d.projectEvidence.length,
-          analyzedProjectCount: d.projectEvidence.filter(p => p.verificationMethod.includes('AST') || p.verificationMethod.includes('Audit')).length || 2,
-          topVerifiedSkills: d.verifiedSkills.map(s => ({ name: s.name, level: s.proficiencyScore, status: s.status })),
-          engineeringCapabilities: d.engineeringCapabilities || [],
+          username: publicDCC.username,
+          name: publicDCC.name || publicDCC.username,
+          avatarUrl: publicDCC.avatarUrl || 'https://avatars.githubusercontent.com/u/84218321?v=4',
+          overallScore: publicDCC.overallScore,
+          dccLevel: publicDCC.level,
+          confidenceScore: publicDCC.confidenceScore,
+          publicProjectCount: (publicDCC.projectEvidence || []).length,
+          analyzedProjectCount: (publicDCC.projectEvidence || []).filter((p: any) => p.verificationMethod?.includes('AST') || p.verificationMethod?.includes('Audit')).length || 2,
+          topVerifiedSkills: (publicDCC.verifiedSkills || []).map((s: any) => ({ name: s.name, level: s.level, status: s.status })),
+          engineeringCapabilities: publicDCC.engineeringCapabilities || [],
         });
 
-        d.verifiedSkills.forEach(s => allSkills.push(s.name));
+        (publicDCC.verifiedSkills || []).forEach((s: any) => allSkills.push(s.name));
       }
     }
 

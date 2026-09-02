@@ -7,7 +7,6 @@ import Sidebar from '@/components/shared/Sidebar';
 import RadarChartComponent from '@/components/charts/RadarChartComponent';
 import MultiLineChart from '@/components/charts/MultiLineChart';
 import ActivityItem from '@/components/ui/ActivityItem';
-import SkillChip from '@/components/ui/SkillChip';
 import DashboardGrowthSection from '@/components/dashboard/DashboardGrowthSection';
 import CareerWidget from '@/components/dashboard/CareerWidget';
 import {
@@ -16,23 +15,17 @@ import {
   FolderGit2,
   GitCommit,
   GitPullRequest,
-  TrendingUp,
-  Sparkles,
-  Award,
   Calendar,
   ChevronDown,
-  Star,
-  ExternalLink,
   CheckCircle2,
   Code2,
-  ArrowRight,
 } from 'lucide-react';
 import { DUMMY_REPOSITORIES, getDummyDCCData } from '@/lib/dummyData';
 
 export default function DeveloperOverviewPage() {
   const [profile, setProfile] = useState<any>(null);
   const [trustScore, setTrustScore] = useState<any>(null);
-  const [dateRange, setDateRange] = useState('Last 30 Days');
+  const [dateRange, setDateRange] = useState('Last 30 days');
 
   useEffect(() => {
     fetch('/api/profile')
@@ -48,224 +41,176 @@ export default function DeveloperOverviewPage() {
 
   const dcc = getDummyDCCData('00000000-0000-0000-0000-000000000001');
 
-  // 1. Radar Data for Skill DNA Snapshot (6 Technical Dimensions)
   const radarData = [
-    { dimension: 'Frontend', score: 96 },
-    { dimension: 'Backend', score: 94 },
-    { dimension: 'Database', score: 92 },
+    { dimension: 'Frontend',      score: 96 },
+    { dimension: 'Backend',       score: 94 },
+    { dimension: 'Database',      score: 92 },
     { dimension: 'Tools & DevOps', score: 88 },
     { dimension: 'CS Fundamentals', score: 95 },
-    { dimension: 'Others', score: 89 },
+    { dimension: 'Others',        score: 89 },
   ];
 
-  // 2. Activity Overview Multi-series Line Chart Data
   const activityTrendData = [
-    { date: 'Jan 1', commits: 42, contributions: 68, prs: 6 },
-    { date: 'Jan 8', commits: 56, contributions: 82, prs: 8 },
-    { date: 'Jan 15', commits: 48, contributions: 74, prs: 5 },
-    { date: 'Jan 22', commits: 70, contributions: 98, prs: 12 },
-    { date: 'Jan 29', commits: 64, contributions: 89, prs: 9 },
-    { date: 'Feb 5', commits: 88, contributions: 120, prs: 16 },
-    { date: 'Feb 12', commits: 94, contributions: 135, prs: 18 },
-    { date: 'Feb 19', commits: 82, contributions: 114, prs: 14 },
+    { date: 'Jan 1',  commits: 42,  contributions: 68,  prs: 6  },
+    { date: 'Jan 8',  commits: 56,  contributions: 82,  prs: 8  },
+    { date: 'Jan 15', commits: 48,  contributions: 74,  prs: 5  },
+    { date: 'Jan 22', commits: 70,  contributions: 98,  prs: 12 },
+    { date: 'Jan 29', commits: 64,  contributions: 89,  prs: 9  },
+    { date: 'Feb 5',  commits: 88,  contributions: 120, prs: 16 },
+    { date: 'Feb 12', commits: 94,  contributions: 135, prs: 18 },
+    { date: 'Feb 19', commits: 82,  contributions: 114, prs: 14 },
     { date: 'Feb 26', commits: 104, contributions: 148, prs: 22 },
-  ];
-
-  // 3. KPI Mini-Sparklines Data
-  const sparklineData = [
-    { value: 40 },
-    { value: 45 },
-    { value: 42 },
-    { value: 55 },
-    { value: 68 },
-    { value: 74 },
-    { value: 89 },
   ];
 
   const overallScore = trustScore?.overallScore || 940;
 
+  // KPI data — single source, no ad-hoc per-card styling
+  const kpis = [
+    {
+      label: 'Overall score',
+      value: `${overallScore / 10}`,
+      unit: '/100',
+      trend: '+4.2%',
+      trendPositive: true,
+      meta: 'Elite · Verified by AST',
+      icon: ShieldCheck,
+      iconColor: '#10B981',
+    },
+    {
+      label: 'GitHub activity',
+      value: '2,840',
+      unit: '',
+      trend: '+18% YoY',
+      trendPositive: true,
+      meta: 'Commits & contributions',
+      icon: Activity,
+      iconColor: '#06B6D4',
+    },
+    {
+      label: 'Projects',
+      value: '12',
+      unit: '',
+      trend: '100% passed',
+      trendPositive: true,
+      meta: '4 active · All AST audited',
+      icon: FolderGit2,
+      iconColor: '#7C3AED',
+    },
+    {
+      label: 'Commits',
+      value: '3,842',
+      unit: '',
+      trend: '+142/mo',
+      trendPositive: true,
+      meta: '48-day streak',
+      icon: GitCommit,
+      iconColor: '#F59E0B',
+    },
+    {
+      label: 'Pull requests',
+      value: '148',
+      unit: '',
+      trend: '98% merged',
+      trendPositive: true,
+      meta: '24 peer reviews given',
+      icon: GitPullRequest,
+      iconColor: '#A78BFA',
+    },
+  ] as const;
+
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#070A0F] text-[#F8FAFC]">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#08090D] text-[#F1F5F9]">
       <Sidebar user={profile} trustScore={trustScore} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <Navbar user={profile} breadcrumb="Overview" />
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 max-w-[1600px] w-full mx-auto space-y-5">
-          {/* HEADER */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-white/[0.06]">
+        <main className="flex-1 overflow-y-auto px-5 sm:px-6 py-5 max-w-[1600px] w-full mx-auto space-y-6">
+
+          {/* PAGE HEADER */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/[0.07]">
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#F8FAFC] flex items-center gap-2">
-                Overview <span className="text-xl">👋</span>
+              <h1 className="text-[18px] font-semibold tracking-tight text-[#F1F5F9] leading-tight">
+                Overview
               </h1>
-              <p className="text-xs text-[#94A3B8] mt-0.5">
-                Track your engineering growth, verified skills, and technical contributions in real-time.
+              <p className="text-[12.5px] text-[#64748B] mt-0.5">
+                Engineering growth, verified skills, and technical contributions — in real time.
               </p>
             </div>
-
-            {/* Date Range Selector */}
             <div className="flex items-center gap-2">
-              <div className="relative">
-                <button className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#0D121A] hover:bg-[#111722] border border-white/[0.08] text-[#94A3B8] hover:text-[#F8FAFC] transition-colors">
-                  <Calendar className="w-3.5 h-3.5 text-[#7C3AED]" />
-                  <span>{dateRange}</span>
-                  <ChevronDown className="w-3 h-3 text-[#64748B]" />
-                </button>
-              </div>
+              <button className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-medium bg-[#131720] hover:bg-[#181F2C] border border-white/[0.07] text-[#94A3B8] hover:text-[#F1F5F9] transition-colors">
+                <Calendar className="w-3.5 h-3.5 text-[#7C3AED]" />
+                {dateRange}
+                <ChevronDown className="w-3 h-3 text-[#475569]" />
+              </button>
             </div>
           </div>
 
-          {/* FIRST ROW: 5 KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
-            {/* KPI 1: Overall Score */}
-            <div className="bg-[#0D121A] border border-white/[0.08] hover:border-white/[0.14] rounded-xl p-3.5 transition-all shadow-sm flex flex-col justify-between">
-              <div className="flex items-start justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">
-                  Overall Score
-                </span>
-                <div className="p-1.5 rounded-lg bg-[#10B981]/10 text-[#10B981]">
-                  <ShieldCheck className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="my-2 flex items-baseline justify-between">
-                <span className="font-mono text-2xl font-bold text-[#F8FAFC]">
-                  {overallScore / 10}
-                  <span className="text-xs text-[#64748B] font-normal">/100</span>
-                </span>
-                <span className="font-mono text-[10px] font-bold text-[#10B981] bg-[#10B981]/10 px-1.5 py-0.2 rounded border border-[#10B981]/20">
-                  +4.2%
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-[10px] text-[#64748B]">
-                <span>Verified by AST Engine</span>
-                <span className="font-mono text-[#10B981]">Elite</span>
-              </div>
-            </div>
+          {/* KPI ROW — uniform cards, no rainbow icon badges */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {kpis.map((kpi) => {
+              const Icon = kpi.icon;
+              return (
+                <div
+                  key={kpi.label}
+                  className="bg-[#0E1117] border border-white/[0.07] rounded-xl p-4 flex flex-col gap-1.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11.5px] font-medium text-[#64748B]">{kpi.label}</span>
+                    <Icon className="w-3.5 h-3.5 shrink-0" style={{ color: kpi.iconColor }} />
+                  </div>
 
-            {/* KPI 2: GitHub Activity */}
-            <div className="bg-[#0D121A] border border-white/[0.08] hover:border-white/[0.14] rounded-xl p-3.5 transition-all shadow-sm flex flex-col justify-between">
-              <div className="flex items-start justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">
-                  GitHub Activity
-                </span>
-                <div className="p-1.5 rounded-lg bg-[#38BDF8]/10 text-[#38BDF8]">
-                  <Activity className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="my-2 flex items-baseline justify-between">
-                <span className="font-mono text-2xl font-bold text-[#F8FAFC]">
-                  2,840
-                </span>
-                <span className="font-mono text-[10px] font-bold text-[#38BDF8] bg-[#38BDF8]/10 px-1.5 py-0.2 rounded border border-[#38BDF8]/20">
-                  +18% YoY
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-[10px] text-[#64748B]">
-                <span>Commits & Contributions</span>
-                <span className="font-mono text-[#38BDF8]">Top 2%</span>
-              </div>
-            </div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-[22px] font-semibold tracking-tight text-[#F1F5F9] leading-none">
+                      {kpi.value}
+                    </span>
+                    {kpi.unit && (
+                      <span className="text-[11px] text-[#475569]">{kpi.unit}</span>
+                    )}
+                    <span
+                      className={[
+                        'text-[10.5px] font-medium px-1.5 py-0.5 rounded ml-auto',
+                        kpi.trendPositive
+                          ? 'text-[#10B981] bg-[rgba(16,185,129,0.10)]'
+                          : 'text-[#EF4444] bg-[rgba(239,68,68,0.10)]',
+                      ].join(' ')}
+                    >
+                      {kpi.trend}
+                    </span>
+                  </div>
 
-            {/* KPI 3: Projects */}
-            <div className="bg-[#0D121A] border border-white/[0.08] hover:border-white/[0.14] rounded-xl p-3.5 transition-all shadow-sm flex flex-col justify-between">
-              <div className="flex items-start justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">
-                  Projects
-                </span>
-                <div className="p-1.5 rounded-lg bg-[#7C3AED]/10 text-[#7C3AED]">
-                  <FolderGit2 className="w-4 h-4" />
+                  <p className="text-[11px] text-[#475569] truncate">{kpi.meta}</p>
                 </div>
-              </div>
-              <div className="my-2 flex items-baseline justify-between">
-                <span className="font-mono text-2xl font-bold text-[#F8FAFC]">
-                  12
-                </span>
-                <span className="font-mono text-[10px] font-bold text-[#10B981] bg-[#10B981]/10 px-1.5 py-0.2 rounded">
-                  100% Passed
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-[10px] text-[#64748B]">
-                <span>100% AST Audited</span>
-                <span className="font-mono text-[#A78BFA]">4 Active</span>
-              </div>
-            </div>
-
-            {/* KPI 4: Commits */}
-            <div className="bg-[#0D121A] border border-white/[0.08] hover:border-white/[0.14] rounded-xl p-3.5 transition-all shadow-sm flex flex-col justify-between">
-              <div className="flex items-start justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">
-                  Commits
-                </span>
-                <div className="p-1.5 rounded-lg bg-[#06B6D4]/10 text-[#06B6D4]">
-                  <GitCommit className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="my-2 flex items-baseline justify-between">
-                <span className="font-mono text-2xl font-bold text-[#F8FAFC]">
-                  3,842
-                </span>
-                <span className="font-mono text-[10px] font-bold text-[#06B6D4] bg-[#06B6D4]/10 px-1.5 py-0.2 rounded">
-                  +142 /mo
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-[10px] text-[#64748B]">
-                <span>Across 6 repositories</span>
-                <span className="font-mono text-[#F8FAFC]">48d Streak</span>
-              </div>
-            </div>
-
-            {/* KPI 5: Pull Requests */}
-            <div className="bg-[#0D121A] border border-white/[0.08] hover:border-white/[0.14] rounded-xl p-3.5 transition-all shadow-sm flex flex-col justify-between">
-              <div className="flex items-start justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">
-                  Pull Requests
-                </span>
-                <div className="p-1.5 rounded-lg bg-[#A78BFA]/10 text-[#A78BFA]">
-                  <GitPullRequest className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="my-2 flex items-baseline justify-between">
-                <span className="font-mono text-2xl font-bold text-[#F8FAFC]">
-                  148
-                </span>
-                <span className="font-mono text-[10px] font-bold text-[#10B981] bg-[#10B981]/10 px-1.5 py-0.2 rounded">
-                  98% Merged
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-[10px] text-[#64748B]">
-                <span>Peer-reviewed code</span>
-                <span className="font-mono text-[#A78BFA]">24 Reviews</span>
-              </div>
-            </div>
+              );
+            })}
           </div>
 
-          {/* SECOND SECTION (3-Column Desktop Grid: Radar Chart + Line Chart + Activity Timeline) */}
+          {/* CHARTS ROW */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            {/* Left: Skill DNA Snapshot with Radar Chart */}
-            <div className="lg:col-span-4 bg-[#0D121A] border border-white/[0.08] rounded-xl p-4 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
-                <h3 className="font-bold text-xs uppercase tracking-wider text-[#F8FAFC]">
-                  Skill DNA Snapshot
-                </h3>
+            {/* Skill DNA Radar */}
+            <div className="lg:col-span-4 bg-[#0E1117] border border-white/[0.07] rounded-xl p-4 flex flex-col">
+              <div className="flex items-center justify-between pb-3 border-b border-white/[0.07] mb-3">
+                <div>
+                  <h3 className="text-[13px] font-medium text-[#F1F5F9]">Skill DNA snapshot</h3>
+                  <p className="text-[11.5px] text-[#64748B] mt-0.5">6 technical dimensions</p>
+                </div>
                 <Link
                   href="/skill-dna"
-                  className="text-[11px] font-semibold text-[#A78BFA] hover:underline flex items-center gap-1"
+                  className="text-[11.5px] font-medium text-[#A78BFA] hover:text-[#C4B5FD] transition-colors"
                 >
-                  Explore DNA &rarr;
+                  Explore →
                 </Link>
               </div>
 
-              {/* Mathematical 6-Axis Radar Chart */}
-              <div className="py-2">
-                <RadarChartComponent data={radarData} color="#7C3AED" height={220} />
+              <div className="flex-1">
+                <RadarChartComponent data={radarData} color="#7C3AED" height={210} />
               </div>
 
-              {/* Core Skill Chips */}
-              <div className="pt-2 border-t border-white/[0.06] flex flex-wrap gap-1.5">
+              <div className="pt-3 border-t border-white/[0.07] flex flex-wrap gap-1.5">
                 {['React', 'TypeScript', 'Next.js 15', 'Rust', 'PostgreSQL'].map((s) => (
                   <span
                     key={s}
-                    className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#111722] text-[#94A3B8] border border-white/[0.04]"
+                    className="text-[11px] px-2 py-0.5 rounded bg-[#131720] text-[#64748B] border border-white/[0.05]"
                   >
                     {s}
                   </span>
@@ -273,68 +218,68 @@ export default function DeveloperOverviewPage() {
               </div>
             </div>
 
-            {/* Center: Activity Overview Multi-Series Line Chart */}
-            <div className="lg:col-span-5 bg-[#0D121A] border border-white/[0.08] rounded-xl p-4 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+            {/* Activity Chart */}
+            <div className="lg:col-span-5 bg-[#0E1117] border border-white/[0.07] rounded-xl p-4 flex flex-col">
+              <div className="flex items-center justify-between pb-3 border-b border-white/[0.07] mb-3">
                 <div>
-                  <h3 className="font-bold text-xs uppercase tracking-wider text-[#F8FAFC]">
-                    Activity Overview
-                  </h3>
-                  <span className="text-[10px] text-[#64748B]">
-                    Commits, Contributions & PR Merges
-                  </span>
+                  <h3 className="text-[13px] font-medium text-[#F1F5F9]">Activity overview</h3>
+                  <p className="text-[11.5px] text-[#64748B] mt-0.5">
+                    Commits, contributions & PR merges
+                  </p>
                 </div>
                 <Link
                   href="/github"
-                  className="text-[11px] font-semibold text-[#A78BFA] hover:underline"
+                  className="text-[11.5px] font-medium text-[#A78BFA] hover:text-[#C4B5FD] transition-colors"
                 >
-                  GitHub Telemetry &rarr;
+                  GitHub →
                 </Link>
               </div>
 
-              {/* Multi-Series Line Chart */}
-              <div className="py-2">
+              <div className="flex-1">
                 <MultiLineChart
                   data={activityTrendData}
-                  height={220}
+                  height={210}
                   series={[
-                    { key: 'commits', label: 'Commits', color: '#7C3AED' },
-                    { key: 'contributions', label: 'Contributions', color: '#38BDF8' },
-                    { key: 'prs', label: 'PRs', color: '#10B981' },
+                    { key: 'commits',       label: 'Commits',       color: '#7C3AED' },
+                    { key: 'contributions', label: 'Contributions', color: '#06B6D4' },
+                    { key: 'prs',           label: 'PRs',           color: '#10B981' },
                   ]}
                 />
               </div>
 
-              <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-xs text-[#94A3B8]">
-                <span>Continuous streak: <strong className="text-[#10B981] font-mono">48 days</strong></span>
-                <span>Velocity: <strong className="text-white font-mono">+22%</strong></span>
+              <div className="pt-3 border-t border-white/[0.07] flex items-center justify-between text-[11.5px] text-[#64748B]">
+                <span>
+                  Continuous streak:{' '}
+                  <strong className="text-[#10B981] font-medium">48 days</strong>
+                </span>
+                <span>
+                  Velocity: <strong className="text-[#F1F5F9] font-medium">+22%</strong>
+                </span>
               </div>
             </div>
 
-            {/* Right: Recent Activity Vertical Timeline */}
-            <div className="lg:col-span-3 bg-[#0D121A] border border-white/[0.08] rounded-xl p-4 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
-                <h3 className="font-bold text-xs uppercase tracking-wider text-[#F8FAFC]">
-                  Recent Activity
-                </h3>
+            {/* Recent Activity */}
+            <div className="lg:col-span-3 bg-[#0E1117] border border-white/[0.07] rounded-xl p-4 flex flex-col">
+              <div className="flex items-center justify-between pb-3 border-b border-white/[0.07] mb-1">
+                <h3 className="text-[13px] font-medium text-[#F1F5F9]">Recent activity</h3>
                 <Link
                   href="/activity"
-                  className="text-[11px] font-semibold text-[#A78BFA] hover:underline"
+                  className="text-[11.5px] font-medium text-[#A78BFA] hover:text-[#C4B5FD] transition-colors"
                 >
-                  View All
+                  All →
                 </Link>
               </div>
 
-              <div className="space-y-0.5 flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto space-y-0.5">
                 {[
-                  { type: 'audit', title: 'SkillVerse AST Review', desc: 'Overall: 95/100', time: '2h ago', repo: 'SkillVerse' },
-                  { type: 'commit', title: 'Raft consensus buffer pool', desc: 'Zero-alloc unsafe check', time: '5h ago', repo: 'hyperion-cache' },
-                  { type: 'pr', title: 'Merged PR #24: LLM Pruning', desc: 'Context latency -42%', time: '1d ago', repo: 'neural-orchestrator' },
-                  { type: 'achievement', title: 'Elite Level Achieved', desc: 'Sustained 940+ score', time: '2d ago', repo: 'Skill DNA' },
-                ].map((act: any, i: number) => (
+                  { type: 'audit',       title: 'SkillVerse AST Review',    desc: 'Overall: 95/100',        time: '2h ago',  repo: 'SkillVerse'         },
+                  { type: 'commit',      title: 'Raft consensus buffer pool', desc: 'Zero-alloc unsafe check', time: '5h ago',  repo: 'hyperion-cache'     },
+                  { type: 'pr',          title: 'Merged PR #24: LLM Pruning', desc: 'Context latency −42%',   time: '1d ago',  repo: 'neural-orchestrator' },
+                  { type: 'achievement', title: 'Elite Level Achieved',       desc: 'Sustained 940+ score',   time: '2d ago',  repo: 'Skill DNA'          },
+                ].map((act, i) => (
                   <ActivityItem
                     key={i}
-                    type={act.type}
+                    type={act.type as any}
                     title={act.title}
                     description={act.desc}
                     timestamp={act.time}
@@ -345,51 +290,44 @@ export default function DeveloperOverviewPage() {
             </div>
           </div>
 
-          {/* CAPABILITY GROWTH SECTION (Phase 23) */}
+          {/* CAPABILITY GROWTH */}
           <DashboardGrowthSection />
 
-          {/* THIRD SECTION (3-Column Desktop Grid: Recent Projects + Achievements + Career & Learning Intelligence) */}
+          {/* BOTTOM ROW */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            {/* Left: Recent Projects */}
-            <div className="lg:col-span-4 bg-[#0D121A] border border-white/[0.08] rounded-xl p-4 shadow-sm space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
-                <h3 className="font-bold text-xs uppercase tracking-wider text-[#F8FAFC]">
-                  Recent Verified Projects
-                </h3>
+            {/* Recent projects */}
+            <div className="lg:col-span-4 bg-[#0E1117] border border-white/[0.07] rounded-xl p-4">
+              <div className="flex items-center justify-between pb-3 border-b border-white/[0.07] mb-3">
+                <h3 className="text-[13px] font-medium text-[#F1F5F9]">Recent projects</h3>
                 <Link
                   href="/projects"
-                  className="text-[11px] font-semibold text-[#A78BFA] hover:underline"
+                  className="text-[11.5px] font-medium text-[#A78BFA] hover:text-[#C4B5FD] transition-colors"
                 >
-                  All ({DUMMY_REPOSITORIES.length}) &rarr;
+                  All ({DUMMY_REPOSITORIES.length}) →
                 </Link>
               </div>
 
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {DUMMY_REPOSITORIES.slice(0, 2).map((repo) => (
                   <div
                     key={repo.id}
-                    className="p-3 rounded-lg bg-[#111722] border border-white/[0.04] hover:border-white/[0.10] transition-all flex items-start justify-between gap-3"
+                    className="p-3 rounded-lg bg-[#131720] border border-white/[0.05] hover:border-white/[0.09] transition-colors flex items-start justify-between gap-3"
                   >
-                    <div className="space-y-1 min-w-0">
+                    <div className="min-w-0 space-y-1">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-xs text-[#F8FAFC] truncate">
-                          {repo.name}
-                        </h4>
-                        <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#10B981]/15 text-[#34D399] border border-[#10B981]/30">
+                        <h4 className="text-[12.5px] font-medium text-[#F1F5F9] truncate">{repo.name}</h4>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-[rgba(16,185,129,0.10)] text-[#10B981] shrink-0">
                           Active
                         </span>
                       </div>
-                      <p className="text-[11px] text-[#64748B] line-clamp-1">
-                        {repo.description}
-                      </p>
-                      <div className="flex items-center gap-3 text-[10px] text-[#94A3B8] font-mono pt-1">
+                      <p className="text-[11.5px] text-[#64748B] line-clamp-1">{repo.description}</p>
+                      <div className="flex items-center gap-3 text-[10.5px] text-[#475569]">
                         <span>{repo.language}</span>
                         <span>★ {repo.stars}</span>
-                        <span>Health: {repo.healthScore}%</span>
+                        <span>Health {repo.healthScore}%</span>
                       </div>
                     </div>
-
-                    <span className="font-mono text-sm font-bold text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded shrink-0">
+                    <span className="text-[13px] font-semibold text-[#10B981] shrink-0 mt-0.5">
                       {repo.overallScore}
                     </span>
                   </div>
@@ -397,51 +335,45 @@ export default function DeveloperOverviewPage() {
               </div>
             </div>
 
-            {/* Center: Achievements */}
-            <div className="lg:col-span-4 bg-[#0D121A] border border-white/[0.08] rounded-xl p-4 shadow-sm space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
-                <h3 className="font-bold text-xs uppercase tracking-wider text-[#F8FAFC]">
-                  Achievements & Proofs
-                </h3>
+            {/* Achievements */}
+            <div className="lg:col-span-4 bg-[#0E1117] border border-white/[0.07] rounded-xl p-4">
+              <div className="flex items-center justify-between pb-3 border-b border-white/[0.07] mb-3">
+                <h3 className="text-[13px] font-medium text-[#F1F5F9]">Achievements</h3>
                 <Link
                   href="/achievements"
-                  className="text-[11px] font-semibold text-[#A78BFA] hover:underline"
+                  className="text-[11.5px] font-medium text-[#A78BFA] hover:text-[#C4B5FD] transition-colors"
                 >
-                  View All &rarr;
+                  View all →
                 </Link>
               </div>
 
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {[
-                  { title: 'Elite Developer Status', desc: 'Sustained 900+ score across 5 codebases', date: 'Feb 2026', color: '#10B981' },
-                  { title: 'Zero Memory Leak Audit', desc: 'Raft consensus verified with 0 unsafe leaks', date: 'Jan 2026', color: '#7C3AED' },
-                  { title: 'Global Hackathon Finalist', desc: 'Top 1% in Distributed Raft Challenge', date: 'Dec 2025', color: '#F59E0B' },
+                  { title: 'Elite Developer Status',    desc: 'Sustained 900+ score across 5 codebases',      date: 'Feb 2026', color: '#10B981' },
+                  { title: 'Zero Memory Leak Audit',    desc: 'Raft consensus verified with 0 unsafe leaks',   date: 'Jan 2026', color: '#7C3AED' },
+                  { title: 'Global Hackathon Finalist', desc: 'Top 1% in Distributed Raft Challenge',          date: 'Dec 2025', color: '#F59E0B' },
                 ].map((ach, i) => (
                   <div
                     key={i}
-                    className="p-2.5 rounded-lg bg-[#111722] border border-white/[0.04] flex items-start gap-2.5"
+                    className="p-2.5 rounded-lg bg-[#131720] border border-white/[0.05] flex items-start gap-2.5"
                   >
                     <div
-                      className="w-2 h-2 rounded-full mt-1.5 shrink-0"
+                      className="w-1.5 h-1.5 rounded-full mt-2 shrink-0"
                       style={{ backgroundColor: ach.color }}
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-bold text-xs text-[#F8FAFC] truncate">
-                          {ach.title}
-                        </h4>
-                        <span className="font-mono text-[10px] text-[#64748B]">
-                          {ach.date}
-                        </span>
+                      <div className="flex items-center justify-between gap-2">
+                        <h4 className="text-[12.5px] font-medium text-[#F1F5F9] truncate">{ach.title}</h4>
+                        <span className="text-[10.5px] text-[#475569] shrink-0">{ach.date}</span>
                       </div>
-                      <p className="text-[11px] text-[#94A3B8] truncate">{ach.desc}</p>
+                      <p className="text-[11.5px] text-[#64748B] truncate">{ach.desc}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Right: Career & Learning Intelligence Widget */}
+            {/* Career Intelligence Widget */}
             <div className="lg:col-span-4">
               <CareerWidget />
             </div>

@@ -708,34 +708,9 @@ export const knowledgeBase = pgTable('knowledge_base', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// 43. API Keys Table
-export const apiKeys = pgTable('api_keys', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
-  keyHash: text('key_hash').notNull().unique(),
-  name: varchar('name', { length: 255 }).notNull(),
-  scopes: jsonb('scopes'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
-
-// 44. Webhook Subscriptions Table
-export const webhooks = pgTable('webhooks', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
-  url: text('url').notNull(),
-  events: jsonb('events').notNull(),
-  secret: varchar('secret', { length: 255 }).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
-
-// 45. API Usage Logs Table
-export const apiUsage = pgTable('api_usage', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
-  endpoint: varchar('endpoint', { length: 255 }).notNull(),
-  statusCode: integer('status_code').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+// 43. API Keys & Personal Access Tokens Table (Phase 38 - see personalAccessTokens below)
+// 44. Webhook Subscriptions Table (Phase 38 - see webhooks below)
+// 45. API Usage Logs Table (Phase 38 - see apiUsageLogs below)
 
 // 46. AI Agents Table
 export const aiAgents = pgTable('ai_agents', {
@@ -1268,6 +1243,169 @@ export const careerRecommendationsCache = pgTable('career_recommendations_cache'
   stateHash: varchar('state_hash', { length: 100 }).notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+// 94. Personal Access Tokens Table (Phase 38 Developer API & Webhook Platform)
+export const personalAccessTokens = pgTable('personal_access_tokens', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  tokenHash: varchar('token_hash', { length: 128 }).notNull().unique(), // SHA-256 hash of raw token
+  tokenPrefix: varchar('token_prefix', { length: 30 }).notNull(), // e.g. "sk_live_...9f2"
+  scopes: jsonb('scopes').notNull(), // string[] of ApiScope
+  expiresAt: timestamp('expires_at'),
+  lastUsedAt: timestamp('last_used_at'),
+  revokedAt: timestamp('revoked_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const apiKeys = personalAccessTokens;
+
+// 95. Webhooks Table (Phase 38 Event Subscriptions)
+export const webhooks = pgTable('webhooks', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  url: text('url').notNull(),
+  events: jsonb('events').notNull(), // string[] of WebhookEventType
+  secret: varchar('secret', { length: 255 }).notNull(), // e.g. "whsec_..."
+  status: varchar('status', { length: 20 }).default('active').notNull(), // 'active' | 'disabled' | 'failing'
+  failureCount: integer('failure_count').default(0).notNull(),
+  description: text('description'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// 96. Webhook Deliveries Table (Phase 38 Bounded Retries & Audit Trail)
+export const webhookDeliveries = pgTable('webhook_deliveries', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  webhookId: uuid('webhook_id').references(() => webhooks.id, { onDelete: 'cascade' }).notNull(),
+  eventId: varchar('event_id', { length: 100 }).notNull(), // Unique UUID / Idempotency key
+  eventType: varchar('event_type', { length: 100 }).notNull(),
+  payload: jsonb('payload').notNull(),
+  statusCode: integer('status_code'),
+  durationMs: integer('duration_ms'),
+  attempt: integer('attempt').default(1).notNull(),
+  maxAttempts: integer('max_attempts').default(3).notNull(),
+  nextRetryAt: timestamp('next_retry_at'),
+  status: varchar('status', { length: 20 }).default('pending').notNull(), // 'pending' | 'success' | 'retry' | 'failed'
+  responseBody: text('response_body'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 97. API Usage Logs Table (Phase 38 Lightweight Metrics & Rate Limiting Audit)
+export const apiUsageLogs = pgTable('api_usage_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  requestId: varchar('request_id', { length: 100 }).notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  tokenId: uuid('token_id').references(() => personalAccessTokens.id, { onDelete: 'set null' }),
+  clientType: varchar('client_type', { length: 50 }).default('api').notNull(),
+  endpoint: varchar('endpoint', { length: 255 }).notNull(),
+  method: varchar('method', { length: 10 }).notNull(),
+  statusCode: integer('status_code').notNull(),
+  durationMs: integer('duration_ms').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 98. Subscriptions Table (Phase 39 Monetization & Billing Foundation)
+export const subscriptions = pgTable('subscriptions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  targetType: varchar('target_type', { length: 20 }).default('user').notNull(), // 'user' | 'company'
+  targetId: uuid('target_id').notNull(), // user_id or company_id
+  planId: varchar('plan_id', { length: 50 }).default('free').notNull(), // 'free' | 'developer_pro' | 'company' | 'enterprise'
+  status: varchar('status', { length: 20 }).default('active').notNull(), // 'active' | 'trialing' | 'past_due' | 'cancelled' | 'expired' | 'free'
+  provider: varchar('provider', { length: 50 }).default('mock').notNull(), // 'mock' | 'stripe' | 'razorpay' | 'paddle'
+  providerCustomerId: varchar('provider_customer_id', { length: 255 }),
+  providerSubscriptionId: varchar('provider_subscription_id', { length: 255 }),
+  currentPeriodStart: timestamp('current_period_start').defaultNow().notNull(),
+  currentPeriodEnd: timestamp('current_period_end').notNull(),
+  cancelAtPeriodEnd: boolean('cancel_at_period_end').default(false).notNull(),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// 99. Usage Counters Table (Phase 39 Monthly Aggregated Quotas)
+export const usageCounters = pgTable('usage_counters', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  targetType: varchar('target_type', { length: 20 }).default('user').notNull(), // 'user' | 'company'
+  targetId: uuid('target_id').notNull(), // user_id or company_id
+  metric: varchar('metric', { length: 100 }).notNull(), // 'repository_analyses' | 'ai_reviews' | 'api_requests' etc.
+  periodStart: timestamp('period_start').notNull(),
+  periodEnd: timestamp('period_end').notNull(),
+  count: integer('count').default(0).notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// 100. Billing Customers Table (Phase 39 Provider Mapping)
+export const billingCustomers = pgTable('billing_customers', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  targetType: varchar('target_type', { length: 20 }).default('user').notNull(), // 'user' | 'company'
+  targetId: uuid('target_id').notNull(), // user_id or company_id
+  provider: varchar('provider', { length: 50 }).default('mock').notNull(),
+  providerCustomerId: varchar('provider_customer_id', { length: 255 }).notNull().unique(),
+  email: varchar('email', { length: 255 }).notNull(),
+  name: varchar('name', { length: 255 }),
+  billingAddress: jsonb('billing_address'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// 101. Billing Events Table (Phase 39 Audit Trail & Webhook Ingestion)
+export const billingEvents = pgTable('billing_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: varchar('event_id', { length: 100 }).notNull().unique(),
+  provider: varchar('provider', { length: 50 }).notNull(),
+  eventType: varchar('event_type', { length: 100 }).notNull(),
+  targetType: varchar('target_type', { length: 20 }),
+  targetId: uuid('target_id'),
+  payload: jsonb('payload').notNull(),
+  status: varchar('status', { length: 20 }).default('success').notNull(), // 'success' | 'ignored' | 'failed'
+  errorMessage: text('error_message'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 102. Security & Administrative Audit Logs Table (Phase 40 Enterprise Readiness)
+export const auditLogs = pgTable('audit_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  actorId: uuid('actor_id').references(() => users.id, { onDelete: 'set null' }),
+  actorRole: varchar('actor_role', { length: 50 }).default('developer').notNull(),
+  action: varchar('action', { length: 100 }).notNull(),
+  resourceType: varchar('resource_type', { length: 100 }).notNull(),
+  resourceId: varchar('resource_id', { length: 100 }),
+  ipAddress: varchar('ip_address', { length: 50 }).default('127.0.0.1'),
+  details: jsonb('details'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 103. User Consent Records Table (Phase 41 Legal & Privacy Foundation)
+export const userConsents = pgTable('user_consents', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  purpose: varchar('purpose', { length: 50 }).notNull(),
+  granted: boolean('granted').default(true).notNull(),
+  version: varchar('version', { length: 20 }).default('v1.0').notNull(),
+  ipAddress: varchar('ip_address', { length: 50 }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  revokedAt: timestamp('revoked_at'),
+});
+
+// 104. Privacy & Grievance Requests Table (Phase 41 Legal & Privacy Foundation)
+export const privacyRequests = pgTable('privacy_requests', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  email: varchar('email', { length: 255 }).notNull(),
+  name: varchar('name', { length: 255 }),
+  requestType: varchar('request_type', { length: 50 }).notNull(), // 'data_access' | 'data_rectification' | 'account_deletion' | 'consent_withdrawal' | 'general_inquiry'
+  details: text('details').notNull(),
+  status: varchar('status', { length: 20 }).default('pending').notNull(), // 'pending' | 'in_review' | 'completed' | 'rejected'
+  responseNotes: text('response_notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  resolvedAt: timestamp('resolved_at'),
+});
+
+
+
+
 
 
 

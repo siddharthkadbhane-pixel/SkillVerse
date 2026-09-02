@@ -107,10 +107,10 @@ async function runSkillIntelligenceTests() {
     // TEST 8: Public DCC Sanitization
     console.log('\n--- 8. Testing Public DCC Sanitization ---');
     const publicDCC = await DeveloperCapabilityCardService.getPublicDCC('siddharthkadbhane-pixel');
-    assert(!publicDCC.isPrivate && !!publicDCC.data, 'Public DCC resolved successfully');
-    if (publicDCC.data?.engineeringCapabilities) {
+    assert(publicDCC !== null, 'Public DCC resolved successfully');
+    if (publicDCC?.engineeringCapabilities) {
       assert(
-        publicDCC.data.engineeringCapabilities.every(c => !c.id.includes('secret') && typeof c.whyExplanation === 'string'),
+        publicDCC.engineeringCapabilities.every((c: any) => !c.id.includes('secret') && typeof c.whyExplanation === 'string'),
         'Public capabilities sanitized with clean explainability'
       );
     }

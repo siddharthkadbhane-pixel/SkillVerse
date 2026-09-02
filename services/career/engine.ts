@@ -956,7 +956,7 @@ export class CareerEngine {
           title: ch.title,
           difficulty: ch.difficulty,
           type: ch.type,
-          reward: ch.reward || 'Verified AST Quality Proof',
+          reward: ch.prizePool || 'Verified AST Quality Proof',
           requiredSkills: ch.requiredSkills || [],
           organizer: ch.organizer?.name || 'SkillVerse Engineering',
         }));

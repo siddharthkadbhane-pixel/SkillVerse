@@ -26,39 +26,41 @@ export default function StatCard({
 }: StatCardProps) {
   return (
     <div
-      className={`bg-[#0D121A] border border-white/[0.08] hover:border-white/[0.14] rounded-xl p-5 transition-all duration-200 shadow-sm flex flex-col justify-between group ${className}`}
+      className={`bg-[#0E1117] border border-white/[0.07] rounded-xl p-4 flex flex-col gap-2 ${className}`}
     >
-      <div className="flex items-center justify-between gap-3 mb-2">
-        <span className="text-xs font-medium text-[#94A3B8] tracking-wide uppercase">
-          {label}
-        </span>
+      {/* Header row */}
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11.5px] font-medium text-[#64748B]">{label}</span>
         {Icon && (
-          <div className="p-2 rounded-lg bg-[#111722] border border-white/[0.06] group-hover:border-white/[0.10] transition-colors">
-            <Icon className={`w-4 h-4 ${iconColor}`} />
+          <div className="p-1.5 rounded-lg bg-[#131720] border border-white/[0.06]">
+            <Icon className={`w-3.5 h-3.5 ${iconColor}`} />
           </div>
         )}
       </div>
 
-      <div className="flex items-baseline gap-2 mt-1">
-        <span className="font-mono text-2xl sm:text-3xl font-bold tracking-tight text-[#F8FAFC]">
+      {/* Value row */}
+      <div className="flex items-baseline gap-2">
+        <span className="text-[22px] font-semibold tracking-tight text-[#F1F5F9] leading-none">
           {value}
         </span>
         {trend && (
           <span
-            className={`font-mono text-xs font-semibold px-1.5 py-0.5 rounded flex items-center gap-0.5 ${
+            className={[
+              'text-[11px] font-medium px-1.5 py-0.5 rounded',
               trend.isPositive !== false
-                ? 'text-[#10B981] bg-[#10B981]/10'
-                : 'text-[#EF4444] bg-[#EF4444]/10'
-            }`}
+                ? 'text-[#10B981] bg-[rgba(16,185,129,0.10)]'
+                : 'text-[#EF4444] bg-[rgba(239,68,68,0.10)]',
+            ].join(' ')}
           >
             {trend.isPositive !== false ? '↑' : '↓'} {trend.value}
           </span>
         )}
       </div>
 
+      {/* Subtitle */}
       {(subtitle || trend?.label) && (
-        <p className="text-xs text-[#64748B] mt-2 font-normal truncate">
-          {trend?.label ? `${trend.label} • ` : ''}
+        <p className="text-[11.5px] text-[#475569] truncate leading-snug">
+          {trend?.label ? `${trend.label} · ` : ''}
           {subtitle}
         </p>
       )}

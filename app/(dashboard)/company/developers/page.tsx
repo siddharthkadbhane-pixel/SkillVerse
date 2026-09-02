@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/shared/Navbar';
@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { DeveloperSearchResultItem } from '@/types/discovery';
 
-export default function RecruiterFindDevelopersPage() {
+function RecruiterFindDevelopersContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q') || '';
 
@@ -373,5 +373,21 @@ export default function RecruiterFindDevelopersPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function RecruiterFindDevelopersPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#070A0F] text-white flex items-center justify-center">
+          <div className="text-xs text-[#94A3B8] font-mono animate-pulse">
+            Loading Talent Discovery Engine...
+          </div>
+        </div>
+      }
+    >
+      <RecruiterFindDevelopersContent />
+    </Suspense>
   );
 }

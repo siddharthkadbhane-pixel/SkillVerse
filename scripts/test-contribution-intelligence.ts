@@ -84,22 +84,22 @@ async function runContributionIntelligenceTests() {
     console.log('\n--- 7. Testing DCC Payload Activity Context Integration ---');
     const fullDCC = await DeveloperCapabilityCardService.getFullDCC(TEST_USER_ID);
     assert(!!fullDCC.activityContext, 'Activity context present on DCC');
-    assert(fullDCC.activityContext.activeRepositoriesCount >= 1, 'Active repositories count reflected on DCC');
+    assert((fullDCC.activityContext?.activeRepositoriesCount ?? 0) >= 1, 'Active repositories count reflected on DCC');
     assert(fullDCC.card.overallScore > 0, `Verified overall score remains intact: ${fullDCC.card.overallScore}`);
     assert(Array.isArray(fullDCC.verifiedSkills), 'Verified skills intact');
 
     // TEST 8: Public Profile Privacy & Sanitization
     console.log('\n--- 8. Testing Public DCC Profile Activity Context ---');
     const publicDCC = await DeveloperCapabilityCardService.getPublicDCC('siddharthkadbhane-pixel');
-    assert(!publicDCC.isPrivate && !!publicDCC.data, 'Public DCC retrieved successfully');
-    if (publicDCC.data) {
-      assert(!!publicDCC.data.activityContext, 'Activity context present on Public DCC');
+    assert(publicDCC !== null, 'Public DCC retrieved successfully');
+    if (publicDCC) {
+      assert(!!publicDCC.activityContext, 'Activity context present on Public DCC');
       assert(
-        publicDCC.data.activityContext.recentActivities.every(a => a.isPublic),
+        (publicDCC.activityContext?.recentActivities || []).every((a: any) => a.isPublic),
         'All public DCC activity records are explicitly public'
       );
       assert(
-        !(publicDCC.data.activityContext as any).githubToken,
+        !(publicDCC.activityContext as any)?.githubToken,
         'Zero GitHub tokens in activity context'
       );
     }

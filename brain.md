@@ -233,5 +233,9 @@ All subsystems have been tested with comprehensive dummy datasets and verified p
 16. **Developer Community & Knowledge Network Engine** — Technical writeups, Q&A, peer code reviews, and community reputation.
 17. **AI Career & Learning Intelligence Engine (Phase 35)** — 10-role fit matrix, evidence-supported gap analysis, 4-stage roadmaps, cadenced tasks, and cached recommendations.
 18. **SkillVerse VS Code IDE Integration Engine (Phase 37)** — Token authentication, workspace repository detection, AST file inspection, DCC/Repo TreeDataProviders, and Status Bar.
+19. **Developer API & Webhook Platform (Phase 38)** — SHA-256 Personal Access Tokens (PAT), HMAC-SHA256 event subscriptions, rate limiting, and analytics.
+20. **Monetization & Billing Foundation (Phase 39)** — Free-first plan hierarchy, server-side feature entitlement gating, resource usage counters, subscription lifecycle, provider abstraction (`MockBillingProvider`), and zero-credibility-inflation guarantee.
+21. **Scale, Security & Enterprise Readiness (Phase 40)** — Global CSP & HSTS middleware, anti-IDOR server-side authorization guards, audit trail logging, structured secret log masking, GDPR data controls, and production runbooks.
+22. **Legal, Privacy & Compliance Foundation (Phase 41)** — Dedicated Privacy Policy (`/privacy`), Terms (`/terms`), Cookies (`/cookies`), Grievance Portal (`/contact/privacy`), granular consent engine (`user_consents`), data subject portability (`/api/privacy/export`), GitHub disconnect, and account anonymization.
 
 
