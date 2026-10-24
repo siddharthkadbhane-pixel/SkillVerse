@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { ApiAuthContext, ApiScope, ApiClientType } from '@/types/api';
 import { PersonalAccessTokenService } from './tokens';
-import { getSessionUser } from '@/services/supabase';
+import { getSessionUser, isDemoAuthEnabled } from '@/services/supabase';
 import { db, withDbTimeout } from '@/lib/drizzle';
 import { users } from '@/database/schema';
 import { eq } from 'drizzle-orm';
@@ -77,6 +77,16 @@ export class ApiAuthService {
 
       // Resolve user data
       const tokenUser = await this.resolveUserById(validation.tokenData.userId);
+
+      if (!tokenUser) {
+        return {
+          success: false,
+          errorStatus: 401,
+          errorCode: 'USER_NOT_FOUND',
+          errorMessage: 'User associated with this token could not be found.',
+          context: this.createEmptyContext(requestId, clientType),
+        };
+      }
 
       const context: ApiAuthContext = {
         isAuthenticated: true,
@@ -178,14 +188,14 @@ export class ApiAuthService {
     name: string;
     role: string;
     avatarUrl?: string;
-  }> {
+  } | null> {
     let dbUser: any = null;
     try {
       dbUser = await withDbTimeout(
         db.query.users.findFirst({
           where: eq(users.id, userId),
         }),
-        250
+        3000
       );
     } catch {}
 
@@ -200,14 +210,20 @@ export class ApiAuthService {
       };
     }
 
-    const dummy = getDummyUserById(userId) || DUMMY_USERS[0];
-    return {
-      id: dummy.id,
-      email: dummy.email,
-      username: dummy.username,
-      name: dummy.name,
-      role: dummy.role,
-      avatarUrl: dummy.avatarUrl,
-    };
+    if (isDemoAuthEnabled()) {
+      const dummy = getDummyUserById(userId);
+      if (dummy) {
+        return {
+          id: dummy.id,
+          email: dummy.email,
+          username: dummy.username,
+          name: dummy.name,
+          role: dummy.role,
+          avatarUrl: dummy.avatarUrl,
+        };
+      }
+    }
+
+    return null;
   }
 }

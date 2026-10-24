@@ -20,39 +20,8 @@ interface CachedTokenEntry {
   createdAt: string;
 }
 
+// In-memory token cache for local session optimization
 const inMemoryTokenStore = new Map<string, CachedTokenEntry>();
-
-// Seed default dev token for Siddharth Kadbhane test account
-(function seedDefaultDevTokens() {
-  const defaultDevToken = 'sk_live_00000000_siddharth_lead_architect_key';
-  const defaultHash = crypto.createHash('sha256').update(defaultDevToken).digest('hex');
-  inMemoryTokenStore.set(defaultHash, {
-    id: 'pat_seed_siddharth_001',
-    userId: DUMMY_USERS[0].id,
-    name: 'VS Code & CLI Developer Suite',
-    tokenHash: defaultHash,
-    tokenPrefix: 'sk_live_...key',
-    scopes: [
-      'read:profile',
-      'read:dcc',
-      'read:skills',
-      'read:evidence',
-      'read:repositories',
-      'write:repositories',
-      'write:analysis',
-      'read:opportunities',
-      'write:applications',
-      'read:challenges',
-      'write:submissions',
-      'read:teams',
-      'write:webhooks',
-    ],
-    expiresAt: null,
-    lastUsedAt: new Date().toISOString(),
-    revokedAt: null,
-    createdAt: new Date().toISOString(),
-  });
-})();
 
 export class PersonalAccessTokenService {
   /**
@@ -162,7 +131,7 @@ export class PersonalAccessTokenService {
         db.query.personalAccessTokens.findFirst({
           where: eq(personalAccessTokens.tokenHash, tokenHash),
         }),
-        250
+        3000
       );
     } catch {
       // Fall back to in-memory store

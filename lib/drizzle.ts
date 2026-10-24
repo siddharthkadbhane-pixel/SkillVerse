@@ -35,12 +35,13 @@ import { sql } from 'drizzle-orm';
 
 const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/postgres';
 
-// Fast connection settings with quick failure to prevent blocking UI requests
+// Fast connection settings configured for Neon serverless postgres
 const client = postgres(connectionString, {
   prepare: false,
-  connect_timeout: 1,
-  idle_timeout: 10,
+  connect_timeout: 15,
+  idle_timeout: 30,
   max: 10,
+  ssl: 'require',
 });
 
 export const db = drizzle(client, { schema });
@@ -72,7 +73,7 @@ export function checkDbAvailability(): boolean {
 /**
  * Executes a database query with circuit breaker and strict timeout to prevent slow blocking responses
  */
-export async function withDbTimeout<T>(promise: Promise<T>, timeoutMs = 150): Promise<T> {
+export async function withDbTimeout<T>(promise: Promise<T>, timeoutMs = 5000): Promise<T> {
   // If DB circuit breaker is open (known offline/timing out), reject instantly (0ms)
   if (!checkDbAvailability()) {
     return Promise.reject(new Error('DB currently offline (circuit breaker open)'));
@@ -122,7 +123,7 @@ export async function syncDatabaseSchema() {
   }
   try {
     // Quick connection probe with timeout before running schema migrations
-    await withDbTimeout(db.execute(sql`SELECT 1;`), 600);
+    await withDbTimeout(db.execute(sql`SELECT 1;`), 8000);
     console.log('🔄 Checking database schema updates...');
     // Ensure new reviews columns exist
     await db.execute(sql`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS health_scores jsonb;`);
@@ -994,7 +995,7 @@ export async function syncDatabaseSchema() {
         created_at timestamp NOT NULL DEFAULT now()
       );
 
-      // Phase 39 Monetization & Billing Foundation
+      -- Phase 39 Monetization & Billing Foundation
       CREATE TABLE IF NOT EXISTS subscriptions (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         target_type varchar(20) NOT NULL DEFAULT 'user',
@@ -1049,7 +1050,7 @@ export async function syncDatabaseSchema() {
         created_at timestamp NOT NULL DEFAULT now()
       );
 
-      // Phase 40 Scale, Security & Enterprise Readiness
+      -- Phase 40 Scale, Security & Enterprise Readiness
       CREATE TABLE IF NOT EXISTS audit_logs (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         actor_id uuid REFERENCES users(id) ON DELETE SET NULL,
@@ -1062,7 +1063,7 @@ export async function syncDatabaseSchema() {
         created_at timestamp NOT NULL DEFAULT now()
       );
 
-      // Phase 41 Legal, Privacy & Compliance Foundation
+      -- Phase 41 Legal, Privacy & Compliance Foundation
       CREATE TABLE IF NOT EXISTS user_consents (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id uuid REFERENCES users(id) ON DELETE CASCADE NOT NULL,
@@ -1110,7 +1111,5 @@ export async function syncDatabaseSchema() {
   }
 }
 
-
-// Run schema sync asynchronously in the background
-syncDatabaseSchema().catch(() => {});
-
+// Explicit schema synchronization must be executed deliberately via deployment migration scripts.
+// Automatic execution on module import has been eliminated to prevent DDL race conditions and production side-effects.

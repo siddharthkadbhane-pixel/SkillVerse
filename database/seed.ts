@@ -233,30 +233,41 @@ async function main() {
 
     // 5. Seed Companies & Jobs
     console.log('   [5/12] Seeding verified tech companies & career vacancies...');
+    let firstCompanyId: string | null = null;
     for (const company of DUMMY_COMPANIES) {
-      await db.insert(companies).values({
+      const [inserted] = await db.insert(companies).values({
         id: company.id.length === 36 ? company.id : undefined,
         name: company.name,
         logoUrl: company.logoUrl,
         website: company.website,
         description: company.description,
         verified: company.verified,
-      }).onConflictDoNothing();
+      }).onConflictDoNothing().returning();
+      if (!firstCompanyId && inserted?.id) {
+        firstCompanyId = inserted.id;
+      }
+    }
+
+    if (!firstCompanyId) {
+      const existing = await db.select().from(companies).limit(1);
+      firstCompanyId = existing[0]?.id || null;
     }
 
     // 6. Seed Challenges & Hackathons
     console.log('   [6/12] Seeding coding hackathons & algorithmic benchmarks...');
     for (const chal of DUMMY_CHALLENGES) {
-      await db.insert(challenges).values({
-        companyId: DUMMY_COMPANIES[0].id.length === 36 ? DUMMY_COMPANIES[0].id : '00000000-0000-0000-0000-000000000001',
-        title: chal.title,
-        description: chal.description,
-        difficulty: chal.difficulty,
-        technologies: chal.technologies,
-        timeLimit: chal.timeLimit,
-        maxParticipants: chal.maxParticipants,
-        reward: chal.prizePool,
-      }).onConflictDoNothing();
+      if (firstCompanyId) {
+        await db.insert(challenges).values({
+          companyId: firstCompanyId,
+          title: chal.title,
+          description: chal.description,
+          difficulty: chal.difficulty,
+          technologies: chal.technologies,
+          timeLimit: chal.timeLimit,
+          maxParticipants: chal.maxParticipants,
+          reward: chal.prizePool,
+        }).onConflictDoNothing();
+      }
     }
 
     // 7. Seed Community Feed Posts

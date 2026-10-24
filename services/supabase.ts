@@ -28,69 +28,72 @@ export async function createSupabaseServerClient() {
   );
 }
 
-// Get active session user info (with seamless Demo Test User support)
+// Determine if demo test authentication is explicitly permitted in this environment
+export function isDemoAuthEnabled(): boolean {
+  if (process.env.NODE_ENV === 'production') {
+    return process.env.ENABLE_DEMO_AUTH === 'true';
+  }
+  // In development and testing, enabled unless explicitly turned off
+  return process.env.ENABLE_DEMO_AUTH !== 'false';
+}
+
+// Get active session user info (strictly enforcing authenticated sessions in production)
 export async function getSessionUser() {
   try {
     const cookieStore = await cookies();
-    
-    // 1. Try real Supabase auth session (with 100ms race timeout to avoid blocking page transitions)
+
+    // 1. Try real Supabase auth session
     try {
       const supabase = await createSupabaseServerClient();
       const authPromise = supabase.auth.getUser();
       const timeoutPromise = new Promise<any>((_, reject) =>
-        setTimeout(() => reject(new Error('Supabase auth timeout')), 100)
+        setTimeout(() => reject(new Error('Supabase auth timeout')), 2500)
       );
       const { data: { user } } = await Promise.race([authPromise, timeoutPromise]);
-      if (user) {
+      if (user && user.id) {
         return user;
       }
     } catch {
-      // Supabase connection unavailable or timed out, continue instantly to demo user
+      // Supabase connection unavailable, timed out, or unauthenticated
     }
 
-    // 2. Check for active demo test user cookie
-    const demoUserId = cookieStore.get('skillverse_demo_user')?.value;
-    const testUser = getDummyUserById(demoUserId);
+    // 2. Check for active demo test user cookie ONLY if demo auth is explicitly enabled
+    if (isDemoAuthEnabled()) {
+      const demoUserId = cookieStore.get('skillverse_demo_user')?.value;
+      if (demoUserId) {
+        const testUser = DUMMY_USERS.find((u) => u.id === demoUserId);
+        if (testUser) {
+          // Return normalized user object compatible with Supabase Auth shape and SkillVerse DB
+          return {
+            id: testUser.id,
+            email: testUser.email,
+            name: testUser.name,
+            username: testUser.username,
+            avatarUrl: testUser.avatarUrl,
+            role: testUser.role,
+            githubId: testUser.githubId,
+            user_metadata: {
+              full_name: testUser.name,
+              user_name: testUser.username,
+              avatar_url: testUser.avatarUrl,
+              email: testUser.email,
+              sub: testUser.githubId,
+            },
+            app_metadata: {
+              provider: 'demo',
+              role: testUser.role,
+            },
+            createdAt: new Date().toISOString(),
+          } as any;
+        }
+      }
+    }
 
-    // Return normalized user object compatible with Supabase Auth shape and SkillVerse DB
-    return {
-      id: testUser.id,
-      email: testUser.email,
-      name: testUser.name,
-      username: testUser.username,
-      avatarUrl: testUser.avatarUrl,
-      role: testUser.role,
-      githubId: testUser.githubId,
-      user_metadata: {
-        full_name: testUser.name,
-        user_name: testUser.username,
-        avatar_url: testUser.avatarUrl,
-        email: testUser.email,
-        sub: testUser.githubId,
-      },
-      app_metadata: {
-        provider: 'demo',
-        role: testUser.role,
-      },
-      createdAt: new Date().toISOString(),
-    } as any;
+    // Unauthenticated request
+    return null;
   } catch (error) {
-    console.error('Error fetching session user, falling back to default test developer:', error);
-    const defaultUser = DUMMY_USERS[0];
-    return {
-      id: defaultUser.id,
-      email: defaultUser.email,
-      name: defaultUser.name,
-      username: defaultUser.username,
-      avatarUrl: defaultUser.avatarUrl,
-      role: defaultUser.role,
-      githubId: defaultUser.githubId,
-      user_metadata: {
-        full_name: defaultUser.name,
-        user_name: defaultUser.username,
-        avatar_url: defaultUser.avatarUrl,
-      },
-    } as any;
+    // In case of error (e.g. called outside request scope), log safe diagnostic and return null
+    return null;
   }
 }
 

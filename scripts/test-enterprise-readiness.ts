@@ -3,6 +3,7 @@
 import { AuthorizationGuard } from '../services/security/authorizer';
 import { AuditLogService } from '../services/security/audit';
 import { DataControlsService } from '../services/security/dataControls';
+import { PersonalAccessTokenService } from '../services/api/tokens';
 import { Logger } from '../lib/logger';
 import { RateLimiter } from '../lib/rate-limit';
 import { HuggingFaceService } from '../services/huggingface';
@@ -40,11 +41,19 @@ export async function runEnterpriseReadinessTests() {
   // ----------------------------------------------------
   console.log('📌 Group 1: Server-Side Authorization & Anti-IDOR Protection');
 
+  // Create isolated test token for developerUser
+  const devToken = await PersonalAccessTokenService.createToken(
+    developerUser.id,
+    'Test Runner Token',
+    ['read:profile', 'read:dcc']
+  );
+
   // Create mock request authenticated as developerUser
   const devReq = {
     headers: new Headers({
       'x-request-id': 'req_test_auth_guard_1',
       'user-agent': 'SkillVerse-Test-Runner',
+      'authorization': `Bearer ${devToken.rawToken}`,
     }),
   } as any;
 

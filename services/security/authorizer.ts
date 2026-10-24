@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ApiAuthService } from '@/services/api/auth';
 import { ApiAuthContext, ApiScope } from '@/types/api';
-import { getSessionUser } from '@/services/supabase';
+import { getSessionUser, isDemoAuthEnabled } from '@/services/supabase';
 import { db, withDbTimeout } from '@/lib/drizzle';
 import { users, companyMembers } from '@/database/schema';
 import { eq, and } from 'drizzle-orm';
@@ -114,7 +114,7 @@ export class AuthorizationGuard {
             eq(companyMembers.status, 'active')
           ),
         }),
-        100
+        3000
       );
 
       if (member) {
@@ -122,11 +122,13 @@ export class AuthorizationGuard {
         memberRole = member.role;
       }
     } catch {
-      // Fallback check against dummy user company association
-      const dummyUser = DUMMY_USERS.find((u) => u.id === userId);
-      if (dummyUser && (dummyUser.role === 'company_admin' || dummyUser.role === 'recruiter')) {
-        isMember = true;
-        memberRole = dummyUser.role;
+      // Fallback check against dummy user company association ONLY in demo/test environments
+      if (isDemoAuthEnabled()) {
+        const dummyUser = DUMMY_USERS.find((u) => u.id === userId);
+        if (dummyUser && (dummyUser.role === 'company_admin' || dummyUser.role === 'recruiter')) {
+          isMember = true;
+          memberRole = dummyUser.role;
+        }
       }
     }
 

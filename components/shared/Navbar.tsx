@@ -75,6 +75,16 @@ export default function Navbar({ user, breadcrumb }: NavbarProps) {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      await fetch('/api/auth/signout', { method: 'POST' });
+    } catch (e) {
+      console.error('Sign out failed:', e);
+    } finally {
+      window.location.href = '/login';
+    }
+  };
+
   return (
     <header
       className="h-14 sticky top-0 z-40 flex items-center justify-between gap-4 px-4 sm:px-5 shrink-0"
@@ -244,13 +254,14 @@ export default function Navbar({ user, breadcrumb }: NavbarProps) {
                 className="px-3 py-2.5 flex items-center justify-between"
                 style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}
               >
-                <Link
-                  href="/login"
-                  className="text-[11.5px] text-[#64748B] hover:text-[#F1F5F9] flex items-center gap-1.5 transition-colors"
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="text-[11.5px] text-[#64748B] hover:text-[#F1F5F9] flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <LogOut className="w-3 h-3" />
-                  Sign In Screen
-                </Link>
+                  Sign Out
+                </button>
                 <Link
                   href={`/passport/${activeUser.username}`}
                   className="text-[11.5px] text-[#A78BFA] hover:text-[#C4B5FD] font-medium transition-colors"

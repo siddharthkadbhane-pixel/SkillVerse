@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionUser } from '@/services/supabase';
+import crypto from 'crypto';
+import { getSessionUser, isDemoAuthEnabled } from '@/services/supabase';
+import { PersonalAccessTokenService } from '@/services/api/tokens';
 import { DeveloperCapabilityCardService } from '@/services/dcc/service';
 import { db } from '@/lib/drizzle';
 import { users } from '@/database/schema';
@@ -12,24 +14,35 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const { token, apiKey, username, userId } = body;
 
-    // 1. Direct API Key or Demo User authentication
     let targetUser: any = null;
 
     if (apiKey || token) {
       const authKey = (apiKey || token).trim();
-      // Look up user by token or fallback to matching dummy/db user
-      if (authKey.startsWith('sk_demo_') || authKey === 'demo-token') {
-        targetUser = DUMMY_USERS[0];
-      } else {
+
+      // Check for valid Personal Access Token
+      const validation = await PersonalAccessTokenService.validateToken(authKey);
+      if (validation.isValid && validation.tokenData) {
         const dbUser = await db.query.users.findFirst({
-          where: eq(users.id, authKey),
+          where: eq(users.id, validation.tokenData.userId),
         });
-        targetUser = dbUser || DUMMY_USERS[0];
+        targetUser = dbUser || (isDemoAuthEnabled() ? getDummyUserById(validation.tokenData.userId) : null);
+      } else if (isDemoAuthEnabled() && (authKey.startsWith('sk_demo_') || authKey === 'demo-token')) {
+        // Only allow demo token in non-production/demo-enabled environments
+        targetUser = DUMMY_USERS[0];
       }
-    } else if (username) {
-      targetUser = getDummyUserByUsername(username) || DUMMY_USERS[0];
-    } else if (userId) {
-      targetUser = getDummyUserById(userId) || DUMMY_USERS[0];
+    } else if (username || userId) {
+      // Demo impersonation parameters - strictly forbidden in production
+      if (!isDemoAuthEnabled()) {
+        return NextResponse.json(
+          { success: false, error: 'Demo user impersonation is disabled in production.' },
+          { status: 403 }
+        );
+      }
+      if (username) {
+        targetUser = getDummyUserByUsername(username);
+      } else if (userId) {
+        targetUser = getDummyUserById(userId);
+      }
     } else {
       targetUser = await getSessionUser();
     }
@@ -43,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     // Fetch live DCC score & level
     const dcc = await DeveloperCapabilityCardService.getFullDCC(targetUser.id);
-    const sessionToken = `sk_live_${targetUser.id}_${Date.now()}`;
+    const sessionToken = `sk_live_${targetUser.id}_${crypto.randomBytes(16).toString('hex')}`;
 
     Logger.info(`IDE authenticated developer: ${targetUser.username} (${dcc.card.level})`);
 
@@ -78,7 +91,29 @@ export async function GET(req: NextRequest) {
     const authHeader = req.headers.get('authorization') || '';
     const token = authHeader.replace(/^Bearer\s+/i, '').trim();
 
-    const user = await getSessionUser();
+    let user: any = null;
+
+    if (token) {
+      const validation = await PersonalAccessTokenService.validateToken(token);
+      if (validation.isValid && validation.tokenData) {
+        const dbUser = await db.query.users.findFirst({
+          where: eq(users.id, validation.tokenData.userId),
+        });
+        user = dbUser || (isDemoAuthEnabled() ? getDummyUserById(validation.tokenData.userId) : null);
+      }
+    }
+
+    if (!user) {
+      user = await getSessionUser();
+    }
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required. Please provide a valid Bearer token or session cookie.' },
+        { status: 401 }
+      );
+    }
+
     const dcc = await DeveloperCapabilityCardService.getFullDCC(user.id);
 
     return NextResponse.json({
@@ -102,3 +137,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
