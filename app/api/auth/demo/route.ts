@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { DUMMY_USERS } from '@/lib/dummyData';
 import { isDemoAuthEnabled } from '@/services/supabase';
+import { DistributedRateLimiter } from '@/services/security/distributedRateLimiter';
 
 export async function GET(req: NextRequest) {
   // Reject in production or when demo auth is disabled
@@ -59,6 +60,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { success: false, error: 'Forbidden', message: 'Demo authentication is disabled in this environment' },
       { status: 403 }
+    );
+  }
+
+  // Rate limit protection against brute force
+  const clientIp = DistributedRateLimiter.getClientIp(req);
+  const rateLimit = await DistributedRateLimiter.check(clientIp, 'auth_sensitive');
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { success: false, error: 'Too Many Requests', message: 'Too many authentication attempts. Please retry later.' },
+      { status: 429, headers: rateLimit.headers }
     );
   }
 

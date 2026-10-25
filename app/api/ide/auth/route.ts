@@ -8,8 +8,19 @@ import { users } from '@/database/schema';
 import { eq } from 'drizzle-orm';
 import { DUMMY_USERS, getDummyUserById, getDummyUserByUsername } from '@/lib/dummyData';
 import { Logger } from '@/lib/logger';
+import { DistributedRateLimiter } from '@/services/security/distributedRateLimiter';
 
 export async function POST(req: NextRequest) {
+  // Rate limit protection against credential brute-forcing
+  const clientIp = DistributedRateLimiter.getClientIp(req);
+  const rateLimit = await DistributedRateLimiter.check(clientIp, 'auth_sensitive');
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { success: false, error: 'Too Many Requests', message: 'Too many authentication attempts. Please retry later.' },
+      { status: 429, headers: rateLimit.headers }
+    );
+  }
+
   try {
     const body = await req.json().catch(() => ({}));
     const { token, apiKey, username, userId } = body;

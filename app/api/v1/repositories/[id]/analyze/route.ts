@@ -4,7 +4,7 @@ import { ApiRateLimiter } from '@/services/api/rateLimiter';
 import { ApiResponse } from '@/services/api/response';
 import { db, withDbTimeout } from '@/lib/drizzle';
 import { repositories } from '@/database/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { DUMMY_REPOSITORIES } from '@/lib/dummyData';
 import { WebhookEngine } from '@/services/webhooks/engine';
 import { ApiAnalyticsService } from '@/services/api/analytics';
@@ -48,22 +48,64 @@ export async function POST(
 
   try {
     let repo: any = null;
+    let repoExistsGlobally = false;
+
+    // 1. Ownership-constrained query
     try {
       repo = await withDbTimeout(
         db.query.repositories.findFirst({
-          where: eq(repositories.id, id),
+          where: and(eq(repositories.id, id), eq(repositories.userId, context.user.id)),
         }),
         250
       );
     } catch {}
 
+    // 2. Check global existence for 403 vs 404
     if (!repo) {
-      repo = DUMMY_REPOSITORIES.find(r => r.id === id || r.name.toLowerCase() === id.toLowerCase());
+      try {
+        const anyRepo = await withDbTimeout(
+          db.query.repositories.findFirst({
+            where: eq(repositories.id, id),
+          }),
+          250
+        );
+        if (anyRepo) {
+          repoExistsGlobally = true;
+          if (context.user.role === 'admin') repo = anyRepo;
+        }
+      } catch {}
+    }
+
+    if (!repo && !repoExistsGlobally) {
+      const dummyMatch = DUMMY_REPOSITORIES.find(r => r.id === id || r.name.toLowerCase() === id.toLowerCase());
+      if (dummyMatch) {
+        if (dummyMatch.userId === context.user.id || context.user.role === 'admin') {
+          repo = dummyMatch;
+        } else {
+          repoExistsGlobally = true;
+        }
+      }
+    }
+
+    if (repoExistsGlobally && (!repo || (repo.userId !== context.user.id && context.user.role !== 'admin'))) {
+      return ApiResponse.error('FORBIDDEN_RESOURCE_ACCESS', 'You do not have permission to analyze this repository.', {
+        status: 403,
+        requestId: context.requestId,
+        headers: rateLimit.headers,
+      });
     }
 
     if (!repo) {
       return ApiResponse.error('REPOSITORY_NOT_FOUND', `Repository with ID ${id} was not found.`, {
         status: 404,
+        requestId: context.requestId,
+        headers: rateLimit.headers,
+      });
+    }
+
+    if (repo.userId !== context.user.id && context.user.role !== 'admin') {
+      return ApiResponse.error('FORBIDDEN_RESOURCE_ACCESS', 'You do not have permission to analyze this repository.', {
+        status: 403,
         requestId: context.requestId,
         headers: rateLimit.headers,
       });

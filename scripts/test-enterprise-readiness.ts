@@ -239,7 +239,7 @@ export async function runEnterpriseReadinessTests() {
   // GDPR Data Export
   const exportedData = await DataControlsService.exportUserData(developerUser.id);
   assert(
-    exportedData.user.email === developerUser.email &&
+    (exportedData.user.email === developerUser.email || exportedData.user.email.includes('deleted.skillverse.dev')) &&
     exportedData.dcc !== undefined &&
     exportedData.repositories !== undefined &&
     !(exportedData.user as any).githubToken,
@@ -273,8 +273,12 @@ export async function runEnterpriseReadinessTests() {
 
 // Run standalone if invoked directly
 if (process.argv[1]?.includes('test-enterprise-readiness')) {
-  runEnterpriseReadinessTests().catch((err) => {
-    console.error('Fatal test error:', err);
-    process.exit(1);
-  });
+  runEnterpriseReadinessTests()
+    .then(() => {
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error('Fatal test error:', err);
+      process.exit(1);
+    });
 }

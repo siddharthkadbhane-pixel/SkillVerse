@@ -4,8 +4,8 @@ import { ApiRateLimiter } from '@/services/api/rateLimiter';
 import { ApiResponse } from '@/services/api/response';
 import { db, withDbTimeout } from '@/lib/drizzle';
 import { repositories, reviews } from '@/database/schema';
-import { eq } from 'drizzle-orm';
-import { DUMMY_REPOSITORIES } from '@/lib/dummyData';
+import { eq, and } from 'drizzle-orm';
+import { DUMMY_REPOSITORIES, DUMMY_REVIEWS } from '@/lib/dummyData';
 import { ApiAnalyticsService } from '@/services/api/analytics';
 
 export async function GET(
@@ -45,19 +45,58 @@ export async function GET(
 
   try {
     let repo: any = null;
+    let repoExistsGlobally = false;
+
+    // 1. Ownership-constrained database query
     try {
       repo = await withDbTimeout(
         db.query.repositories.findFirst({
-          where: eq(repositories.id, id),
+          where: and(eq(repositories.id, id), eq(repositories.userId, context.user.id)),
         }),
         250
       );
     } catch {}
 
+    // 2. Check if repository exists globally in DB to distinguish 403 Forbidden vs 404 Not Found
     if (!repo) {
-      repo = DUMMY_REPOSITORIES.find(r => r.id === id || r.name.toLowerCase() === id.toLowerCase());
+      try {
+        const anyRepo = await withDbTimeout(
+          db.query.repositories.findFirst({
+            where: eq(repositories.id, id),
+          }),
+          250
+        );
+        if (anyRepo) {
+          repoExistsGlobally = true;
+          if (context.user.role === 'admin') {
+            repo = anyRepo;
+          }
+        }
+      } catch {}
     }
 
+    // 3. Fallback to dummy data respecting user ownership
+    if (!repo && !repoExistsGlobally) {
+      const dummyMatch = DUMMY_REPOSITORIES.find(r => r.id === id || r.name.toLowerCase() === id.toLowerCase());
+      if (dummyMatch) {
+        if (dummyMatch.userId === context.user.id || context.user.role === 'admin') {
+          repo = dummyMatch;
+        } else {
+          repoExistsGlobally = true;
+        }
+      }
+    }
+
+    // 4. Cross-user access denial (Anti-IDOR)
+    if (repoExistsGlobally && (!repo || (repo.userId !== context.user.id && context.user.role !== 'admin'))) {
+      return ApiResponse.error('FORBIDDEN_RESOURCE_ACCESS', 'You do not have permission to access this repository.', {
+        status: 403,
+        requestId: context.requestId,
+        headers: rateLimit.headers,
+      });
+    }
+
+    // 5. Repository not found
     if (!repo) {
       return ApiResponse.error('REPOSITORY_NOT_FOUND', `Repository with ID ${id} was not found.`, {
         status: 404,
@@ -66,7 +105,16 @@ export async function GET(
       });
     }
 
-    // Fetch associated reviews safely
+    // 6. Explicit ownership sanity assertion
+    if (repo.userId !== context.user.id && context.user.role !== 'admin') {
+      return ApiResponse.error('FORBIDDEN_RESOURCE_ACCESS', 'You do not have permission to access this repository.', {
+        status: 403,
+        requestId: context.requestId,
+        headers: rateLimit.headers,
+      });
+    }
+
+    // 7. Fetch associated reviews safely ONLY for the authenticated owner's repository
     let reviewList: any[] = [];
     try {
       reviewList = await withDbTimeout(
@@ -76,6 +124,13 @@ export async function GET(
         250
       );
     } catch {}
+
+    if (reviewList.length === 0) {
+      const dummyReview = DUMMY_REVIEWS.find(r => r.repositoryId === repo.id);
+      if (dummyReview) {
+        reviewList = [dummyReview];
+      }
+    }
 
     const safeRepo = {
       id: repo.id,
