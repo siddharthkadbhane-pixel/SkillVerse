@@ -52,15 +52,15 @@ export default function GitHubPage() {
   );
 
   const getHeatmapColor = (count: number) => {
-    if (count >= 6) return 'bg-[#7C3AED]';
-    if (count >= 4) return 'bg-[#8B5CF6]/70';
-    if (count >= 2) return 'bg-[#7C3AED]/40';
-    if (count >= 1) return 'bg-[#7C3AED]/20';
-    return 'bg-[#151B26]';
+    if (count >= 6) return 'bg-[#6366F1]';
+    if (count >= 4) return 'bg-[#6366F1]/80';
+    if (count >= 2) return 'bg-[#6366F1]/40';
+    if (count >= 1) return 'bg-[#6366F1]/20';
+    return 'bg-slate-200 dark:bg-[#151B26]';
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#070A0F] text-[#F8FAFC]">
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-[#070A0F] text-slate-900 dark:text-[#F8FAFC]">
       <Sidebar user={profile} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -76,7 +76,7 @@ export default function GitHubPage() {
               href="https://github.com/siddharthkadbhane-pixel"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#111722] hover:bg-[#151B26] border border-white/[0.08] text-[#94A3B8] hover:text-[#F8FAFC] transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-[#111722] hover:bg-slate-100 dark:hover:bg-[#151B26] border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F8FAFC] transition-colors"
             >
               <Github className="w-3.5 h-3.5" />
               View on GitHub
@@ -90,14 +90,14 @@ export default function GitHubPage() {
               value="2,840"
               trend={{ value: '18% YoY', isPositive: true }}
               icon={Activity}
-              iconColor="text-[#10B981]"
+              iconColor="text-[#14B8A6]"
               subtitle="Top 2% global activity"
             />
             <StatCard
               label="Verified Commits"
               value="3,842"
               icon={GitCommit}
-              iconColor="text-[#38BDF8]"
+              iconColor="text-[#3B82F6]"
               subtitle="Signed cryptographic commits"
             />
             <StatCard
@@ -105,7 +105,7 @@ export default function GitHubPage() {
               value="148"
               trend={{ value: '98% Merge Rate', isPositive: true }}
               icon={GitPullRequest}
-              iconColor="text-[#7C3AED]"
+              iconColor="text-[#6366F1]"
               subtitle="Peer-reviewed code"
             />
             <StatCard
@@ -118,21 +118,21 @@ export default function GitHubPage() {
           </div>
 
           {/* Contribution Heatmap Card */}
-          <div className="bg-[#0D121A] border border-white/[0.08] rounded-xl p-5 sm:p-6 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-white/[0.06]">
+          <div className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-5 sm:p-6 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-200 dark:border-white/[0.06]">
               <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-[#7C3AED]" />
-                <h3 className="font-semibold text-sm text-[#F8FAFC]">
+                <Calendar className="w-4 h-4 text-[#6366F1]" />
+                <h3 className="font-semibold text-sm text-slate-900 dark:text-[#F8FAFC]">
                   Contribution Activity Matrix
                 </h3>
               </div>
-              <div className="flex items-center gap-2 text-[11px] text-[#64748B]">
+              <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-[#64748B]">
                 <span>Less</span>
-                <span className="w-2.5 h-2.5 rounded-sm bg-[#151B26]" />
-                <span className="w-2.5 h-2.5 rounded-sm bg-[#7C3AED]/20" />
-                <span className="w-2.5 h-2.5 rounded-sm bg-[#7C3AED]/40" />
-                <span className="w-2.5 h-2.5 rounded-sm bg-[#8B5CF6]/70" />
-                <span className="w-2.5 h-2.5 rounded-sm bg-[#7C3AED]" />
+                <span className="w-2.5 h-2.5 rounded-sm bg-slate-200 dark:bg-[#151B26]" />
+                <span className="w-2.5 h-2.5 rounded-sm bg-[#6366F1]/20" />
+                <span className="w-2.5 h-2.5 rounded-sm bg-[#6366F1]/40" />
+                <span className="w-2.5 h-2.5 rounded-sm bg-[#6366F1]/80" />
+                <span className="w-2.5 h-2.5 rounded-sm bg-[#6366F1]" />
                 <span>More</span>
               </div>
             </div>
@@ -154,24 +154,24 @@ export default function GitHubPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-3 border-t border-white/[0.06] text-xs text-[#94A3B8]">
-              <span>Continuous streak: <strong className="text-[#10B981] font-mono">48 days</strong></span>
-              <span>Longest streak: <strong className="text-[#F8FAFC] font-mono">112 days</strong></span>
+            <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-white/[0.06] text-xs text-slate-600 dark:text-[#94A3B8]">
+              <span>Continuous streak: <strong className="text-[#0D9488] dark:text-[#14B8A6] font-mono">48 days</strong></span>
+              <span>Longest streak: <strong className="text-slate-900 dark:text-[#F8FAFC] font-mono">112 days</strong></span>
             </div>
           </div>
 
           {/* Languages Breakdown */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-6 bg-[#0D121A] border border-white/[0.08] rounded-xl p-5 shadow-sm space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-white/[0.06]">
-                <Code2 className="w-4 h-4 text-[#38BDF8]" />
-                <h3 className="font-semibold text-sm text-[#F8FAFC]">
+            <div className="lg:col-span-6 bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-5 shadow-xs space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-white/[0.06]">
+                <Code2 className="w-4 h-4 text-[#3B82F6]" />
+                <h3 className="font-semibold text-sm text-slate-900 dark:text-[#F8FAFC]">
                   Language Distribution by Lines of Code
                 </h3>
               </div>
 
               {/* Progress Bar Stack */}
-              <div className="w-full h-3 bg-[#151B26] rounded-full overflow-hidden flex">
+              <div className="w-full h-3 bg-slate-100 dark:bg-[#151B26] rounded-full overflow-hidden flex">
                 {languageStats.map((lang, i) => (
                   <div
                     key={i}
@@ -186,35 +186,35 @@ export default function GitHubPage() {
                   <div key={i} className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: lang.color }} />
-                      <span className="font-medium text-[#F8FAFC]">{lang.name}</span>
-                      <span className="text-[11px] text-[#64748B]">({lang.lines})</span>
+                      <span className="font-medium text-slate-900 dark:text-[#F8FAFC]">{lang.name}</span>
+                      <span className="text-[11px] text-slate-500 dark:text-[#64748B]">({lang.lines})</span>
                     </div>
-                    <span className="font-mono font-bold text-[#94A3B8]">{lang.percentage}%</span>
+                    <span className="font-mono font-bold text-slate-600 dark:text-[#94A3B8]">{lang.percentage}%</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Top Repositories */}
-            <div className="lg:col-span-6 bg-[#0D121A] border border-white/[0.08] rounded-xl p-5 shadow-sm space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+            <div className="lg:col-span-6 bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-white/[0.06]">
                 <div className="flex items-center gap-2">
                   <Star className="w-4 h-4 text-[#F59E0B]" />
-                  <h3 className="font-semibold text-sm text-[#F8FAFC]">
+                  <h3 className="font-semibold text-sm text-slate-900 dark:text-[#F8FAFC]">
                     Top Starred Repositories
                   </h3>
                 </div>
-                <Link href="/projects" className="text-xs text-[#A78BFA] hover:underline font-semibold">
+                <Link href="/projects" className="text-xs text-[#6366F1] hover:underline font-semibold">
                   All Projects
                 </Link>
               </div>
 
               <div className="space-y-3">
                 {DUMMY_REPOSITORIES.slice(0, 3).map((r) => (
-                  <div key={r.id} className="p-3 bg-[#111722] border border-white/[0.04] rounded-lg flex items-center justify-between gap-3">
+                  <div key={r.id} className="p-3 bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.04] rounded-xl flex items-center justify-between gap-3">
                     <div>
-                      <h4 className="font-semibold text-xs text-[#F8FAFC] truncate">{r.name}</h4>
-                      <p className="text-[11px] text-[#64748B] line-clamp-1">{r.description}</p>
+                      <h4 className="font-semibold text-xs text-slate-900 dark:text-[#F8FAFC] truncate">{r.name}</h4>
+                      <p className="text-[11px] text-slate-500 dark:text-[#64748B] line-clamp-1">{r.description}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0 font-mono text-xs text-[#F59E0B]">
                       <Star className="w-3.5 h-3.5 fill-[#F59E0B]" />

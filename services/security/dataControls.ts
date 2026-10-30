@@ -149,7 +149,7 @@ export class DataControlsService {
     let failureReason = '';
 
     try {
-      await withDbTimeout(
+      const updatedRows = await withDbTimeout(
         db
           .update(users)
           .set({
@@ -162,10 +162,15 @@ export class DataControlsService {
             avatarUrl: null,
             updatedAt: new Date(),
           })
-          .where(eq(users.id, userId)),
-        3000
+          .where(eq(users.id, userId))
+          .returning({ id: users.id }),
+        5000
       );
-      updated = true;
+      if (Array.isArray(updatedRows) && updatedRows.length > 0) {
+        updated = true;
+      } else {
+        failureReason = 'User not found in database';
+      }
     } catch (err: any) {
       failureReason = err.message || 'Database update failed';
       Logger.error(`Database anonymization failed for user ${userId}:`, err);

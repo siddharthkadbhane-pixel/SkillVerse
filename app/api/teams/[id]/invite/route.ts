@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TeamEngine } from '@/services/team/engine';
-import { getSessionUser } from '@/services/supabase';
+import { AuthorizationGuard } from '@/services/security/authorizer';
 import { Logger } from '@/lib/logger';
 
 export async function POST(
@@ -8,12 +8,23 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
-    const sessionUser = await getSessionUser();
-    const inviterId = sessionUser?.id || '00000000-0000-0000-0000-000000000000';
+    const auth = await AuthorizationGuard.requireAuth(req);
+    if (!auth.authorized) {
+      return auth.response!;
+    }
 
+    const { id } = await params;
+    const inviterId = auth.context.user.id;
     const body = await req.json();
-    const inviteeUserId = body.inviteeUserId || '00000000-0000-0000-0000-000000000005';
+    const { inviteeUserId } = body;
+
+    if (!inviteeUserId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Bad Request',
+        message: 'inviteeUserId is required.',
+      }, { status: 400 });
+    }
 
     const result = await TeamEngine.inviteMember(id, inviterId, inviteeUserId);
 

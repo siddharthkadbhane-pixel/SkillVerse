@@ -1,19 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { CompanyWorkspaceService, DEFAULT_COMPANY_ID } from '@/services/company/workspace';
-import { getSessionUser } from '@/services/supabase';
+import { CompanyWorkspaceService } from '@/services/company/workspace';
+import { AuthorizationGuard } from '@/services/security/authorizer';
 import { Logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const companyId = searchParams.get('companyId') || DEFAULT_COMPANY_ID;
+    const companyId = searchParams.get('companyId');
     const developerUserId = searchParams.get('developerUserId');
 
-    if (!developerUserId) {
+    if (!companyId || !developerUserId) {
       return NextResponse.json({
         success: false,
-        error: 'Developer User ID is required.',
+        error: 'Bad Request',
+        message: 'Both companyId and developerUserId query parameters are required.',
       }, { status: 400 });
+    }
+
+    const auth = await AuthorizationGuard.requireCompanyMembership(req, companyId);
+    if (!auth.authorized) {
+      return auth.response!;
     }
 
     const notes = await CompanyWorkspaceService.getRecruiterNotes(companyId, developerUserId);
@@ -34,18 +40,23 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const companyId = body.companyId || DEFAULT_COMPANY_ID;
+    const companyId = body?.companyId;
     const { developerUserId, content } = body;
 
-    if (!developerUserId || !content) {
+    if (!companyId || !developerUserId || !content) {
       return NextResponse.json({
         success: false,
-        error: 'Developer User ID and note content are required.',
+        error: 'Bad Request',
+        message: 'companyId, developerUserId, and content are required.',
       }, { status: 400 });
     }
 
-    const sessionUser = await getSessionUser();
-    const recruiterId = sessionUser?.id || '00000000-0000-0000-0000-000000000002';
+    const auth = await AuthorizationGuard.requireCompanyMembership(req, companyId);
+    if (!auth.authorized) {
+      return auth.response!;
+    }
+
+    const recruiterId = auth.context.user.id;
 
     const result = await CompanyWorkspaceService.addRecruiterNote(
       companyId,

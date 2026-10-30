@@ -10,7 +10,7 @@ export async function GET(
   try {
     const { id } = await params;
     const sessionUser = await getSessionUser();
-    const userId = sessionUser?.id || '00000000-0000-0000-0000-000000000000';
+    const userId = sessionUser?.id || undefined;
 
     const challenge = await ChallengeEngine.getChallengeById(id, userId);
 

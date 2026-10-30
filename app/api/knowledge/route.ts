@@ -13,29 +13,14 @@ export async function GET(req: NextRequest) {
         success: true,
         data: articles,
       });
-    } catch {
-      // Fallback mock articles
-      return NextResponse.json({
-        success: true,
-        data: [
-          {
-            id: 'article_1',
-            title: 'Serverless Connection Limits in Next.js App Router',
-            content: 'Always define database clients outside route functions to share active connections. Configure pgBouncer connection parameters to avoid resource leaks.',
-            category: 'Database',
-            createdAt: new Date().toISOString(),
-          },
-          {
-            id: 'article_2',
-            title: 'Hugging Face API Prompt Engineering Standards',
-            content: 'Set clear context boundaries, specify output JSON structures, and use structured templates to optimize Llama code audits.',
-            category: 'AI Engineering',
-            createdAt: new Date().toISOString(),
-          }
-        ]
-      });
+    } catch (dbErr: any) {
+      console.error('[API Knowledge] Database read error:', dbErr?.message);
+      return NextResponse.json(
+        { success: false, error: 'Database operation failed: unable to fetch knowledge articles' },
+        { status: 500 }
+      );
     }
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 550 });
+    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
   }
 }

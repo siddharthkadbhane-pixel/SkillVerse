@@ -5,7 +5,7 @@ export const userRoleEnum = pgEnum('user_role', ['developer', 'recruiter', 'comp
 export const jobTypeEnum = pgEnum('job_type', ['full_time', 'part_time', 'contract', 'internship', 'remote']);
 export const appStatusEnum = pgEnum('app_status', ['applied', 'reviewing', 'shortlisted', 'rejected', 'offered']);
 
-// 1. Users Table (Linked to Supabase Auth)
+// 1. Users Table (Core Identity Model - Better Auth Compatible)
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: varchar('email', { length: 255 }).notNull().unique(),
@@ -19,6 +19,7 @@ export const users = pgTable('users', {
   website: text('website'),
   location: varchar('location', { length: 255 }),
   companyId: uuid('company_id'),
+  emailVerified: boolean('email_verified').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -1401,6 +1402,49 @@ export const privacyRequests = pgTable('privacy_requests', {
   responseNotes: text('response_notes'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   resolvedAt: timestamp('resolved_at'),
+});
+
+// ============================================================================
+// Better Auth Core Authentication Models (Phase 44 Supabase Exit)
+// ============================================================================
+
+// 105. Sessions Table (Better Auth Active Session Tracking)
+export const sessions = pgTable('sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  expiresAt: timestamp('expires_at').notNull(),
+  token: text('token').notNull().unique(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+});
+
+// 106. Accounts Table (Better Auth OAuth Providers & Credentials)
+export const accounts = pgTable('accounts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  accountId: text('account_id').notNull(),
+  providerId: text('provider_id').notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  idToken: text('id_token'),
+  accessTokenExpiresAt: timestamp('access_token_expires_at'),
+  refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
+  scope: text('scope'),
+  password: text('password'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// 107. Verifications Table (Better Auth Magic Links, OTP & Email Tokens)
+export const verifications = pgTable('verifications', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  identifier: text('identifier').notNull(),
+  value: text('value').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 

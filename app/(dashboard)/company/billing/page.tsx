@@ -96,7 +96,7 @@ export default function CompanyBillingPage() {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#070A0F] text-[#F8FAFC]">
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-[#08090D] text-slate-900 dark:text-[#F1F5F9] transition-colors">
       <Sidebar user={profile} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -155,22 +155,22 @@ export default function CompanyBillingPage() {
           </div>
 
           {/* Current Plan Card */}
-          <div className="bg-[#0D121A] border border-[#7C3AED]/40 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
+          <div className="bg-white dark:bg-[#0D121A] border border-indigo-200 dark:border-[#7C3AED]/40 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-white/[0.08]">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#A78BFA]">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#6366F1] dark:text-[#A78BFA]">
                   Active Plan Tier
                 </span>
-                <h2 className="text-xl font-bold text-[#F8FAFC]">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-[#F8FAFC]">
                   {currentPlan.name}
                 </h2>
               </div>
               <span className="font-mono text-2xl font-bold text-[#10B981]">
-                ${currentPlan.priceMonthly}<span className="text-xs text-[#64748B] font-normal"> / month</span>
+                ${currentPlan.priceMonthly}<span className="text-xs text-slate-500 dark:text-[#64748B] font-normal"> / month</span>
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-[#94A3B8]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-600 dark:text-[#94A3B8]">
               {currentPlan.features?.map((feat: string, idx: number) => (
                 <div key={idx} className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
@@ -180,18 +180,18 @@ export default function CompanyBillingPage() {
             </div>
 
             {/* Zero-Inflation Notice */}
-            <div className="p-3.5 rounded-xl bg-[#38BDF8]/5 border border-[#38BDF8]/20 flex items-center gap-3">
+            <div className="p-3.5 rounded-xl bg-sky-50 dark:bg-[#38BDF8]/5 border border-sky-200 dark:border-[#38BDF8]/20 flex items-center gap-3">
               <ShieldCheck className="w-5 h-5 text-[#38BDF8] shrink-0" />
-              <div className="text-xs text-[#94A3B8] leading-relaxed">
-                <strong className="text-[#F8FAFC]">Integrity Guarantee:</strong> Company subscriptions unlock hiring workflow automation and search filters. They do not alter developer scores, rankings, or evidence verification.
+              <div className="text-xs text-slate-600 dark:text-[#94A3B8] leading-relaxed">
+                <strong className="text-slate-900 dark:text-[#F8FAFC]">Integrity Guarantee:</strong> Company subscriptions unlock hiring workflow automation and search filters. They do not alter developer scores, rankings, or evidence verification.
               </div>
             </div>
           </div>
 
           {/* Invoices Table */}
-          <div className="bg-[#0D121A] border border-white/[0.08] rounded-xl overflow-hidden shadow-sm">
-            <div className="p-5 border-b border-white/[0.06] flex items-center justify-between">
-              <h3 className="font-bold text-sm text-[#F8FAFC]">
+          <div className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] rounded-xl overflow-hidden shadow-sm">
+            <div className="p-5 border-b border-slate-100 dark:border-white/[0.06] flex items-center justify-between">
+              <h3 className="font-bold text-sm text-slate-900 dark:text-[#F8FAFC]">
                 Billing History & Receipts
               </h3>
             </div>
@@ -199,7 +199,7 @@ export default function CompanyBillingPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-white/[0.06] bg-[#111722] text-[#64748B] font-mono text-[11px] uppercase">
+                  <tr className="border-b border-slate-100 dark:border-white/[0.06] bg-slate-50 dark:bg-[#111722] text-slate-500 dark:text-[#64748B] font-mono text-[11px] uppercase">
                     <th className="py-3 px-4">Invoice</th>
                     <th className="py-3 px-4">Date</th>
                     <th className="py-3 px-4">Plan</th>
@@ -208,19 +208,19 @@ export default function CompanyBillingPage() {
                     <th className="py-3 px-4 text-right">Receipt</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/[0.04]">
+                <tbody className="divide-y divide-slate-100 dark:divide-white/[0.04]">
                   {invoices.map((inv) => (
-                    <tr key={inv.id} className="hover:bg-[#111722]/50 transition-colors">
-                      <td className="py-3.5 px-4 font-mono font-semibold text-[#F8FAFC]">
+                    <tr key={inv.id} className="hover:bg-slate-50 dark:hover:bg-[#111722]/50 transition-colors">
+                      <td className="py-3.5 px-4 font-mono font-semibold text-slate-900 dark:text-[#F8FAFC]">
                         {inv.id}
                       </td>
-                      <td className="py-3.5 px-4 font-mono text-[#94A3B8]">
+                      <td className="py-3.5 px-4 font-mono text-slate-600 dark:text-[#94A3B8]">
                         {inv.date}
                       </td>
-                      <td className="py-3.5 px-4 text-[#94A3B8]">
+                      <td className="py-3.5 px-4 text-slate-600 dark:text-[#94A3B8]">
                         {inv.plan}
                       </td>
-                      <td className="py-3.5 px-4 font-mono font-bold text-[#F8FAFC]">
+                      <td className="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-[#F8FAFC]">
                         {inv.amount}
                       </td>
                       <td className="py-3.5 px-4">
@@ -231,7 +231,7 @@ export default function CompanyBillingPage() {
                       <td className="py-3.5 px-4 text-right">
                         <button
                           onClick={() => alert(`Downloading PDF receipt for ${inv.id}`)}
-                          className="text-xs font-semibold text-[#A78BFA] hover:underline inline-flex items-center gap-1"
+                          className="text-xs font-semibold text-[#6366F1] dark:text-[#A78BFA] hover:underline inline-flex items-center gap-1"
                         >
                           <Download className="w-3 h-3" />
                           PDF

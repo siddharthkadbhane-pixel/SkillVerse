@@ -1,6 +1,6 @@
-import { db } from '@/lib/drizzle';
+import { db, withDbTimeout } from '@/lib/drizzle';
 import { repositories, reviews, userSkills, skills, users, privacySettings } from '@/database/schema';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { 
   VerifiedSkill, 
   SkillEvidenceItem, 
@@ -15,6 +15,27 @@ import {
 import { Logger } from '@/lib/logger';
 
 export class DCCEvidenceService {
+  private static cachedMasterSkills: any[] | null = null;
+  private static masterSkillsCachedAt = 0;
+  private static readonly MASTER_SKILLS_TTL = 10 * 60 * 1000; // 10 minutes
+
+  static async getMasterSkills(): Promise<any[]> {
+    if (this.cachedMasterSkills && Date.now() - this.masterSkillsCachedAt < this.MASTER_SKILLS_TTL) {
+      return this.cachedMasterSkills;
+    }
+    try {
+      const skillsData = await withDbTimeout(db.query.skills.findMany(), 5000);
+      if (skillsData && skillsData.length > 0) {
+        this.cachedMasterSkills = skillsData;
+        this.masterSkillsCachedAt = Date.now();
+        return skillsData;
+      }
+    } catch (e: any) {
+      Logger.warn(`Failed to read master skills catalog: ${e?.message}`);
+    }
+    return this.cachedMasterSkills || [];
+  }
+
   /**
    * Categorizes a skill into a standard category
    */
@@ -179,18 +200,17 @@ export class DCCEvidenceService {
     let userRecord: any = null;
 
     try {
-      userRepos = await db.query.repositories.findMany({
-        where: eq(repositories.userId, userId),
-      });
+      const [reposRes, skillsRes, masterRes, userRes] = await Promise.all([
+        withDbTimeout(db.query.repositories.findMany({ where: eq(repositories.userId, userId) }), 5000),
+        withDbTimeout(db.query.userSkills.findMany({ where: eq(userSkills.userId, userId) }), 5000),
+        this.getMasterSkills(),
+        withDbTimeout(db.query.users.findFirst({ where: eq(users.id, userId) }), 5000),
+      ]);
 
-      userSkillRows = await db.query.userSkills.findMany({
-        where: eq(userSkills.userId, userId),
-      });
-
-      masterSkills = await db.query.skills.findMany();
-      userRecord = await db.query.users.findFirst({
-        where: eq(users.id, userId),
-      });
+      userRepos = reposRes || [];
+      userSkillRows = skillsRes || [];
+      masterSkills = masterRes || [];
+      userRecord = userRes || null;
     } catch (err: any) {
       Logger.warn(`DB read error during skills evidence compilation: ${err.message}.`);
     }
@@ -242,6 +262,23 @@ export class DCCEvidenceService {
       }
     }
 
+    // Pre-fetch all reviews for analyzed repositories in ONE batched query (N+1 elimination)
+    const analyzedRepoIds = userRepos.filter((r) => r.isAnalyzed).map((r) => r.id);
+    const reviewMap = new Map<string, any>();
+    if (analyzedRepoIds.length > 0) {
+      try {
+        const reviewRows = await withDbTimeout(
+          db.query.reviews.findMany({
+            where: inArray(reviews.repositoryId, analyzedRepoIds),
+          }),
+          5000
+        );
+        reviewRows.forEach((rev) => reviewMap.set(rev.repositoryId, rev));
+      } catch (err: any) {
+        Logger.warn(`Review batch fetch notice: ${err?.message}`);
+      }
+    }
+
     // Process repositories and AI reviews for evidence (idempotent by repository fullName)
     for (const repo of userRepos) {
       const role = this.determineContributionRole(repo, username);
@@ -273,15 +310,12 @@ export class DCCEvidenceService {
       }
 
       if (repo.isAnalyzed) {
-        try {
-          const review = await db.query.reviews.findFirst({
-            where: eq(reviews.repositoryId, repo.id),
-          });
+        const review = reviewMap.get(repo.id);
 
-          if (review) {
-            const extracted = Array.isArray(review.skillsExtracted) 
-              ? (review.skillsExtracted as any[]).map((s: any) => typeof s === 'string' ? s : s?.name).filter(Boolean)
-              : [];
+        if (review) {
+          const extracted = Array.isArray(review.skillsExtracted) 
+            ? (review.skillsExtracted as any[]).map((s: any) => typeof s === 'string' ? s : s?.name).filter(Boolean)
+            : [];
 
             const summaryMeta = repo.summary as any;
             const detectedFrameworks = summaryMeta?.framework ? [summaryMeta.framework] : [];
@@ -318,9 +352,8 @@ export class DCCEvidenceService {
               }
             }
           }
-        } catch {}
+        }
       }
-    }
 
     // If zero evidence found and user is a real empty user (Fresher State)
     if (evidenceMap.size === 0) {
@@ -604,22 +637,32 @@ export class DCCEvidenceService {
     const analyzedRepos = userRepos.filter(r => r.isAnalyzed);
     const repoEvidenceList: { repoName: string; repoFullName: string; metricScore: number; highlights: string[]; contributionRole?: RepoContributionRole }[] = [];
 
-    for (const r of analyzedRepos) {
+    const analyzedRepoIds = analyzedRepos.map(r => r.id);
+    const reviewMap = new Map<string, any>();
+    if (analyzedRepoIds.length > 0) {
       try {
-        const review = await db.query.reviews.findFirst({
-          where: eq(reviews.repositoryId, r.id),
-        });
-        if (review) {
-          const strengths = Array.isArray(review.strengths) ? (review.strengths as string[]) : [];
-          repoEvidenceList.push({
-            repoName: r.name,
-            repoFullName: r.fullName,
-            metricScore: review.overallScore || 75,
-            highlights: strengths.slice(0, 2),
-            contributionRole: this.determineContributionRole(r, username),
-          });
-        }
+        const reviewRows = await withDbTimeout(
+          db.query.reviews.findMany({
+            where: inArray(reviews.repositoryId, analyzedRepoIds),
+          }),
+          5000
+        );
+        reviewRows.forEach(rev => reviewMap.set(rev.repositoryId, rev));
       } catch {}
+    }
+
+    for (const r of analyzedRepos) {
+      const review = reviewMap.get(r.id);
+      if (review) {
+        const strengths = Array.isArray(review.strengths) ? (review.strengths as string[]) : [];
+        repoEvidenceList.push({
+          repoName: r.name,
+          repoFullName: r.fullName,
+          metricScore: review.overallScore || 75,
+          highlights: strengths.slice(0, 2),
+          contributionRole: this.determineContributionRole(r, username),
+        });
+      }
     }
 
     if (repoEvidenceList.length === 0 && (userId === '00000000-0000-0000-0000-000000000000' || userId === '00000000-0000-0000-0000-000000000001')) {
@@ -718,13 +761,22 @@ export class DCCEvidenceService {
     const username = userRecord?.username || 'developer';
     const projectSummaries: ProjectEvidenceSummary[] = [];
 
+    const analyzedRepoIds = userRepos.filter(r => r.isAnalyzed).map(r => r.id);
+    const reviewMap = new Map<string, any>();
+    if (analyzedRepoIds.length > 0) {
+      try {
+        const reviewRows = await withDbTimeout(
+          db.query.reviews.findMany({
+            where: inArray(reviews.repositoryId, analyzedRepoIds),
+          }),
+          5000
+        );
+        reviewRows.forEach(rev => reviewMap.set(rev.repositoryId, rev));
+      } catch {}
+    }
+
     for (const repo of userRepos) {
-      let review = null;
-      if (repo.isAnalyzed) {
-        try {
-          review = await db.query.reviews.findFirst({ where: eq(reviews.repositoryId, repo.id) });
-        } catch {}
-      }
+      const review = repo.isAnalyzed ? reviewMap.get(repo.id) : null;
 
       const role = this.determineContributionRole(repo, username);
       const isFork = role === 'fork';

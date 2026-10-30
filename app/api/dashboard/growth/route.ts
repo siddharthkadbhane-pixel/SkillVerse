@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionUser } from '@/services/supabase';
+import { AuthorizationGuard } from '@/services/security/authorizer';
 import { CapabilityGrowthService } from '@/services/dcc/growth';
 import { Logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await getSessionUser();
-    
-    // Default dummy ID if unauthenticated dev session
-    const userId = user?.id || '00000000-0000-0000-0000-000000000000';
+    const auth = await AuthorizationGuard.requireAuth(req);
+    if (!auth.authorized) {
+      return auth.response!;
+    }
+
+    const userId = auth.context.user.id;
 
     const summary = await CapabilityGrowthService.getDashboardGrowthSummary(userId);
 
@@ -18,6 +20,9 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     Logger.error('API Error in GET /api/dashboard/growth:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({
+      success: false,
+      error: 'An unexpected error occurred while fetching growth summary.',
+    }, { status: 500 });
   }
 }

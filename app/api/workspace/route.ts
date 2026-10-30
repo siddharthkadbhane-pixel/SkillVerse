@@ -1,133 +1,119 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/drizzle';
-import { getSessionUser } from '@/services/supabase';
+import { db, withDbTimeout } from '@/lib/drizzle';
+import { AuthorizationGuard } from '@/services/security/authorizer';
 import { workspaceProjects, workspaceTasks, notes } from '@/database/schema';
 import { eq } from 'drizzle-orm';
+import { Logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await getSessionUser();
-    
-    // Baseline mock workspace list if not logged in
-    if (!user) {
-      return NextResponse.json({
-        success: true,
-        data: {
-          projects: [
-            { id: 'proj_1', name: 'SkillVerse AI Reviewer', description: 'Refactoring prompts' }
-          ],
-          tasks: [
-            { id: 'task_1', projectId: 'proj_1', title: 'Setup tsconfig strict mode', status: 'todo' },
-            { id: 'task_2', projectId: 'proj_1', title: 'Configure Vitest test files', status: 'in_progress' }
-          ],
-          notes: [
-            { id: 'note_1', title: 'Connection Leak Notes', content: 'Use pgBouncer connection pooling to avoid serverless limit issues.' }
-          ]
-        }
-      });
+    const auth = await AuthorizationGuard.requireAuth(req);
+    if (!auth.authorized) {
+      return auth.response!;
     }
+
+    const userId = auth.context.user.id;
+
+    let userProjects: any[] = [];
+    let userNotes: any[] = [];
+    const allTasks: any[] = [];
 
     try {
-      const userProjects = await db.query.workspaceProjects.findMany({
-        where: eq(workspaceProjects.userId, user.id),
-      });
+      userProjects = await withDbTimeout(
+        db.query.workspaceProjects.findMany({
+          where: eq(workspaceProjects.userId, userId),
+        }),
+        1000
+      ) || [];
 
-      const userNotes = await db.query.notes.findMany({
-        where: eq(notes.userId, user.id),
-      });
+      userNotes = await withDbTimeout(
+        db.query.notes.findMany({
+          where: eq(notes.userId, userId),
+        }),
+        1000
+      ) || [];
 
-      const allTasks = [];
-      for (const p of userProjects) {
-        const tasks = await db.query.workspaceTasks.findMany({
-          where: eq(workspaceTasks.projectId, p.id),
-        });
-        allTasks.push(...tasks);
-      }
-
-      // If empty, insert mock values to prevent empty state
-      if (userProjects.length === 0) {
-        return NextResponse.json({
-          success: true,
-          data: {
-            projects: [
-              { id: 'proj_1', name: 'My Skillverse Workspace Project', description: 'Workspace created automatically.' }
-            ],
-            tasks: [
-              { id: 'task_1', projectId: 'proj_1', title: 'Analyze first codebase', status: 'todo' },
-              { id: 'task_2', projectId: 'proj_1', title: 'Review Skill DNA levels', status: 'done' }
-            ],
-            notes: [
-              { id: 'note_1', title: 'Workspace notes', content: 'Draft your project specifications, refactoring notes, or documentation structures.' }
-            ]
+      if (userProjects.length > 0) {
+        for (const p of userProjects) {
+          const tasks = await withDbTimeout(
+            db.query.workspaceTasks.findMany({
+              where: eq(workspaceTasks.projectId, p.id),
+            }),
+            500
+          );
+          if (tasks) {
+            allTasks.push(...tasks);
           }
-        });
+        }
       }
+    } catch {}
 
-      return NextResponse.json({
-        success: true,
-        data: {
-          projects: userProjects,
-          tasks: allTasks,
-          notes: userNotes,
-        }
-      });
-    } catch {
-      // Fallback
-      return NextResponse.json({
-        success: true,
-        data: {
-          projects: [
-            { id: 'proj_1', name: 'SkillVerse AI Reviewer', description: 'Refactoring prompts' }
-          ],
-          tasks: [
-            { id: 'task_1', projectId: 'proj_1', title: 'Setup tsconfig strict mode', status: 'todo' }
-          ],
-          notes: [
-            { id: 'note_1', title: 'Connection Leak Notes', content: 'Use pgBouncer connection pooling.' }
-          ]
-        }
-      });
-    }
+    // Return clean, unpolluted data (empty lists for zero-state users, never mock data)
+    return NextResponse.json({
+      success: true,
+      data: {
+        projects: userProjects,
+        tasks: allTasks,
+        notes: userNotes,
+      },
+    });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 550 });
+    Logger.error('API Error in GET /api/workspace:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'An unexpected error occurred while fetching workspace details.',
+    }, { status: 500 });
   }
 }
+
 export async function POST(req: NextRequest) {
   try {
-    const user = await getSessionUser();
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    const auth = await AuthorizationGuard.requireAuth(req);
+    if (!auth.authorized) {
+      return auth.response!;
     }
 
-    const { title, content } = await req.json();
+    const userId = auth.context.user.id;
+    const body = await req.json();
+    const { title, content } = body;
+
+    if (!title || !content) {
+      return NextResponse.json({
+        success: false,
+        error: 'Bad Request',
+        message: 'Title and content are required.',
+      }, { status: 400 });
+    }
 
     try {
-      const [newNote] = await db
-        .insert(notes)
-        .values({
-          userId: user.id,
-          title,
-          content,
-        })
-        .returning();
+      const [newNote] = await withDbTimeout(
+        db
+          .insert(notes)
+          .values({
+            userId,
+            title,
+            content,
+          })
+          .returning(),
+        2000
+      );
 
       return NextResponse.json({
         success: true,
         data: newNote,
       });
-    } catch {
-      // Fallback
+    } catch (dbError: any) {
+      Logger.error('Database insertion error in POST /api/workspace:', dbError);
       return NextResponse.json({
-        success: true,
-        data: {
-          id: 'note_mock_created',
-          title,
-          content,
-          createdAt: new Date().toISOString(),
-        }
-      });
+        success: false,
+        error: 'Database operation failed while creating note.',
+      }, { status: 500 });
     }
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    Logger.error('API Error in POST /api/workspace:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'An unexpected error occurred while saving note.',
+    }, { status: 500 });
   }
 }

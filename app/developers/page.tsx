@@ -137,7 +137,7 @@ function DevelopersDiscoveryContent() {
     selectedSort !== 'relevance';
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#070A0F] text-[#F8FAFC]">
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-[#070A0F] text-slate-900 dark:text-[#F8FAFC] transition-colors">
       <Sidebar user={profile} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -145,48 +145,48 @@ function DevelopersDiscoveryContent() {
 
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
           {/* Header Banner */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-br from-[#0D121A] to-[#111722] border border-white/[0.08] p-6 rounded-2xl relative overflow-hidden shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-br from-white to-slate-50 dark:from-[#0D121A] dark:to-[#111722] border border-slate-200 dark:border-white/[0.08] p-6 rounded-2xl relative overflow-hidden shadow-sm">
             <div className="space-y-1.5 z-10">
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#7C3AED]/15 border border-[#7C3AED]/30 text-[#C4B5FD] text-[11px] font-bold uppercase tracking-wider">
-                <Sparkles className="w-3.5 h-3.5 text-[#A78BFA]" />
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/20 text-[#6366F1] dark:text-[#C4B5FD] text-[11px] font-bold uppercase tracking-wider">
+                <Sparkles className="w-3.5 h-3.5 text-[#6366F1]" />
                 Proof-of-Skill Discovery Engine
               </div>
-              <h1 className="text-xl sm:text-2xl font-bold text-[#F8FAFC] tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F8FAFC] tracking-tight">
                 Discover Verified Developers
               </h1>
-              <p className="text-xs sm:text-sm text-[#94A3B8] max-w-2xl leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-[#94A3B8] max-w-2xl leading-relaxed">
                 Find developers through verified Developer Capability Cards (DCCs), AST codebase review benchmarks, and verifiable git audit trails—not unverified resume keywords.
               </p>
             </div>
 
             <div className="flex items-center gap-3 shrink-0 z-10">
               <div className="text-right hidden sm:block">
-                <div className="text-xs font-mono text-[#64748B]">VERIFICATION PIPELINE</div>
-                <div className="text-xs font-bold text-[#10B981] flex items-center gap-1 justify-end">
+                <div className="text-xs font-mono text-slate-400 dark:text-[#64748B]">VERIFICATION PIPELINE</div>
+                <div className="text-xs font-bold text-[#14B8A6] flex items-center gap-1 justify-end">
                   <ShieldCheck className="w-4 h-4" /> 100% Cryptographic Proof
                 </div>
               </div>
             </div>
 
-            <div className="absolute right-0 top-0 w-96 h-96 bg-[#7C3AED]/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute right-0 top-0 w-96 h-96 bg-[#6366F1]/5 rounded-full blur-3xl pointer-events-none" />
           </div>
 
           {/* Search & Quick Skill Filter Bar */}
           <div className="space-y-3">
             {/* Main Search Input */}
             <div className="relative">
-              <Search className="w-4 h-4 text-[#64748B] absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-slate-400 dark:text-[#64748B] absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Search by skill, developer name, username, or technology (e.g. React, TypeScript, Rust)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#0D121A] border border-white/[0.10] hover:border-white/[0.16] focus:border-[#7C3AED]/60 rounded-xl pl-10 pr-10 py-3 text-sm text-[#F8FAFC] placeholder-[#64748B] outline-none transition-all shadow-inner"
+                className="w-full bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.10] hover:border-slate-300 dark:hover:border-white/[0.16] focus:border-[#6366F1] focus:ring-1 focus:ring-[#6366F1]/20 rounded-xl pl-10 pr-10 py-3 text-sm text-slate-900 dark:text-[#F8FAFC] placeholder-slate-400 dark:placeholder-[#64748B] outline-none transition-all shadow-sm"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#64748B] hover:text-white p-1 rounded-md transition-colors"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#64748B] hover:text-slate-900 dark:hover:text-white p-1 rounded-md transition-colors"
                   aria-label="Clear search"
                 >
                   <X className="w-4 h-4" />
@@ -205,8 +205,8 @@ function DevelopersDiscoveryContent() {
                   }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
                     selectedSkill === skill
-                      ? 'bg-[#7C3AED] text-white shadow-sm shadow-[#7C3AED]/30'
-                      : 'bg-[#0D121A] text-[#94A3B8] hover:text-white hover:bg-white/[0.04] border border-white/[0.06]'
+                      ? 'bg-[#6366F1] text-white shadow-sm shadow-[#6366F1]/20'
+                      : 'bg-white dark:bg-[#0D121A] text-slate-600 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06]'
                   }`}
                 >
                   {skill}
@@ -216,62 +216,62 @@ function DevelopersDiscoveryContent() {
           </div>
 
           {/* Filter Toolbar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-[#0D121A] border border-white/[0.08] p-3.5 rounded-xl">
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] p-3.5 rounded-xl shadow-sm">
             <div className="flex flex-wrap items-center gap-2.5">
               {/* Verification Tier */}
-              <div className="flex items-center gap-1 bg-[#111722] border border-white/[0.08] rounded-lg px-2.5 py-1">
-                <span className="text-[11px] text-[#64748B] font-medium">Status:</span>
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-lg px-2.5 py-1">
+                <span className="text-[11px] text-slate-500 dark:text-[#64748B] font-medium">Status:</span>
                 <select
                   value={selectedStatus}
                   onChange={(e) => {
                     setSelectedStatus(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="bg-transparent text-xs text-[#F8FAFC] outline-none cursor-pointer pr-1"
+                  className="bg-transparent text-xs text-slate-800 dark:text-[#F8FAFC] outline-none cursor-pointer pr-1"
                 >
-                  <option value="all" className="bg-[#111722] text-[#F8FAFC]">All Statuses</option>
-                  <option value="verified" className="bg-[#111722] text-[#F8FAFC]">Verified Only</option>
-                  <option value="supported" className="bg-[#111722] text-[#F8FAFC]">Supported</option>
-                  <option value="detected" className="bg-[#111722] text-[#F8FAFC]">Detected</option>
+                  <option value="all" className="bg-white dark:bg-[#111722] text-slate-800 dark:text-[#F8FAFC]">All Statuses</option>
+                  <option value="verified" className="bg-white dark:bg-[#111722] text-slate-800 dark:text-[#F8FAFC]">Verified Only</option>
+                  <option value="supported" className="bg-white dark:bg-[#111722] text-slate-800 dark:text-[#F8FAFC]">Supported</option>
+                  <option value="detected" className="bg-white dark:bg-[#111722] text-slate-800 dark:text-[#F8FAFC]">Detected</option>
                 </select>
               </div>
 
               {/* Capability Level */}
-              <div className="flex items-center gap-1 bg-[#111722] border border-white/[0.08] rounded-lg px-2.5 py-1">
-                <span className="text-[11px] text-[#64748B] font-medium">Level:</span>
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-lg px-2.5 py-1">
+                <span className="text-[11px] text-slate-500 dark:text-[#64748B] font-medium">Level:</span>
                 <select
                   value={selectedLevel}
                   onChange={(e) => {
                     setSelectedLevel(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="bg-transparent text-xs text-[#F8FAFC] outline-none cursor-pointer pr-1"
+                  className="bg-transparent text-xs text-slate-800 dark:text-[#F8FAFC] outline-none cursor-pointer pr-1"
                 >
-                  <option value="all" className="bg-[#111722] text-[#F8FAFC]">All Levels</option>
-                  <option value="Elite" className="bg-[#111722] text-[#F8FAFC]">Elite (920+)</option>
-                  <option value="Expert" className="bg-[#111722] text-[#F8FAFC]">Expert (800+)</option>
-                  <option value="Advanced" className="bg-[#111722] text-[#F8FAFC]">Advanced (650+)</option>
-                  <option value="Professional" className="bg-[#111722] text-[#F8FAFC]">Professional (500+)</option>
-                  <option value="Creator" className="bg-[#111722] text-[#F8FAFC]">Creator (300+)</option>
-                  <option value="Builder" className="bg-[#111722] text-[#F8FAFC]">Builder (150+)</option>
+                  <option value="all" className="bg-white dark:bg-[#111722] text-slate-800 dark:text-[#F8FAFC]">All Levels</option>
+                  <option value="Elite" className="bg-white dark:bg-[#111722] text-slate-800 dark:text-[#F8FAFC]">Elite (920+)</option>
+                  <option value="Expert" className="bg-white dark:bg-[#111722] text-slate-800 dark:text-[#F8FAFC]">Expert (800+)</option>
+                  <option value="Advanced" className="bg-white dark:bg-[#111722] text-slate-800 dark:text-[#F8FAFC]">Advanced (650+)</option>
+                  <option value="Professional" className="bg-white dark:bg-[#111722] text-slate-800 dark:text-[#F8FAFC]">Professional (500+)</option>
+                  <option value="Creator" className="bg-white dark:bg-[#111722] text-slate-800 dark:text-[#F8FAFC]">Creator (300+)</option>
+                  <option value="Builder" className="bg-white dark:bg-[#111722] text-slate-800 dark:text-[#F8FAFC]">Builder (150+)</option>
                 </select>
               </div>
 
               {/* Min Projects */}
-              <div className="flex items-center gap-1 bg-[#111722] border border-white/[0.08] rounded-lg px-2.5 py-1">
-                <span className="text-[11px] text-[#64748B] font-medium">Projects:</span>
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-lg px-2.5 py-1">
+                <span className="text-[11px] text-slate-500 dark:text-[#64748B] font-medium">Projects:</span>
                 <select
                   value={selectedMinProjects}
                   onChange={(e) => {
                     setSelectedMinProjects(parseInt(e.target.value, 10));
                     setCurrentPage(1);
                   }}
-                  className="bg-transparent text-xs text-[#F8FAFC] outline-none cursor-pointer pr-1"
+                  className="bg-transparent text-xs text-slate-800 dark:text-[#F8FAFC] outline-none cursor-pointer pr-1"
                 >
-                  <option value={0} className="bg-[#111722] text-[#F8FAFC]">Any Count</option>
-                  <option value={1} className="bg-[#111722] text-[#F8FAFC]">1+ Analyzed</option>
-                  <option value={3} className="bg-[#111722] text-[#F8FAFC]">3+ Analyzed</option>
-                  <option value={5} className="bg-[#111722] text-[#F8FAFC]">5+ Analyzed</option>
+                  <option value={0} className="bg-white dark:bg-[#111722] text-slate-800 dark:text-[#F8FAFC]">Any Count</option>
+                  <option value={1} className="bg-white dark:bg-[#111722] text-slate-800 dark:text-[#F8FAFC]">1+ Analyzed</option>
+                  <option value={3} className="bg-white dark:bg-[#111722] text-slate-800 dark:text-[#F8FAFC]">3+ Analyzed</option>
+                  <option value={5} className="bg-white dark:bg-[#111722] text-slate-800 dark:text-[#F8FAFC]">5+ Analyzed</option>
                 </select>
               </div>
 
@@ -289,18 +289,18 @@ function DevelopersDiscoveryContent() {
 
             {/* Sort Dropdown */}
             <div className="flex items-center gap-1.5 ml-auto">
-              <ArrowUpDown className="w-3.5 h-3.5 text-[#64748B]" />
-              <span className="text-[11px] text-[#64748B] font-medium">Sort:</span>
+              <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 dark:text-[#64748B]" />
+              <span className="text-[11px] text-slate-500 dark:text-[#64748B] font-medium">Sort:</span>
               <select
                 value={selectedSort}
                 onChange={(e) => setSelectedSort(e.target.value as DeveloperSortOption)}
-                className="bg-[#111722] border border-white/[0.08] rounded-lg px-2.5 py-1 text-xs text-[#F8FAFC] outline-none cursor-pointer"
+                className="bg-slate-100 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-[#F8FAFC] outline-none cursor-pointer"
               >
-                <option value="relevance" className="bg-[#111722] text-[#F8FAFC]">Relevance</option>
-                <option value="verified_skills" className="bg-[#111722] text-[#F8FAFC]">Most Verified Skills</option>
-                <option value="score" className="bg-[#111722] text-[#F8FAFC]">Capability Score</option>
-                <option value="projects" className="bg-[#111722] text-[#F8FAFC]">Analyzed Projects</option>
-                <option value="recent" className="bg-[#111722] text-[#F8FAFC]">Recently Active</option>
+                <option value="relevance" className="bg-white dark:bg-[#111722] text-slate-800 dark:text-[#F8FAFC]">Relevance</option>
+                <option value="verified_skills" className="bg-white dark:bg-[#111722] text-slate-800 dark:text-[#F8FAFC]">Most Verified Skills</option>
+                <option value="score" className="bg-white dark:bg-[#111722] text-slate-800 dark:text-[#F8FAFC]">Capability Score</option>
+                <option value="projects" className="bg-white dark:bg-[#111722] text-slate-800 dark:text-[#F8FAFC]">Analyzed Projects</option>
+                <option value="recent" className="bg-white dark:bg-[#111722] text-slate-800 dark:text-[#F8FAFC]">Recently Active</option>
               </select>
             </div>
           </div>
@@ -327,33 +327,33 @@ function DevelopersDiscoveryContent() {
               {[...Array(6)].map((_, i) => (
                 <div
                   key={i}
-                  className="bg-[#0D121A] border border-white/[0.06] rounded-2xl p-5 space-y-4 animate-pulse"
+                  className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.06] rounded-2xl p-5 space-y-4 animate-pulse shadow-sm"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-white/[0.05]" />
+                      <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-white/[0.05]" />
                       <div className="space-y-1.5">
-                        <div className="w-28 h-4 bg-white/[0.08] rounded" />
-                        <div className="w-20 h-3 bg-white/[0.04] rounded" />
+                        <div className="w-28 h-4 bg-slate-200 dark:bg-white/[0.08] rounded" />
+                        <div className="w-20 h-3 bg-slate-100 dark:bg-white/[0.04] rounded" />
                       </div>
                     </div>
-                    <div className="w-16 h-5 bg-white/[0.06] rounded-full" />
+                    <div className="w-16 h-5 bg-slate-200 dark:bg-white/[0.06] rounded-full" />
                   </div>
-                  <div className="w-full h-10 bg-white/[0.04] rounded" />
+                  <div className="w-full h-10 bg-slate-100 dark:bg-white/[0.04] rounded" />
                   <div className="flex gap-2">
-                    <div className="w-20 h-6 bg-white/[0.06] rounded" />
-                    <div className="w-20 h-6 bg-white/[0.06] rounded" />
+                    <div className="w-20 h-6 bg-slate-200 dark:bg-white/[0.06] rounded" />
+                    <div className="w-20 h-6 bg-slate-200 dark:bg-white/[0.06] rounded" />
                   </div>
-                  <div className="w-full h-8 bg-white/[0.04] rounded" />
+                  <div className="w-full h-8 bg-slate-100 dark:bg-white/[0.04] rounded" />
                 </div>
               ))}
             </div>
           ) : error ? (
-            <div className="p-8 text-center bg-[#0D121A] border border-[#EF4444]/20 rounded-2xl space-y-3">
+            <div className="p-8 text-center bg-white dark:bg-[#0D121A] border border-[#EF4444]/20 rounded-2xl space-y-3 shadow-sm">
               <p className="text-sm text-[#EF4444] font-medium">{error}</p>
               <button
                 onClick={fetchDevelopers}
-                className="px-4 py-2 bg-[#111722] hover:bg-[#151B26] border border-white/[0.08] rounded-lg text-xs font-semibold text-white transition-colors"
+                className="px-4 py-2 bg-slate-100 dark:bg-[#111722] hover:bg-slate-200 dark:hover:bg-[#151B26] border border-slate-200 dark:border-white/[0.08] rounded-lg text-xs font-semibold text-slate-800 dark:text-white transition-colors"
               >
                 Retry Search
               </button>
@@ -375,8 +375,8 @@ function DevelopersDiscoveryContent() {
 
           {/* Pagination Controls */}
           {searchData && searchData.pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4 border-t border-white/[0.06]">
-              <span className="text-xs text-[#64748B] font-mono">
+            <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-white/[0.06]">
+              <span className="text-xs text-slate-500 dark:text-[#64748B] font-mono">
                 Page {searchData.pagination.page} of {searchData.pagination.totalPages}
               </span>
 
@@ -384,7 +384,7 @@ function DevelopersDiscoveryContent() {
                 <button
                   onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                   disabled={currentPage <= 1}
-                  className="px-3 py-1.5 rounded-lg bg-[#0D121A] hover:bg-[#111722] border border-white/[0.08] text-xs font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-lg bg-white dark:bg-[#0D121A] hover:bg-slate-100 dark:hover:bg-[#111722] border border-slate-200 dark:border-white/[0.08] text-xs font-semibold text-slate-700 dark:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1 shadow-sm"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
                   Previous
@@ -393,7 +393,7 @@ function DevelopersDiscoveryContent() {
                 <button
                   onClick={() => setCurrentPage((prev) => Math.min(searchData.pagination.totalPages, prev + 1))}
                   disabled={currentPage >= searchData.pagination.totalPages}
-                  className="px-3 py-1.5 rounded-lg bg-[#0D121A] hover:bg-[#111722] border border-white/[0.08] text-xs font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-lg bg-white dark:bg-[#0D121A] hover:bg-slate-100 dark:hover:bg-[#111722] border border-slate-200 dark:border-white/[0.08] text-xs font-semibold text-slate-700 dark:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1 shadow-sm"
                 >
                   Next
                   <ChevronRight className="w-3.5 h-3.5" />

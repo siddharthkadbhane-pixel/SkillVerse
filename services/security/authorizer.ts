@@ -86,12 +86,35 @@ export class AuthorizationGuard {
   public static async requireCompanyMembership(
     req: NextRequest,
     companyId: string,
-    minRole?: 'company_admin' | 'recruiter'
+    minRole?: 'company_admin' | 'recruiter' | ('company_admin' | 'recruiter')[]
   ): Promise<{
     authorized: boolean;
     context: ApiAuthContext;
     response?: NextResponse;
   }> {
+    if (!companyId || typeof companyId !== 'string' || !companyId.trim()) {
+      return {
+        authorized: false,
+        context: {
+          isAuthenticated: false,
+          user: { id: '', username: 'anonymous', name: 'Anonymous', role: 'anonymous' },
+          authMethod: 'none',
+          scopes: [],
+          requestId: req.headers.get('x-request-id') || `req_${Date.now()}`,
+          clientType: 'api',
+        },
+        response: NextResponse.json(
+          {
+            success: false,
+            error: 'Bad Request',
+            code: 'INVALID_COMPANY_ID',
+            message: 'A valid companyId parameter is required.',
+          },
+          { status: 400 }
+        ),
+      };
+    }
+
     const auth = await this.requireAuth(req);
     if (!auth.authorized) return auth;
 
@@ -121,14 +144,30 @@ export class AuthorizationGuard {
         isMember = true;
         memberRole = member.role;
       }
-    } catch {
-      // Fallback check against dummy user company association ONLY in demo/test environments
-      if (isDemoAuthEnabled()) {
-        const dummyUser = DUMMY_USERS.find((u) => u.id === userId);
-        if (dummyUser && (dummyUser.role === 'company_admin' || dummyUser.role === 'recruiter')) {
-          isMember = true;
-          memberRole = dummyUser.role;
-        }
+    } catch {}
+
+    // Strict scoped check against demo company membership ONLY in demo/test environments
+    if (!isMember && isDemoAuthEnabled()) {
+      const DEMO_MEMBERSHIPS: Record<string, { companyId: string; role: 'company_admin' | 'recruiter'; status: string }[]> = {
+        '00000000-0000-0000-0000-000000000002': [
+          { companyId: '00000000-0000-0000-0000-000000000001', role: 'company_admin', status: 'active' },
+        ],
+        '00000000-0000-0000-0000-000000000003': [
+          { companyId: '00000000-0000-0000-0000-000000000001', role: 'recruiter', status: 'active' },
+        ],
+        '00000000-0000-0000-0000-000000000004': [
+          { companyId: '00000000-0000-0000-0000-000000000002', role: 'recruiter', status: 'active' },
+        ],
+        '00000000-0000-0000-0000-000000000005': [
+          { companyId: '00000000-0000-0000-0000-000000000002', role: 'company_admin', status: 'active' },
+        ],
+      };
+
+      const userMemberships = DEMO_MEMBERSHIPS[userId] || [];
+      const match = userMemberships.find(m => m.companyId === companyId && m.status === 'active');
+      if (match) {
+        isMember = true;
+        memberRole = match.role;
       }
     }
 
@@ -150,21 +189,24 @@ export class AuthorizationGuard {
     }
 
     // Role check if minRole is specified
-    if (minRole === 'company_admin' && memberRole !== 'company_admin') {
-      return {
-        authorized: false,
-        context: auth.context,
-        response: NextResponse.json(
-          {
-            success: false,
-            error: 'Forbidden',
-            code: 'INSUFFICIENT_COMPANY_PRIVILEGES',
-            message: 'Company administrator privilege required for this action.',
-            requestId: auth.context.requestId,
-          },
-          { status: 403 }
-        ),
-      };
+    if (minRole) {
+      const allowedRoles = Array.isArray(minRole) ? minRole : [minRole];
+      if (!allowedRoles.includes(memberRole as any)) {
+        return {
+          authorized: false,
+          context: auth.context,
+          response: NextResponse.json(
+            {
+              success: false,
+              error: 'Forbidden',
+              code: 'INSUFFICIENT_COMPANY_PRIVILEGES',
+              message: 'Company administrator privilege required for this action.',
+              requestId: auth.context.requestId,
+            },
+            { status: 403 }
+          ),
+        };
+      }
     }
 
     return { authorized: true, context: auth.context };

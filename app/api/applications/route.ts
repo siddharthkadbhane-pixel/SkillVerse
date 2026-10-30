@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OpportunityEngine } from '@/services/opportunity/engine';
-import { getSessionUser } from '@/services/supabase';
+import { AuthorizationGuard } from '@/services/security/authorizer';
 import { db, withDbTimeout } from '@/lib/drizzle';
 import { applications, jobs } from '@/database/schema';
 import { eq } from 'drizzle-orm';
@@ -8,8 +8,12 @@ import { Logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   try {
-    const sessionUser = await getSessionUser();
-    const userId = sessionUser?.id || '00000000-0000-0000-0000-000000000000';
+    const auth = await AuthorizationGuard.requireAuth(req);
+    if (!auth.authorized) {
+      return auth.response!;
+    }
+
+    const userId = auth.context.user.id;
 
     let userApps: any[] = [];
     try {
@@ -23,7 +27,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: userApps,
+      data: userApps || [],
     });
   } catch (error: any) {
     Logger.error('API Error in GET /api/applications:', error);
@@ -36,18 +40,23 @@ export async function GET(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const auth = await AuthorizationGuard.requireAuth(req);
+    if (!auth.authorized) {
+      return auth.response!;
+    }
+
     const { searchParams } = new URL(req.url);
     const applicationId = searchParams.get('id');
 
     if (!applicationId) {
       return NextResponse.json({
         success: false,
-        error: 'Application ID is required.',
+        error: 'Bad Request',
+        message: 'Application ID is required.',
       }, { status: 400 });
     }
 
-    const sessionUser = await getSessionUser();
-    const userId = sessionUser?.id || '00000000-0000-0000-0000-000000000000';
+    const userId = auth.context.user.id;
 
     const result = await OpportunityEngine.withdrawApplication(userId, applicationId);
 

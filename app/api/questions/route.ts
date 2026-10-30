@@ -37,20 +37,14 @@ export async function POST(req: NextRequest) {
         success: true,
         data: newQuestion,
       });
-    } catch {
-      // Fallback
-      return NextResponse.json({
-        success: true,
-        data: {
-          id: 'question_mock_created',
-          title,
-          content,
-          tags,
-          createdAt: new Date().toISOString(),
-        }
-      });
+    } catch (dbErr: any) {
+      console.error('[API Questions] Database insert error:', dbErr?.message);
+      return NextResponse.json(
+        { success: false, error: 'Database operation failed: unable to submit question' },
+        { status: 500 }
+      );
     }
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 550 });
+    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
   }
 }

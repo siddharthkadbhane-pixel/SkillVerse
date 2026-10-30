@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TeamEngine } from '@/services/team/engine';
-import { getSessionUser } from '@/services/supabase';
+import { AuthorizationGuard } from '@/services/security/authorizer';
 import { Logger } from '@/lib/logger';
 
 export async function GET(
@@ -8,16 +8,21 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await AuthorizationGuard.requireAuth(req);
+    if (!auth.authorized) {
+      return auth.response!;
+    }
+
     const { id } = await params;
-    const sessionUser = await getSessionUser();
-    const userId = sessionUser?.id || '00000000-0000-0000-0000-000000000000';
+    const userId = auth.context.user.id;
 
     const team = await TeamEngine.getTeamById(id, userId);
 
     if (!team) {
       return NextResponse.json({
         success: false,
-        error: 'Team not found.',
+        error: 'Not Found',
+        message: 'Team not found.',
       }, { status: 404 });
     }
 

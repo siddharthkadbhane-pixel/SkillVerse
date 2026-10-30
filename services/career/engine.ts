@@ -43,6 +43,8 @@ const LEVEL_SCORES: Record<string, number> = {
 };
 
 export class CareerEngine {
+  private static inFlightOverviews = new Map<string, Promise<CareerOverviewData>>();
+
   /**
    * Retrieves complete career intelligence overview for a developer
    */
@@ -51,29 +53,38 @@ export class CareerEngine {
     const cached = CachingService.get<CareerOverviewData>(cacheKey);
     if (cached) return cached;
 
+    const inFlight = this.inFlightOverviews.get(userId);
+    if (inFlight) return inFlight;
+
+    const promise = this.compileCareerOverview(userId, cacheKey).finally(() => {
+      this.inFlightOverviews.delete(userId);
+    });
+    this.inFlightOverviews.set(userId, promise);
+    return promise;
+  }
+
+  private static async compileCareerOverview(userId: string, cacheKey: string): Promise<CareerOverviewData> {
     Logger.info(`Compiling Career & Learning Intelligence for user: ${userId}`);
 
     // 1. Get or create active career goal
     const goal = await this.getCareerGoal(userId);
 
-    // 2. Compute role fits across all roles
+    // 2. Compute role fits across all roles (computed once)
     const allRoleFits = await this.getRoleFits(userId);
 
     // 3. Identify active role fit
     const targetRoleId = goal.targetRoleId;
     const activeRoleFit = allRoleFits.find((rf) => rf.roleId === targetRoleId) || allRoleFits[0];
 
-    // 4. Compute top skill gaps for target role
-    const topGaps = await this.getSkillGaps(userId, targetRoleId);
+    // 4. Extract top skill gaps directly from the active role fit (avoids redundant getRoleFits invocation)
+    const topGaps = activeRoleFit ? activeRoleFit.gaps.slice(0, 5) : [];
 
-    // 5. Get or generate roadmap
-    const roadmap = await this.getOrGenerateRoadmap(userId, goal);
-
-    // 6. Get learning tasks
-    const tasks = await this.getLearningTasks(userId);
-
-    // 7. Get recommendations (projects, challenges, opportunities)
-    const recommendations = await this.getCareerRecommendations(userId, targetRoleId);
+    // 5, 6, 7. Fetch roadmap, learning tasks, and career recommendations concurrently in parallel
+    const [roadmap, tasks, recommendations] = await Promise.all([
+      this.getOrGenerateRoadmap(userId, goal),
+      this.getLearningTasks(userId),
+      this.getCareerRecommendations(userId, targetRoleId),
+    ]);
 
     // 8. Compile progress
     const progress = await this.getLearningProgress(userId, goal, roadmap, tasks);
@@ -101,9 +112,9 @@ export class CareerEngine {
     let verifiedSkills: any[] = [];
 
     try {
-      capabilities = await SkillIntelligenceService.calculateDeveloperCapabilities(userId);
+      capabilities = await SkillIntelligenceService.getDeveloperCapabilities(userId);
     } catch (err: any) {
-      Logger.warn(`Failed to calculate capabilities for role fit: ${err.message}`);
+      Logger.warn(`Failed to read capabilities for role fit: ${err.message}`);
     }
 
     try {
@@ -294,7 +305,7 @@ export class CareerEngine {
           where: eq(careerGoals.userId, userId),
           orderBy: [desc(careerGoals.createdAt)],
         }),
-        250
+        5000
       );
 
       if (existing) {
@@ -371,7 +382,7 @@ export class CareerEngine {
             createdAt: new Date(),
           })
           .returning(),
-        300
+        5000
       );
 
     } catch (err: any) {
@@ -427,7 +438,7 @@ export class CareerEngine {
           where: and(eq(learningRoadmaps.userId, userId), eq(learningRoadmaps.targetRole, roleId)),
           orderBy: [desc(learningRoadmaps.updatedAt)],
         }),
-        250
+        5000
       );
 
       if (cached && cached.stages) {
@@ -585,13 +596,16 @@ export class CareerEngine {
     };
 
     // Save to DB safely
+    const isGoalUuid = typeof goal.id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(goal.id);
+    let insertedRoadmapId: string | null = null;
+
     try {
-      await withDbTimeout(
+      const [saved] = await withDbTimeout(
         db
           .insert(learningRoadmaps)
           .values({
             userId,
-            goalId: goal.id,
+            goalId: isGoalUuid ? goal.id : null,
             targetRole: roleId,
             title: newRoadmap.title,
             overviewSummary: newRoadmap.overviewSummary,
@@ -609,13 +623,17 @@ export class CareerEngine {
               stages: newRoadmap.stages,
               updatedAt: new Date(),
             },
-          }),
-        300
+          })
+          .returning(),
+        5000
       );
+      if (saved?.id) {
+        insertedRoadmapId = saved.id;
+      }
     } catch {}
 
     // Seed initial daily/weekly tasks if not present
-    await this.seedInitialTasks(userId, goal.id, newRoadmap.id, roleTax);
+    await this.seedInitialTasks(userId, isGoalUuid ? goal.id : null, insertedRoadmapId, roleTax);
 
     return newRoadmap;
   }
@@ -625,8 +643,8 @@ export class CareerEngine {
    */
   private static async seedInitialTasks(
     userId: string,
-    goalId: string,
-    roadmapId: string,
+    goalId: string | null,
+    roadmapId: string | null,
     roleTax: CareerRoleTaxonomy
   ): Promise<void> {
     try {
@@ -634,7 +652,7 @@ export class CareerEngine {
         db.query.learningTasks.findMany({
           where: eq(learningTasks.userId, userId),
         }),
-        250
+        5000
       );
 
       if (existingTasks.length > 0) return;
@@ -707,15 +725,15 @@ export class CareerEngine {
         },
       ];
 
-      for (const t of initialTasks) {
-        await withDbTimeout(
-          db.insert(learningTasks).values({
+      await withDbTimeout(
+        db.insert(learningTasks).values(
+          initialTasks.map((t) => ({
             ...t,
             createdAt: new Date(),
-          }),
-          200
-        );
-      }
+          }))
+        ),
+        5000
+      );
     } catch (err: any) {
       Logger.warn(`Task seeding notice: ${err.message}`);
     }
@@ -731,7 +749,7 @@ export class CareerEngine {
           where: eq(learningTasks.userId, userId),
           orderBy: [desc(learningTasks.createdAt)],
         }),
-        250
+        5000
       );
 
       if (records && records.length > 0) {
@@ -847,7 +865,7 @@ export class CareerEngine {
           })
           .where(and(eq(learningTasks.id, taskId), eq(learningTasks.userId, userId)))
           .returning(),
-        250
+        5000
       );
 
       if (updated) {

@@ -53,10 +53,10 @@ export default function DCCGrowthTimeline({ timeline = [] }: DCCGrowthTimelinePr
 
   if (!timeline || timeline.length === 0) {
     return (
-      <div className="p-8 rounded-lg bg-zinc-900/30 border border-white/[0.04] text-center flex flex-col items-center gap-2">
-        <History className="w-6 h-6 text-zinc-600 mb-1" />
-        <h4 className="text-xs font-semibold text-zinc-300">No Capability History Yet</h4>
-        <p className="text-xs text-zinc-500 max-w-sm leading-relaxed">
+      <div className="p-8 rounded-lg bg-slate-50 dark:bg-zinc-900/30 border border-slate-200 dark:border-white/[0.04] text-center flex flex-col items-center gap-2">
+        <History className="w-6 h-6 text-slate-400 dark:text-zinc-600 mb-1" />
+        <h4 className="text-xs font-semibold text-slate-800 dark:text-zinc-300">No Capability History Yet</h4>
+        <p className="text-xs text-slate-500 dark:text-zinc-500 max-w-sm leading-relaxed">
           Analyze your first repository to start building your verified engineering growth timeline.
         </p>
       </div>
@@ -64,24 +64,24 @@ export default function DCCGrowthTimeline({ timeline = [] }: DCCGrowthTimelinePr
   }
 
   return (
-    <div className="relative pl-5 border-l border-white/[0.08] space-y-4">
+    <div className="relative pl-5 border-l border-slate-200 dark:border-white/[0.08] space-y-4">
       {timeline.map((item, idx) => (
         <div key={item.id || idx} className="relative group">
           
           {/* Bullet node on timeline line */}
-          <div className="absolute -left-[27px] top-1.5 w-3.5 h-3.5 rounded-full bg-[#0E1015] border-2 border-indigo-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-            <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+          <div className="absolute -left-[27px] top-1.5 w-3.5 h-3.5 rounded-full bg-white dark:bg-[#0E1015] border-2 border-indigo-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" />
           </div>
 
           {/* Event Content Box */}
-          <div className="p-3.5 rounded-lg bg-zinc-900/40 hover:bg-zinc-900/70 border border-white/[0.04] hover:border-white/[0.08] transition-all flex flex-col gap-2">
+          <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-zinc-900/40 hover:bg-slate-100 dark:hover:bg-zinc-900/70 border border-slate-200 dark:border-white/[0.04] hover:border-slate-300 dark:hover:border-white/[0.08] transition-all flex flex-col gap-2">
             
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="p-1 rounded bg-zinc-800/80 border border-white/[0.04]">
+                <span className="p-1 rounded bg-slate-200/70 dark:bg-zinc-800/80 border border-slate-200 dark:border-white/[0.04]">
                   {getIcon(item.changeType)}
                 </span>
-                <span className="text-xs font-semibold text-zinc-200 group-hover:text-indigo-300 transition-colors">
+                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
                   {item.title}
                 </span>
               </div>
@@ -90,23 +90,23 @@ export default function DCCGrowthTimeline({ timeline = [] }: DCCGrowthTimelinePr
                 <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${getBadgeStyle(item.badgeVariant)}`}>
                   {item.badgeText || 'Verified'}
                 </span>
-                <span className="text-[11px] font-mono text-zinc-500">
+                <span className="text-[11px] font-mono text-slate-500 dark:text-zinc-500">
                   {item.date}
                 </span>
               </div>
             </div>
 
-            <p className="text-xs text-zinc-400 leading-relaxed">
+            <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
               {item.description}
             </p>
 
             {item.evidenceRepo && (
-              <div className="pt-1.5 border-t border-white/[0.04] flex items-center justify-between text-[11px] font-mono text-zinc-500">
+              <div className="pt-1.5 border-t border-slate-200 dark:border-white/[0.04] flex items-center justify-between text-[11px] font-mono text-slate-500 dark:text-zinc-500">
                 <span className="inline-flex items-center gap-1">
-                  <FolderGit2 className="w-3 h-3 text-zinc-400" />
-                  Evidence: <strong className="text-zinc-300 font-medium">{item.evidenceRepo}</strong>
+                  <FolderGit2 className="w-3 h-3 text-slate-400 dark:text-zinc-400" />
+                  Evidence: <strong className="text-slate-700 dark:text-zinc-300 font-medium">{item.evidenceRepo}</strong>
                 </span>
-                <span className="text-zinc-400 flex items-center gap-0.5 text-[10px]">
+                <span className="text-slate-500 dark:text-zinc-400 flex items-center gap-0.5 text-[10px]">
                   Git Audit Linked
                 </span>
               </div>

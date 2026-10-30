@@ -42,17 +42,17 @@ export default function DCCPublicView({ data }: DCCPublicViewProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#070A0F] text-[#F8FAFC] flex flex-col justify-between selection:bg-[#7C3AED]/30 selection:text-white">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#070A0F] text-slate-900 dark:text-[#F8FAFC] flex flex-col justify-between selection:bg-[#7C3AED]/30 selection:text-white">
       
       {/* Top Banner Navigation */}
-      <header className="border-b border-white/[0.06] bg-[#0D121A]/80 backdrop-blur-md sticky top-0 z-40">
+      <header className="border-b border-slate-200 dark:border-white/[0.06] bg-white/80 dark:bg-[#0D121A]/80 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 text-white font-semibold text-sm">
+          <Link href="/" className="flex items-center gap-2.5 text-slate-900 dark:text-white font-semibold text-sm">
             <div className="w-7 h-7 rounded-lg bg-[#7C3AED] flex items-center justify-center text-white text-xs font-bold font-mono shadow-sm">
               SV
             </div>
             <span className="font-bold tracking-tight">SkillVerse</span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#111722] text-[#94A3B8] border border-white/[0.06] hidden sm:inline-block">
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-[#111722] text-slate-600 dark:text-[#94A3B8] border border-slate-200 dark:border-white/[0.06] hidden sm:inline-block">
               DCC v2.0 Public Profile
             </span>
           </Link>
@@ -62,7 +62,7 @@ export default function DCCPublicView({ data }: DCCPublicViewProps) {
               href={`https://github.com/${data.username}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#111722] hover:bg-[#151B26] border border-white/[0.08] text-[#94A3B8] hover:text-white transition-colors"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-[#111722] hover:bg-slate-200 dark:hover:bg-[#151B26] border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-white transition-colors"
             >
               <span>GitHub</span>
               <ExternalLink className="w-3 h-3" />
@@ -70,7 +70,7 @@ export default function DCCPublicView({ data }: DCCPublicViewProps) {
 
             <button
               onClick={() => setIsShareModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#111722] hover:bg-[#151B26] border border-white/[0.08] text-[#F8FAFC] transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-[#111722] hover:bg-slate-200 dark:hover:bg-[#151B26] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-[#F8FAFC] transition-colors"
             >
               <Share2 className="w-3.5 h-3.5 text-[#7C3AED]" />
               <span>Share Profile</span>
@@ -91,22 +91,22 @@ export default function DCCPublicView({ data }: DCCPublicViewProps) {
       <main className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6 flex-1 w-full">
         
         {/* Core Philosophy Value Prop Banner */}
-        <div className="p-3.5 sm:p-4 rounded-xl bg-gradient-to-r from-[#7C3AED]/15 via-[#0D121A] to-[#0D121A] border border-[#7C3AED]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="p-3.5 sm:p-4 rounded-xl bg-gradient-to-r from-[#7C3AED]/15 via-white dark:via-[#0D121A] to-white dark:to-[#0D121A] border border-[#7C3AED]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-[#7C3AED]/20 border border-[#7C3AED]/30 text-[#C4B5FD] shrink-0">
+            <div className="p-2 rounded-lg bg-[#7C3AED]/20 border border-[#7C3AED]/30 text-[#7C3AED] dark:text-[#C4B5FD] shrink-0">
               <Sparkles className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-xs sm:text-sm font-semibold text-white">
+              <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white">
                 &ldquo;Resume tells what you claim. SkillVerse shows what you have proven.&rdquo;
               </p>
-              <p className="text-[11px] text-[#94A3B8] mt-0.5">
+              <p className="text-[11px] text-slate-600 dark:text-[#94A3B8] mt-0.5">
                 Every capability below is backed by concrete AST code audits, commit telemetry, and repository evidence.
               </p>
             </div>
           </div>
 
-          <span className="text-[10px] font-mono font-bold text-[#10B981] bg-[#10B981]/10 px-2.5 py-1 rounded border border-[#10B981]/20 shrink-0 self-start sm:self-center">
+          <span className="text-[10px] font-mono font-bold text-emerald-700 dark:text-[#10B981] bg-[#10B981]/10 px-2.5 py-1 rounded border border-[#10B981]/20 shrink-0 self-start sm:self-center">
             ✓ 100% Cryptographically & Git-Audited
           </span>
         </div>
@@ -154,10 +154,10 @@ export default function DCCPublicView({ data }: DCCPublicViewProps) {
       </main>
 
       {/* Public Footer */}
-      <footer className="border-t border-white/[0.06] bg-[#0D121A] py-6 text-center text-xs text-[#64748B]">
+      <footer className="border-t border-slate-200 dark:border-white/[0.06] bg-white dark:bg-[#0D121A] py-6 text-center text-xs text-slate-500 dark:text-[#64748B]">
         <div className="max-w-[1400px] mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-[#10B981]" />
+            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-[#10B981]" />
             <span>Cryptographically & Git-Audited Engineering Credential</span>
           </div>
           <span className="font-mono text-[11px]">Powered by SkillVerse Verification Protocol</span>

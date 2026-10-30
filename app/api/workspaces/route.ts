@@ -1,100 +1,107 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/drizzle';
+import { db, withDbTimeout } from '@/lib/drizzle';
 import { workspaces, workspaceMembers } from '@/database/schema';
-import { getSessionUser } from '@/services/supabase';
-import { DUMMY_WORKSPACES } from '@/lib/dummyData';
+import { AuthorizationGuard } from '@/services/security/authorizer';
 import { eq } from 'drizzle-orm';
 import { Logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await getSessionUser();
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    const auth = await AuthorizationGuard.requireAuth(req);
+    if (!auth.authorized) {
+      return auth.response!;
     }
 
+    const userId = auth.context.user.id;
     let list: any[] = [];
+
     try {
-      list = await db
-        .select({
-          id: workspaces.id,
-          name: workspaces.name,
-          repositoryId: workspaces.repositoryId,
-          createdAt: workspaces.createdAt,
-        })
-        .from(workspaces)
-        .leftJoin(workspaceMembers, eq(workspaces.id, workspaceMembers.workspaceId))
-        .where(eq(workspaceMembers.userId, user.id));
+      list = await withDbTimeout(
+        db
+          .select({
+            id: workspaces.id,
+            name: workspaces.name,
+            repositoryId: workspaces.repositoryId,
+            createdAt: workspaces.createdAt,
+          })
+          .from(workspaces)
+          .leftJoin(workspaceMembers, eq(workspaces.id, workspaceMembers.workspaceId))
+          .where(eq(workspaceMembers.userId, userId)),
+        1000
+      );
     } catch {}
 
-    if (list.length === 0) {
-      return NextResponse.json({
-        success: true,
-        data: DUMMY_WORKSPACES,
-      });
-    }
-
+    // Return empty list if no workspaces exist; never substitute other users' mock workspaces
     return NextResponse.json({
       success: true,
-      data: list,
+      data: list || [],
     });
   } catch (error: any) {
     Logger.error('API Error in GET /api/workspaces:', error);
     return NextResponse.json({
-      success: true,
-      data: DUMMY_WORKSPACES,
-    });
+      success: false,
+      error: 'An unexpected error occurred while fetching workspaces.',
+    }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getSessionUser();
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    const auth = await AuthorizationGuard.requireAuth(req);
+    if (!auth.authorized) {
+      return auth.response!;
     }
 
+    const userId = auth.context.user.id;
     const body = await req.json();
-    if (!body.name) {
-      return NextResponse.json({ success: false, error: 'Workspace name is required' }, { status: 400 });
+
+    if (!body?.name) {
+      return NextResponse.json({
+        success: false,
+        error: 'Bad Request',
+        message: 'Workspace name is required.',
+      }, { status: 400 });
     }
 
     try {
-      const [ws] = await db
-        .insert(workspaces)
-        .values({
-          userId: user.id,
-          name: body.name,
-          repositoryId: body.repositoryId || null,
-        })
-        .returning();
+      const [ws] = await withDbTimeout(
+        db
+          .insert(workspaces)
+          .values({
+            userId,
+            name: body.name,
+            repositoryId: body.repositoryId || null,
+          })
+          .returning(),
+        2000
+      );
 
-      await db.insert(workspaceMembers).values({
-        workspaceId: ws.id,
-        userId: user.id,
-        role: 'owner',
-      });
+      await withDbTimeout(
+        db.insert(workspaceMembers).values({
+          workspaceId: ws.id,
+          userId,
+          role: 'owner',
+        }),
+        1000
+      );
 
       return NextResponse.json({
         success: true,
         message: 'Workspace successfully created.',
         data: ws,
       });
-    } catch {
+    } catch (dbError: any) {
+      Logger.error('Database error in POST /api/workspaces:', dbError);
       return NextResponse.json({
-        success: true,
-        message: 'Workspace successfully created.',
-        data: {
-          id: `ws_mock_${Date.now()}`,
-          name: body.name,
-          repositoryName: 'siddharthkadbhane-pixel/SkillVerse',
-          status: 'running',
-          createdAt: new Date().toISOString(),
-        }
-      });
+        success: false,
+        error: 'Database operation failed while creating workspace.',
+      }, { status: 500 });
     }
   } catch (error: any) {
     Logger.error('API Error in POST /api/workspaces:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({
+      success: false,
+      error: 'An unexpected error occurred while creating workspace.',
+    }, { status: 500 });
   }
 }

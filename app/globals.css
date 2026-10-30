@@ -10,22 +10,31 @@
 /* ─── CSS Custom Properties ─────────────────────────────────── */
 
 :root {
-  /* Canvas layers — dark charcoal, not pure black */
-  --canvas:         #08090D;
-  --surface:        #0E1117;
-  --elevated:       #131720;
-  --hover:          #181F2C;
-  --subtle:         #1D2535;
+  /* Canvas layers — Clean light mode default */
+  --canvas:         #F8FAFC;
+  --surface:        #FFFFFF;
+  --elevated:       #F1F5F9;
+  --hover:          #E2E8F0;
+  --subtle:         #CBD5E1;
+  --muted-bg:       #F1F5F9;
 
-  /* Borders — low-contrast, used sparingly */
-  --border:         rgba(255, 255, 255, 0.07);
-  --border-strong:  rgba(255, 255, 255, 0.12);
+  /* Borders */
+  --border:         rgba(15, 23, 42, 0.08);
+  --border-strong:  rgba(15, 23, 42, 0.16);
 
-  /* Brand accent — single primary color */
-  --accent:         #7C3AED;
-  --accent-hover:   #8B5CF6;
-  --accent-dim:     rgba(124, 58, 237, 0.10);
-  --accent-muted:   rgba(124, 58, 237, 0.20);
+  /* Brand accent — Electric Indigo */
+  --accent:         #6366F1;
+  --accent-hover:   #4F46E5;
+  --accent-dim:     rgba(99, 102, 241, 0.08);
+  --accent-muted:   rgba(99, 102, 241, 0.16);
+
+  /* Secondary & Brand Extensions */
+  --blue:           #3B82F6;
+  --blue-dim:       rgba(59, 130, 246, 0.08);
+  --ice-blue:       #93C5FD;
+  --ice-blue-dim:   rgba(147, 197, 253, 0.15);
+  --verified:       #14B8A6;
+  --verified-dim:   rgba(20, 184, 166, 0.10);
 
   /* Semantic */
   --success:        #10B981;
@@ -40,17 +49,18 @@
   --cyan-dim:       rgba(6, 182, 212, 0.10);
 
   /* Text hierarchy */
-  --text:           #F1F5F9;
-  --text-secondary: #94A3B8;
+  --text:           #0F172A;
+  --text-secondary: #475569;
   --text-muted:     #64748B;
-  --text-dim:       #475569;
+  --text-dim:       #94A3B8;
 
   /* Border radius scale */
   --r-sm:    4px;
   --r:       6px;
   --r-md:    8px;
   --r-lg:    10px;
-  --r-xl:    12px;
+  --r-xl:    14px;
+  --r-2xl:   18px;
 
   /* Spacing scale */
   --space-1: 4px;
@@ -60,14 +70,69 @@
   --space-5: 20px;
   --space-6: 24px;
 
-  /* Gradient — reserved for brand logo and DCC highlight only */
-  --gradient-brand:  linear-gradient(135deg, #7C3AED 0%, #06B6D4 100%);
-  --gradient-text:   linear-gradient(135deg, #C4B5FD 0%, #67E8F9 100%);
+  /* Gradients */
+  --gradient-brand:  linear-gradient(135deg, #6366F1 0%, #3B82F6 50%, #06B6D4 100%);
+  --gradient-text:   linear-gradient(135deg, #4338CA 0%, #2563EB 50%, #0284C7 100%);
 
   /* Elevation shadows */
-  --shadow-sm:  0 1px 2px rgba(0, 0, 0, 0.20);
-  --shadow-md:  0 2px 8px rgba(0, 0, 0, 0.28);
-  --shadow-lg:  0 4px 16px rgba(0, 0, 0, 0.36);
+  --shadow-sm:  0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md:  0 4px 12px rgba(15, 23, 42, 0.08);
+  --shadow-lg:  0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+.dark {
+  /* Canvas layers — High-contrast premium dark graphite */
+  --canvas:         #070A0F;
+  --surface:        #0D121A;
+  --elevated:       #111722;
+  --hover:          #151B26;
+  --subtle:         #1C2433;
+  --muted-bg:       #222B3D;
+
+  /* Borders — refined low-contrast */
+  --border:         rgba(255, 255, 255, 0.08);
+  --border-strong:  rgba(255, 255, 255, 0.14);
+
+  /* Brand accent — Electric Indigo */
+  --accent:         #6366F1;
+  --accent-hover:   #818CF8;
+  --accent-dim:     rgba(99, 102, 241, 0.12);
+  --accent-muted:   rgba(99, 102, 241, 0.24);
+
+  /* Secondary & Brand Extensions */
+  --blue:           #3B82F6;
+  --blue-dim:       rgba(59, 130, 246, 0.12);
+  --ice-blue:       #93C5FD;
+  --ice-blue-dim:   rgba(147, 197, 253, 0.15);
+  --verified:       #14B8A6;
+  --verified-dim:   rgba(20, 184, 166, 0.14);
+
+  /* Semantic */
+  --success:        #10B981;
+  --success-dim:    rgba(16, 185, 129, 0.12);
+  --warning:        #F59E0B;
+  --warning-dim:    rgba(245, 158, 11, 0.12);
+  --danger:         #EF4444;
+  --danger-dim:     rgba(239, 68, 68, 0.12);
+  --info:           #3B82F6;
+  --info-dim:       rgba(59, 130, 246, 0.12);
+  --cyan:           #06B6D4;
+  --cyan-dim:       rgba(6, 182, 212, 0.12);
+
+  /* Text hierarchy */
+  --text:           #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-muted:     #64748B;
+  --text-dim:       #475569;
+
+  /* Gradients */
+  --gradient-brand:  linear-gradient(135deg, #6366F1 0%, #3B82F6 50%, #06B6D4 100%);
+  --gradient-text:   linear-gradient(135deg, #A5B4FC 0%, #93C5FD 50%, #67E8F9 100%);
+
+  /* Elevation shadows */
+  --shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md:  0 4px 16px rgba(0, 0, 0, 0.45);
+  --shadow-lg:  0 8px 32px rgba(0, 0, 0, 0.60);
 }
 
 /* ─── Base Resets ────────────────────────────────────────────── */
@@ -1047,24 +1112,29 @@
 
 @layer utilities {
   .dot-matrix {
-    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    background-image: radial-gradient(circle, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
     background-size: 24px 24px;
   }
 
-  /* Ambient glow backgrounds — landing page only, not dashboard */
+  .dark .dot-matrix {
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  /* Ambient glow backgrounds — subtle electric indigo and deep blue lighting */
   .ambient-glow-1 {
-    background: radial-gradient(ellipse at center, rgba(124, 58, 237, 0.12) 0%, transparent 70%);
-    filter: blur(80px);
+    background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.18) 0%, transparent 70%);
+    filter: blur(90px);
   }
 
   .ambient-glow-2 {
-    background: radial-gradient(ellipse at center, rgba(6, 182, 212, 0.08) 0%, transparent 70%);
-    filter: blur(80px);
+    background: radial-gradient(ellipse at center, rgba(59, 130, 246, 0.14) 0%, transparent 70%);
+    filter: blur(90px);
   }
 
   .ambient-glow-3 {
-    background: radial-gradient(ellipse at center, rgba(236, 72, 153, 0.06) 0%, transparent 70%);
-    filter: blur(80px);
+    background: radial-gradient(ellipse at center, rgba(20, 184, 166, 0.08) 0%, transparent 70%);
+    filter: blur(90px);
   }
 
   .aurora-bg {
@@ -1080,12 +1150,25 @@
     width: 200%;
     height: 200%;
     background:
-      radial-gradient(ellipse 600px 400px at 20% 30%, rgba(139, 92, 246, 0.10) 0%, transparent 60%),
-      radial-gradient(ellipse 500px 350px at 75% 20%, rgba(6, 182, 212, 0.07) 0%, transparent 60%),
-      radial-gradient(ellipse 400px 300px at 50% 80%, rgba(236, 72, 153, 0.05) 0%, transparent 60%);
+      radial-gradient(ellipse 650px 420px at 25% 25%, rgba(99, 102, 241, 0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 550px 380px at 75% 20%, rgba(59, 130, 246, 0.09) 0%, transparent 60%),
+      radial-gradient(ellipse 450px 320px at 50% 80%, rgba(20, 184, 166, 0.06) 0%, transparent 60%);
     animation: aurora-drift 24s ease-in-out infinite alternate;
     pointer-events: none;
     z-index: 0;
+  }
+
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  .tilt-card {
+    transform: rotateY(-6deg) rotateX(4deg);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+  }
+
+  .tilt-card:hover {
+    transform: rotateY(0deg) rotateX(0deg) translateY(-4px);
   }
 
   .heading-font {

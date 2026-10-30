@@ -14,6 +14,8 @@ import {
 import { GrowthChartPoint } from '@/types/dcc';
 import { TrendingUp } from 'lucide-react';
 
+import { useTheme } from '@/components/theme/useTheme';
+
 interface DCCCapabilityTrendChartProps {
   data: GrowthChartPoint[];
   height?: number;
@@ -23,15 +25,22 @@ export default function DCCCapabilityTrendChart({
   data = [],
   height = 200,
 }: DCCCapabilityTrendChartProps) {
+  const { effectiveTheme } = useTheme();
+  const isDark = effectiveTheme === 'dark';
+
+  const gridStroke = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.08)';
+  const axisLineStroke = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(15, 23, 42, 0.12)';
+  const tickFill = isDark ? '#71717A' : '#64748B';
+
   if (!data || data.length === 0) {
     return (
       <div 
         style={{ height }} 
-        className="flex flex-col items-center justify-center p-4 rounded-lg bg-zinc-900/30 border border-white/[0.04] text-center"
+        className="flex flex-col items-center justify-center p-4 rounded-lg bg-slate-50 dark:bg-zinc-900/30 border border-slate-200 dark:border-white/[0.04] text-center"
       >
-        <TrendingUp className="w-5 h-5 text-zinc-600 mb-1.5" />
-        <p className="text-xs text-zinc-400 font-medium">No Capability Progression Logged</p>
-        <p className="text-[11px] text-zinc-500 mt-0.5 max-w-xs">
+        <TrendingUp className="w-5 h-5 text-slate-400 dark:text-zinc-600 mb-1.5" />
+        <p className="text-xs text-slate-700 dark:text-zinc-400 font-medium">No Capability Progression Logged</p>
+        <p className="text-[11px] text-slate-500 dark:text-zinc-500 mt-0.5 max-w-xs">
           Analyze repositories to begin mapping verified capability growth over time.
         </p>
       </div>
@@ -61,18 +70,18 @@ export default function DCCCapabilityTrendChart({
             </linearGradient>
           </defs>
 
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
 
           <XAxis
             dataKey="date"
-            stroke="#64748B"
-            tick={{ fill: '#71717A', fontSize: 10, fontFamily: 'monospace' }}
-            axisLine={{ stroke: 'rgba(255, 255, 255, 0.08)' }}
+            stroke={tickFill}
+            tick={{ fill: tickFill, fontSize: 10, fontFamily: 'monospace' }}
+            axisLine={{ stroke: axisLineStroke }}
             tickLine={false}
           />
           <YAxis
-            stroke="#64748B"
-            tick={{ fill: '#71717A', fontSize: 10, fontFamily: 'monospace' }}
+            stroke={tickFill}
+            tick={{ fill: tickFill, fontSize: 10, fontFamily: 'monospace' }}
             axisLine={false}
             tickLine={false}
             domain={['auto', 'auto']}
@@ -83,8 +92,8 @@ export default function DCCCapabilityTrendChart({
               if (active && payload && payload.length) {
                 const milestone = payload[0]?.payload?.milestone;
                 return (
-                  <div className="p-2.5 rounded-lg bg-[#0D121A] border border-white/10 shadow-xl text-xs font-mono">
-                    <p className="font-semibold text-zinc-300 pb-1 border-b border-white/[0.06] mb-1.5">{label}</p>
+                  <div className="p-2.5 rounded-lg bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/10 shadow-xl text-xs font-mono text-slate-800 dark:text-zinc-300">
+                    <p className="font-semibold text-slate-900 dark:text-zinc-300 pb-1 border-b border-slate-100 dark:border-white/[0.06] mb-1.5">{label}</p>
                     {payload.map((p, i) => (
                       <p key={i} style={{ color: p.color }} className="flex items-center justify-between gap-4 py-0.5">
                         <span>{p.name}:</span>
@@ -92,7 +101,7 @@ export default function DCCCapabilityTrendChart({
                       </p>
                     ))}
                     {milestone && (
-                      <p className="mt-1.5 pt-1 border-t border-white/[0.06] text-[10px] text-zinc-400 font-sans italic">
+                      <p className="mt-1.5 pt-1 border-t border-slate-100 dark:border-white/[0.06] text-[10px] text-slate-500 dark:text-zinc-400 font-sans italic">
                         {milestone}
                       </p>
                     )}

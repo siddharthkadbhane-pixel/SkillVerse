@@ -5,8 +5,8 @@ import * as schema from '@/database/schema';
 import fs from 'fs';
 import path from 'path';
 
-// If DATABASE_URL is not set, load it from .env manually
-if (!process.env.DATABASE_URL) {
+// If APP_DATABASE_URL or DATABASE_URL is not set, load it from .env manually
+if (!process.env.APP_DATABASE_URL && !process.env.DATABASE_URL) {
   try {
     const envPath = path.resolve(process.cwd(), '.env');
     if (fs.existsSync(envPath)) {
@@ -32,62 +32,175 @@ if (!process.env.DATABASE_URL) {
 }
 
 import { sql } from 'drizzle-orm';
+import {
+  validateRuntimeDatabaseConfig,
+  assertNoAutoDDLInProduction,
+  redactDatabaseUrl,
+  type RuntimeDbConfig,
+} from './db-config';
 
-const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/postgres';
+export { validateRuntimeDatabaseConfig, assertNoAutoDDLInProduction, redactDatabaseUrl };
+export type { RuntimeDbConfig };
 
-// Fast connection settings configured for Neon serverless postgres
-const client = postgres(connectionString, {
-  prepare: false,
-  connect_timeout: 15,
-  idle_timeout: 30,
-  max: 10,
-  ssl: 'require',
-});
+declare global {
+  // eslint-disable-next-line no-var
+  var _postgresClient: ReturnType<typeof postgres> | undefined;
+}
+
+// Fail-fast runtime database role validation:
+// In production, enforces explicit APP_DATABASE_URL and rejects administrative roles (e.g., neondb_owner)
+const runtimeConfig = validateRuntimeDatabaseConfig(process.env);
+const connectionString = runtimeConfig.connectionString;
+
+// Resilient singleton connection configured for Neon serverless pooler
+const client =
+  globalThis._postgresClient ||
+  postgres(connectionString, {
+    prepare: false,
+    connect_timeout: 15,
+    idle_timeout: 30,
+    max: process.env.NODE_ENV === 'production' ? 10 : 5,
+    ssl: 'require',
+  });
+
+if (process.env.NODE_ENV !== 'production') {
+  globalThis._postgresClient = client;
+}
 
 export const db = drizzle(client, { schema });
 
-// High-speed Database Circuit Breaker
-let isDbOnline = true;
-let lastDbFailure = 0;
-const DB_RETRY_INTERVAL_MS = 15000; // After 15 seconds, attempt one probe query
+// ============================================================================
+// Production-Grade Database Circuit Breaker & Reliability Telemetry
+// ============================================================================
+export type CircuitBreakerState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 
-export function recordDbSuccess() {
-  isDbOnline = true;
-  lastDbFailure = 0;
+export interface DbMetrics {
+  totalQueries: number;
+  successfulQueries: number;
+  failedQueries: number;
+  timedOutQueries: number;
+  circuitBreakerTrips: number;
+  halfOpenProbes: number;
+  recoveredCount: number;
+  consecutiveFailures: number;
+  state: CircuitBreakerState;
+  lastFailureTime: number;
+  lastSuccessTime: number;
+  lastStateChange: number;
 }
 
-export function recordDbFailure() {
-  isDbOnline = false;
-  lastDbFailure = Date.now();
+export const dbMetrics: DbMetrics = {
+  totalQueries: 0,
+  successfulQueries: 0,
+  failedQueries: 0,
+  timedOutQueries: 0,
+  circuitBreakerTrips: 0,
+  halfOpenProbes: 0,
+  recoveredCount: 0,
+  consecutiveFailures: 0,
+  state: 'CLOSED',
+  lastFailureTime: 0,
+  lastSuccessTime: 0,
+  lastStateChange: Date.now(),
+};
+
+const FAILURE_THRESHOLD = 3; // Trip after 3 consecutive connection or timeout failures
+const CIRCUIT_RESET_TIMEOUT_MS = 10000; // After 10s of being OPEN, probe in HALF_OPEN
+const MINIMUM_SAFE_TIMEOUT_MS = 5000; // Safe floor preventing timeouts while protecting against micro-timeouts
+const DEFAULT_QUERY_TIMEOUT_MS = 8000; // Default bounded timeout for standard remote cloud queries
+
+let isProbeInFlight = false;
+
+export function getDbMetrics(): Readonly<DbMetrics> {
+  return { ...dbMetrics };
+}
+
+export function recordDbSuccess() {
+  dbMetrics.successfulQueries++;
+  isProbeInFlight = false;
+  if (dbMetrics.state === 'HALF_OPEN') {
+    dbMetrics.state = 'CLOSED';
+    dbMetrics.recoveredCount++;
+    dbMetrics.lastStateChange = Date.now();
+  } else if (dbMetrics.state === 'OPEN') {
+    dbMetrics.state = 'CLOSED';
+    dbMetrics.lastStateChange = Date.now();
+  }
+  dbMetrics.consecutiveFailures = 0;
+  dbMetrics.lastSuccessTime = Date.now();
+}
+
+export function recordDbFailure(isTimeout = false) {
+  dbMetrics.failedQueries++;
+  isProbeInFlight = false;
+  if (isTimeout) {
+    dbMetrics.timedOutQueries++;
+  }
+  dbMetrics.consecutiveFailures++;
+  dbMetrics.lastFailureTime = Date.now();
+
+  if (dbMetrics.state === 'HALF_OPEN' || dbMetrics.consecutiveFailures >= FAILURE_THRESHOLD) {
+    if (dbMetrics.state !== 'OPEN') {
+      dbMetrics.state = 'OPEN';
+      dbMetrics.circuitBreakerTrips++;
+      dbMetrics.lastStateChange = Date.now();
+    }
+  }
 }
 
 export function checkDbAvailability(): boolean {
-  if (isDbOnline) return true;
-  if (Date.now() - lastDbFailure > DB_RETRY_INTERVAL_MS) {
-    // Retry interval elapsed, allow 1 probe query through
+  if (dbMetrics.state === 'CLOSED') {
     return true;
   }
-  return false;
+  if (dbMetrics.state === 'OPEN') {
+    // If retry interval elapsed, transition to HALF_OPEN to allow 1 probe query
+    if (Date.now() - dbMetrics.lastFailureTime > CIRCUIT_RESET_TIMEOUT_MS) {
+      dbMetrics.state = 'HALF_OPEN';
+      dbMetrics.halfOpenProbes++;
+      dbMetrics.lastStateChange = Date.now();
+      isProbeInFlight = true;
+      return true;
+    }
+    return false;
+  }
+  if (dbMetrics.state === 'HALF_OPEN') {
+    // Prevent thundering herd: allow strictly one concurrent probe through
+    if (isProbeInFlight) {
+      return false;
+    }
+    isProbeInFlight = true;
+    return true;
+  }
+  return true;
 }
 
 /**
- * Executes a database query with circuit breaker and strict timeout to prevent slow blocking responses
+ * Executes a database query with circuit breaker and bounded timeout to prevent cascading blocks.
+ * Enforces a minimum safe timeout floor (5000ms) to accommodate serverless Neon latency and prevent micro-timeouts.
  */
-export async function withDbTimeout<T>(promise: Promise<T>, timeoutMs = 5000): Promise<T> {
-  // If DB circuit breaker is open (known offline/timing out), reject instantly (0ms)
+export async function withDbTimeout<T>(promise: Promise<T>, timeoutMs = DEFAULT_QUERY_TIMEOUT_MS): Promise<T> {
+  dbMetrics.totalQueries++;
+
+  // Fast rejection when circuit breaker is actively OPEN or probing in HALF_OPEN
   if (!checkDbAvailability()) {
-    return Promise.reject(new Error('DB currently offline (circuit breaker open)'));
+    const reason = dbMetrics.state === 'HALF_OPEN'
+      ? 'DB currently probing recovery (circuit breaker half-open)'
+      : 'DB currently offline (circuit breaker open)';
+    return Promise.reject(new Error(reason));
   }
+
+  // Enforce a bounded safe timeout floor
+  const effectiveTimeoutMs = Math.max(MINIMUM_SAFE_TIMEOUT_MS, timeoutMs);
 
   return new Promise<T>((resolve, reject) => {
     let settled = false;
     const timer = setTimeout(() => {
       if (!settled) {
         settled = true;
-        recordDbFailure();
-        reject(new Error(`DB operation timed out after ${timeoutMs}ms`));
+        recordDbFailure(true);
+        reject(new Error(`DB operation timed out after ${effectiveTimeoutMs}ms`));
       }
-    }, timeoutMs);
+    }, effectiveTimeoutMs);
 
     promise
       .then((res) => {
@@ -104,11 +217,13 @@ export async function withDbTimeout<T>(promise: Promise<T>, timeoutMs = 5000): P
           clearTimeout(timer);
           if (
             err?.code === 'CONNECT_TIMEOUT' ||
+            err?.code === 'ECONNRESET' ||
+            err?.code === 'ECONNREFUSED' ||
             err?.message?.includes('TIMEOUT') ||
             err?.message?.includes('timeout') ||
             err?.message?.includes('Connection')
           ) {
-            recordDbFailure();
+            recordDbFailure(false);
           }
           reject(err);
         }
@@ -116,8 +231,9 @@ export async function withDbTimeout<T>(promise: Promise<T>, timeoutMs = 5000): P
   });
 }
 
-// Idempotent database schema sync helper
+// Idempotent database schema sync helper (development/test only)
 export async function syncDatabaseSchema() {
+  assertNoAutoDDLInProduction('syncDatabaseSchema()');
   if (!checkDbAvailability()) {
     return;
   }
@@ -125,6 +241,46 @@ export async function syncDatabaseSchema() {
     // Quick connection probe with timeout before running schema migrations
     await withDbTimeout(db.execute(sql`SELECT 1;`), 8000);
     console.log('🔄 Checking database schema updates...');
+    // Ensure Better Auth columns and tables exist (Phase 44 Supabase Exit)
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified boolean NOT NULL DEFAULT false;`);
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        expires_at timestamp NOT NULL,
+        token text NOT NULL UNIQUE,
+        created_at timestamp NOT NULL DEFAULT now(),
+        updated_at timestamp NOT NULL DEFAULT now(),
+        ip_address text,
+        user_agent text,
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS accounts (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        account_id text NOT NULL,
+        provider_id text NOT NULL,
+        user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        access_token text,
+        refresh_token text,
+        id_token text,
+        access_token_expires_at timestamp,
+        refresh_token_expires_at timestamp,
+        scope text,
+        password text,
+        created_at timestamp NOT NULL DEFAULT now(),
+        updated_at timestamp NOT NULL DEFAULT now()
+      );
+
+      CREATE TABLE IF NOT EXISTS verifications (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        identifier text NOT NULL,
+        value text NOT NULL,
+        expires_at timestamp NOT NULL,
+        created_at timestamp DEFAULT now(),
+        updated_at timestamp DEFAULT now()
+      );
+    `);
+
     // Ensure new reviews columns exist
     await db.execute(sql`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS health_scores jsonb;`);
     await db.execute(sql`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS intelligence_report jsonb;`);

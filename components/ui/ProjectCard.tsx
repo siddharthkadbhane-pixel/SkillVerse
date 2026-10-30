@@ -51,23 +51,23 @@ export default function ProjectCard({
   reviewId,
 }: ProjectCardProps) {
   return (
-    <div className="group bg-[#0E1117] border border-white/[0.07] hover:border-white/[0.12] rounded-xl p-4 transition-colors flex flex-col gap-3">
+    <div className="group bg-white dark:bg-[#0E1117] border border-slate-200 dark:border-white/[0.07] hover:border-slate-300 dark:hover:border-white/[0.12] rounded-xl p-4 transition-colors flex flex-col gap-3 shadow-sm">
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          <Code2 className="w-3.5 h-3.5 text-[#64748B] shrink-0" />
-          <h3 className="text-[13px] font-medium text-[#F1F5F9] group-hover:text-[#A78BFA] transition-colors truncate">
+          <Code2 className="w-3.5 h-3.5 text-slate-400 dark:text-[#64748B] shrink-0" />
+          <h3 className="text-[13px] font-medium text-slate-900 dark:text-[#F1F5F9] group-hover:text-[#6366F1] dark:group-hover:text-[#93C5FD] transition-colors truncate">
             {name}
           </h3>
         </div>
         <div className="shrink-0">
           {isAnalyzed ? (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#10B981] bg-[rgba(16,185,129,0.10)] px-1.5 py-0.5 rounded">
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#14B8A6] bg-[#14B8A6]/10 px-1.5 py-0.5 rounded">
               <CheckCircle2 className="w-2.5 h-2.5" />
               {aiScore}
             </span>
           ) : (
-            <span className="text-[11px] text-[#64748B] bg-white/[0.04] px-1.5 py-0.5 rounded">
+            <span className="text-[11px] text-slate-500 dark:text-[#64748B] bg-slate-100 dark:bg-white/[0.04] px-1.5 py-0.5 rounded">
               Pending
             </span>
           )}
@@ -75,29 +75,29 @@ export default function ProjectCard({
       </div>
 
       {/* Description */}
-      <p className="text-[12px] text-[#64748B] line-clamp-2 leading-relaxed min-h-[32px]">
+      <p className="text-[12px] text-slate-500 dark:text-[#64748B] line-clamp-2 leading-relaxed min-h-[32px]">
         {description || 'No description provided.'}
       </p>
 
       {/* Metrics strip — compact 3-column */}
-      <div className="grid grid-cols-3 divide-x divide-white/[0.06] text-center bg-[#131720] border border-white/[0.05] rounded-lg py-2">
+      <div className="grid grid-cols-3 divide-x divide-slate-200 dark:divide-white/[0.06] text-center bg-slate-50 dark:bg-[#131720] border border-slate-200 dark:border-white/[0.05] rounded-lg py-2">
         <div className="flex flex-col gap-0.5">
-          <span className="text-[13px] font-medium text-[#F1F5F9]">{stars}</span>
-          <span className="text-[10px] text-[#475569]">Stars</span>
+          <span className="text-[13px] font-medium text-slate-900 dark:text-[#F1F5F9]">{stars}</span>
+          <span className="text-[10px] text-slate-400 dark:text-[#475569]">Stars</span>
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="text-[13px] font-medium text-[#F1F5F9]">{commitCount}</span>
-          <span className="text-[10px] text-[#475569]">Commits</span>
+          <span className="text-[13px] font-medium text-slate-900 dark:text-[#F1F5F9]">{commitCount}</span>
+          <span className="text-[10px] text-slate-400 dark:text-[#475569]">Commits</span>
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="text-[13px] font-medium text-[#10B981]">{healthScore}%</span>
-          <span className="text-[10px] text-[#475569]">Health</span>
+          <span className="text-[13px] font-medium text-[#14B8A6]">{healthScore}%</span>
+          <span className="text-[10px] text-slate-400 dark:text-[#475569]">Health</span>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-1 border-t border-white/[0.06] text-[11.5px]">
-        <div className="flex items-center gap-3 text-[#64748B]">
+      <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-white/[0.06] text-[11.5px]">
+        <div className="flex items-center gap-3 text-slate-500 dark:text-[#64748B]">
           {language && (
             <span className="flex items-center gap-1.5">
               <span
@@ -121,13 +121,13 @@ export default function ProjectCard({
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`View ${name} on GitHub`}
-            className="text-[#475569] hover:text-[#F1F5F9] transition-colors"
+            className="text-slate-400 dark:text-[#475569] hover:text-slate-900 dark:hover:text-[#F1F5F9] transition-colors"
           >
             <Github className="w-3.5 h-3.5" />
           </a>
           <Link
             href={`/reviews?repo=${encodeURIComponent(fullName || name)}`}
-            className="inline-flex items-center gap-1 text-[11.5px] font-medium text-[#A78BFA] hover:text-[#C4B5FD] transition-colors"
+            className="inline-flex items-center gap-1 text-[11.5px] font-medium text-[#6366F1] dark:text-[#93C5FD] hover:underline transition-colors"
           >
             Audit
             <ArrowUpRight className="w-3 h-3" />

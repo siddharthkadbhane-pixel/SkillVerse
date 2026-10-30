@@ -17,7 +17,7 @@ export default function Skeleton({
 }: SkeletonProps) {
   return (
     <div
-      className={`skeleton ${rounded ? 'rounded-full' : 'rounded-lg'} ${className}`}
+      className={`animate-pulse bg-slate-200 dark:bg-slate-800/80 ${rounded ? 'rounded-full' : 'rounded-xl'} ${className}`}
       style={{
         width: typeof width === 'number' ? `${width}px` : width,
         height: `${height}px`,

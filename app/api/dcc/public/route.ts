@@ -23,19 +23,7 @@ export async function GET(req: NextRequest) {
     } catch {}
 
     if (!targetUser) {
-      if (username === 'siddharthkadbhane-pixel') {
-        targetUser = {
-          id: '00000000-0000-0000-0000-000000000000',
-          email: 'developer@skillverse.dev',
-          name: 'Sidharth Kadbhane',
-          username: 'siddharthkadbhane-pixel',
-          avatarUrl: 'https://avatars.githubusercontent.com/u/84218321?v=4',
-          bio: 'Full Stack Engineer specializing in TypeScript, Next.js, PostgreSQL and Distributed AI Pipelines.',
-          location: 'Mumbai, India',
-        };
-      } else {
-        return NextResponse.json({ success: false, error: 'Developer not found' }, { status: 404 });
-      }
+      return NextResponse.json({ success: false, error: 'Developer not found' }, { status: 404 });
     }
 
     // Check privacy settings safely

@@ -48,25 +48,14 @@ export async function GET(req: NextRequest) {
         success: true,
         data: logs,
       });
-    } catch {
-      // Fallback mock history logs
-      return NextResponse.json({
-        success: true,
-        data: [
-          {
-            id: 'sh_mock_1',
-            skillName: 'TypeScript',
-            category: 'Programming Languages',
-            previousLevel: 70,
-            currentLevel: 85,
-            growthPercent: 15,
-            version: '1.0.0',
-            createdAt: new Date(Date.now() - 3600000).toISOString(),
-          }
-        ]
-      });
+    } catch (dbErr: any) {
+      console.error('[API Skills History] Database read error:', dbErr?.message);
+      return NextResponse.json(
+        { success: false, error: 'Database operation failed: unable to fetch skills history' },
+        { status: 500 }
+      );
     }
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
   }
 }

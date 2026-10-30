@@ -21,18 +21,18 @@ export default function StatCard({
   subtitle,
   trend,
   icon: Icon,
-  iconColor = 'text-[#7C3AED]',
+  iconColor = 'text-[#6366F1]',
   className = '',
 }: StatCardProps) {
   return (
     <div
-      className={`bg-[#0E1117] border border-white/[0.07] rounded-xl p-4 flex flex-col gap-2 ${className}`}
+      className={`bg-white dark:bg-[#0E1117] border border-slate-200 dark:border-white/[0.07] rounded-xl p-4 flex flex-col gap-2 shadow-sm transition-colors ${className}`}
     >
       {/* Header row */}
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[11.5px] font-medium text-[#64748B]">{label}</span>
+        <span className="text-[11.5px] font-medium text-slate-500 dark:text-[#64748B]">{label}</span>
         {Icon && (
-          <div className="p-1.5 rounded-lg bg-[#131720] border border-white/[0.06]">
+          <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-[#131720] border border-slate-200 dark:border-white/[0.06]">
             <Icon className={`w-3.5 h-3.5 ${iconColor}`} />
           </div>
         )}
@@ -40,7 +40,7 @@ export default function StatCard({
 
       {/* Value row */}
       <div className="flex items-baseline gap-2">
-        <span className="text-[22px] font-semibold tracking-tight text-[#F1F5F9] leading-none">
+        <span className="text-[22px] font-semibold tracking-tight text-slate-900 dark:text-[#F1F5F9] leading-none">
           {value}
         </span>
         {trend && (
@@ -48,7 +48,7 @@ export default function StatCard({
             className={[
               'text-[11px] font-medium px-1.5 py-0.5 rounded',
               trend.isPositive !== false
-                ? 'text-[#10B981] bg-[rgba(16,185,129,0.10)]'
+                ? 'text-[#14B8A6] bg-[#14B8A6]/10'
                 : 'text-[#EF4444] bg-[rgba(239,68,68,0.10)]',
             ].join(' ')}
           >
@@ -59,7 +59,7 @@ export default function StatCard({
 
       {/* Subtitle */}
       {(subtitle || trend?.label) && (
-        <p className="text-[11.5px] text-[#475569] truncate leading-snug">
+        <p className="text-[11.5px] text-slate-400 dark:text-[#475569] truncate leading-snug">
           {trend?.label ? `${trend.label} · ` : ''}
           {subtitle}
         </p>

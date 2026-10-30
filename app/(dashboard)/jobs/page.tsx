@@ -91,7 +91,7 @@ export default function OpportunityDiscoveryPage() {
   ];
 
   return (
-    <div className="flex h-screen bg-[#070A0F] text-[#F8FAFC]">
+    <div className="flex h-screen bg-slate-50 dark:bg-[#070A0F] text-slate-900 dark:text-[#F8FAFC]">
       <Sidebar />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -103,24 +103,24 @@ export default function OpportunityDiscoveryPage() {
             <div>
               <div className="flex items-center gap-2">
                 <Briefcase className="w-5 h-5 text-[#38BDF8]" />
-                <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
                   Verified Engineering Opportunities
                 </h1>
-                <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/25">
+                <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-[#10B981]/10 text-emerald-700 dark:text-[#10B981] border border-[#10B981]/25">
                   DCC 2.0 Matched
                 </span>
               </div>
-              <p className="text-xs text-[#94A3B8] mt-1">
+              <p className="text-xs text-slate-600 dark:text-[#94A3B8] mt-1">
                 Opportunities matched transparently against your verified AST code reviews, capability areas, and project proofs.
               </p>
             </div>
           </div>
 
           {/* Search & Filter Bar */}
-          <div className="bg-[#0D121A] border border-white/[0.08] p-5 rounded-2xl space-y-4">
+          <div className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] p-5 rounded-2xl space-y-4 shadow-sm">
             <div className="flex flex-col sm:flex-row items-center gap-3">
               <div className="relative flex-1 w-full">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-[#64748B]" />
                 <input
                   type="text"
                   value={search}
@@ -129,13 +129,13 @@ export default function OpportunityDiscoveryPage() {
                     if (e.key === 'Enter') fetchOpportunities();
                   }}
                   placeholder="Search by title, required technology, or company name..."
-                  className="w-full bg-[#111722] border border-white/[0.08] rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#38BDF8] transition-colors"
+                  className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#64748B] focus:outline-none focus:border-[#38BDF8] transition-colors"
                 />
               </div>
 
               <button
                 onClick={fetchOpportunities}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#38BDF8] hover:bg-[#0284C7] text-black text-xs font-bold transition-all shadow-md shadow-[#38BDF8]/20"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#38BDF8] hover:bg-[#0284C7] text-slate-950 text-xs font-bold transition-all shadow-md shadow-[#38BDF8]/20"
               >
                 Find Roles
               </button>
@@ -150,8 +150,8 @@ export default function OpportunityDiscoveryPage() {
                     onClick={() => setTypeFilter(opt.value)}
                     className={`px-3 py-1.5 rounded-lg text-[11px] font-mono transition-colors shrink-0 ${
                       typeFilter === opt.value
-                        ? 'bg-[#38BDF8] text-black font-bold'
-                        : 'bg-[#111722] text-[#94A3B8] hover:text-white border border-white/[0.06]'
+                        ? 'bg-[#38BDF8] text-slate-950 font-bold'
+                        : 'bg-slate-100 hover:bg-slate-200 dark:bg-[#111722] dark:hover:bg-white/[0.08] text-slate-700 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-white/[0.06]'
                     }`}
                   >
                     {opt.label}
@@ -163,7 +163,7 @@ export default function OpportunityDiscoveryPage() {
                 <select
                   value={capabilityFilter}
                   onChange={(e) => setCapabilityFilter(e.target.value === 'All Capabilities' ? 'all' : e.target.value)}
-                  className="bg-[#111722] border border-white/[0.08] text-white text-[11px] font-mono rounded-lg px-2.5 py-1.5 focus:outline-none"
+                  className="bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-white text-[11px] font-mono rounded-lg px-2.5 py-1.5 focus:outline-none"
                 >
                   {capabilityOptions.map(cap => (
                     <option key={cap} value={cap}>{cap}</option>
@@ -173,12 +173,12 @@ export default function OpportunityDiscoveryPage() {
                 <select
                   value={workplaceFilter}
                   onChange={(e) => setWorkplaceFilter(e.target.value)}
-                  className="bg-[#111722] border border-white/[0.08] text-white text-[11px] font-mono rounded-lg px-2.5 py-1.5 focus:outline-none"
+                  className="bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-white text-[11px] font-mono rounded-lg px-2.5 py-1.5 focus:outline-none"
                 >
                   <option value="all">All Locations</option>
                   <option value="remote">Remote Only</option>
                   <option value="hybrid">Hybrid</option>
-                  <option value="onsite">Onsite</option>
+                  <option value="onsite">On-Site</option>
                 </select>
               </div>
             </div>
@@ -190,10 +190,10 @@ export default function OpportunityDiscoveryPage() {
               Matching opportunities against your Developer Capability Card...
             </div>
           ) : opportunities.length === 0 ? (
-            <div className="bg-[#0D121A] border border-white/[0.08] rounded-2xl p-12 text-center space-y-3">
-              <Briefcase className="w-8 h-8 text-[#64748B] mx-auto" />
-              <h3 className="text-sm font-bold text-white">No opportunities matched your criteria</h3>
-              <p className="text-xs text-[#94A3B8] max-w-sm mx-auto">
+            <div className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-12 text-center space-y-3 shadow-sm">
+              <Briefcase className="w-8 h-8 text-slate-400 dark:text-[#64748B] mx-auto" />
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">No opportunities matched your criteria</h3>
+              <p className="text-xs text-slate-600 dark:text-[#94A3B8] max-w-sm mx-auto">
                 Try expanding your search filters or exploring all opportunity types.
               </p>
             </div>
@@ -203,17 +203,17 @@ export default function OpportunityDiscoveryPage() {
                 const match = opp.matchEvaluation;
                 const matchBadgeColor =
                   match?.matchTier === 'Strong Match'
-                    ? 'bg-[#10B981]/15 text-[#10B981] border-[#10B981]/30'
+                    ? 'bg-[#10B981]/15 text-emerald-700 dark:text-[#10B981] border-[#10B981]/30'
                     : match?.matchTier === 'Good Match'
-                    ? 'bg-[#38BDF8]/15 text-[#38BDF8] border-[#38BDF8]/30'
+                    ? 'bg-[#38BDF8]/15 text-cyan-700 dark:text-[#38BDF8] border-[#38BDF8]/30'
                     : match?.matchTier === 'Moderate Match'
-                    ? 'bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/30'
-                    : 'bg-[#64748B]/15 text-[#94A3B8] border-[#64748B]/30';
+                    ? 'bg-[#F59E0B]/15 text-amber-700 dark:text-[#F59E0B] border-[#F59E0B]/30'
+                    : 'bg-slate-100 dark:bg-[#64748B]/15 text-slate-600 dark:text-[#94A3B8] border-slate-200 dark:border-[#64748B]/30';
 
                 return (
                   <div
                     key={opp.id}
-                    className="bg-[#0D121A] border border-white/[0.08] hover:border-white/[0.16] rounded-2xl p-6 transition-all space-y-4"
+                    className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.16] rounded-2xl p-6 transition-all space-y-4 shadow-sm"
                   >
                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                       {/* Left Company & Title */}
@@ -221,23 +221,23 @@ export default function OpportunityDiscoveryPage() {
                         <img
                           src={opp.company.logoUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80'}
                           alt={opp.company.name}
-                          className="w-12 h-12 rounded-xl border border-white/[0.1] shrink-0 object-cover"
+                          className="w-12 h-12 rounded-xl border border-slate-200 dark:border-white/[0.1] shrink-0 object-cover"
                         />
                         <div className="space-y-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-base font-bold text-white leading-snug">
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
                               {opp.title}
                             </h3>
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#111722] text-[#94A3B8] border border-white/[0.06] uppercase">
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-[#111722] text-slate-600 dark:text-[#94A3B8] border border-slate-200 dark:border-white/[0.06] uppercase">
                               {opp.type.replace('_', ' ')}
                             </span>
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#111722] text-[#38BDF8] border border-[#38BDF8]/20">
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-50 dark:bg-[#111722] text-cyan-700 dark:text-[#38BDF8] border border-cyan-500/20">
                               {opp.workplaceType}
                             </span>
                           </div>
 
-                          <div className="flex flex-wrap items-center gap-3 text-xs text-[#94A3B8]">
-                            <span className="font-semibold text-[#F8FAFC]">{opp.company.name}</span>
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-[#94A3B8]">
+                            <span className="font-semibold text-slate-900 dark:text-[#F8FAFC]">{opp.company.name}</span>
                             <span>•</span>
                             <span className="flex items-center gap-1">
                               <MapPin className="w-3.5 h-3.5" />
@@ -246,7 +246,7 @@ export default function OpportunityDiscoveryPage() {
                             {opp.salaryRange && (
                               <>
                                 <span>•</span>
-                                <span className="text-[#34D399] font-mono font-semibold">
+                                <span className="text-emerald-600 dark:text-[#34D399] font-mono font-semibold">
                                   {opp.salaryRange}
                                 </span>
                               </>
@@ -266,7 +266,7 @@ export default function OpportunityDiscoveryPage() {
 
                         <button
                           onClick={(e) => handleToggleSave(e, opp)}
-                          className="p-2 rounded-xl bg-[#111722] border border-white/[0.08] hover:border-white/[0.15] text-[#94A3B8] hover:text-white transition-colors"
+                          className="p-2 rounded-xl bg-slate-100 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.15] text-slate-600 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-white transition-colors"
                           title={opp.isSaved ? 'Remove from saved' : 'Save opportunity'}
                         >
                           {opp.isSaved ? (
@@ -278,31 +278,31 @@ export default function OpportunityDiscoveryPage() {
                       </div>
                     </div>
 
-                    <p className="text-xs text-[#94A3B8] leading-relaxed line-clamp-2">
+                    <p className="text-xs text-slate-600 dark:text-[#94A3B8] leading-relaxed line-clamp-2">
                       {opp.description}
                     </p>
 
                     {/* Transparent Match Reason Callout */}
                     {match && (
-                      <div className="bg-[#111722] border border-white/[0.06] p-3 rounded-xl flex items-start gap-2 text-[11px] text-[#94A3B8]">
-                        <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0 mt-0.5" />
+                      <div className="bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.06] p-3 rounded-xl flex items-start gap-2 text-[11px] text-slate-600 dark:text-[#94A3B8]">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-[#10B981] shrink-0 mt-0.5" />
                         <div className="leading-relaxed">
-                          <strong className="text-white">DCC Match Analysis: </strong>
+                          <strong className="text-slate-900 dark:text-white">DCC Match Analysis: </strong>
                           {match.whyExplanation}
                         </div>
                       </div>
                     )}
 
                     {/* Bottom Requirements & Action */}
-                    <div className="pt-2 border-t border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="pt-2 border-t border-slate-100 dark:border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-[10px] font-mono text-[#64748B] uppercase tracking-wider mr-1">
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-[#64748B] uppercase tracking-wider mr-1">
                           Required:
                         </span>
                         {opp.requiredSkills.map(sk => (
                           <span
                             key={sk}
-                            className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#070A0F] border border-white/[0.06] text-[#E2E8F0]"
+                            className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-[#070A0F] border border-slate-200 dark:border-white/[0.06] text-slate-700 dark:text-[#E2E8F0]"
                           >
                             {sk}
                           </span>
@@ -311,14 +311,14 @@ export default function OpportunityDiscoveryPage() {
 
                       <div className="flex items-center gap-2 shrink-0">
                         {opp.hasApplied ? (
-                          <span className="text-xs font-mono font-bold text-[#10B981] px-3 py-1.5 rounded-xl bg-[#10B981]/10 border border-[#10B981]/25">
+                          <span className="text-xs font-mono font-bold text-emerald-700 dark:text-[#10B981] px-3 py-1.5 rounded-xl bg-[#10B981]/10 border border-[#10B981]/25">
                             ✓ Applied ({opp.userApplicationStatus || 'applied'})
                           </span>
                         ) : null}
 
                         <Link
                           href={`/jobs/${opp.id}`}
-                          className="px-4 py-2 rounded-xl bg-[#38BDF8] hover:bg-[#0284C7] text-black text-xs font-bold transition-colors flex items-center gap-1.5 shadow-md shadow-[#38BDF8]/20"
+                          className="px-4 py-2 rounded-xl bg-[#38BDF8] hover:bg-[#0284C7] text-slate-950 text-xs font-bold transition-colors flex items-center gap-1.5 shadow-md shadow-[#38BDF8]/20"
                         >
                           <span>View Details & Apply</span>
                           <ArrowRight className="w-3.5 h-3.5" />

@@ -43,24 +43,24 @@ export default function DCCShareModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fade-in">
-      <div className="w-full max-w-lg rounded-xl border border-white/10 bg-[#0D121A] p-6 shadow-2xl flex flex-col gap-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+      <div className="w-full max-w-lg rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0D121A] p-6 shadow-2xl flex flex-col gap-5">
         
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-[#7C3AED]/15 text-[#C4B5FD] border border-[#7C3AED]/30">
+            <div className="p-2 rounded-lg bg-[#7C3AED]/15 text-[#7C3AED] dark:text-[#C4B5FD] border border-[#7C3AED]/30">
               <Share2 className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">Share Developer Capability Card</h3>
-              <p className="text-xs text-[#94A3B8]">Verified evidence-backed proof of skill identity</p>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Share Developer Capability Card</h3>
+              <p className="text-xs text-slate-500 dark:text-[#94A3B8]">Verified evidence-backed proof of skill identity</p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1 rounded-md text-[#94A3B8] hover:text-white hover:bg-[#111722] transition-all"
+            className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:text-[#94A3B8] dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#111722] transition-all"
           >
             <X className="w-4 h-4" />
           </button>
@@ -68,7 +68,7 @@ export default function DCCShareModal({
 
         {/* Public Share URL */}
         <div className="flex flex-col gap-2">
-          <label className="text-xs font-mono text-[#94A3B8] flex items-center gap-1.5">
+          <label className="text-xs font-mono text-slate-600 dark:text-[#94A3B8] flex items-center gap-1.5">
             <Globe className="w-3.5 h-3.5 text-[#7C3AED]" />
             Public Shareable Link:
           </label>
@@ -77,7 +77,7 @@ export default function DCCShareModal({
               type="text"
               readOnly
               value={publicUrl}
-              className="flex-1 px-3 py-2 text-xs font-mono bg-[#111722] border border-white/[0.08] rounded-lg text-[#F8FAFC] focus:outline-none"
+              className="flex-1 px-3 py-2 text-xs font-mono bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-900 dark:text-[#F8FAFC] focus:outline-none"
             />
             <button
               onClick={() => copyToClipboard(publicUrl, 'link')}
@@ -91,8 +91,8 @@ export default function DCCShareModal({
 
         {/* Markdown Badge */}
         <div className="flex flex-col gap-2">
-          <label className="text-xs font-mono text-[#94A3B8] flex items-center gap-1.5">
-            <Code className="w-3.5 h-3.5 text-[#38BDF8]" />
+          <label className="text-xs font-mono text-slate-600 dark:text-[#94A3B8] flex items-center gap-1.5">
+            <Code className="w-3.5 h-3.5 text-cyan-600 dark:text-[#38BDF8]" />
             GitHub README Markdown Badge:
           </label>
           <div className="flex items-center gap-2">
@@ -100,11 +100,11 @@ export default function DCCShareModal({
               type="text"
               readOnly
               value={markdownBadge}
-              className="flex-1 px-3 py-2 text-xs font-mono bg-[#111722] border border-white/[0.08] rounded-lg text-[#64748B] focus:outline-none truncate"
+              className="flex-1 px-3 py-2 text-xs font-mono bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-600 dark:text-[#64748B] focus:outline-none truncate"
             />
             <button
               onClick={() => copyToClipboard(markdownBadge, 'badge')}
-              className="px-3.5 py-2 text-xs font-semibold bg-[#111722] hover:bg-[#151B26] text-[#F8FAFC] border border-white/[0.08] rounded-lg transition-all flex items-center gap-1.5 shrink-0"
+              className="px-3.5 py-2 text-xs font-semibold bg-slate-100 dark:bg-[#111722] hover:bg-slate-200 dark:hover:bg-[#151B26] text-slate-700 dark:text-[#F8FAFC] border border-slate-200 dark:border-white/[0.08] rounded-lg transition-all flex items-center gap-1.5 shrink-0"
             >
               {copiedType === 'badge' ? <Check className="w-3.5 h-3.5 text-[#10B981]" /> : <Copy className="w-3.5 h-3.5" />}
               <span>{copiedType === 'badge' ? 'Copied' : 'Copy'}</span>
@@ -113,19 +113,19 @@ export default function DCCShareModal({
         </div>
 
         {/* Footer */}
-        <div className="pt-3 border-t border-white/[0.08] flex items-center justify-between">
+        <div className="pt-3 border-t border-slate-100 dark:border-white/[0.08] flex items-center justify-between">
           <a
             href={publicUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-[#A78BFA] hover:underline font-semibold inline-flex items-center gap-1"
+            className="text-xs text-[#7C3AED] dark:text-[#A78BFA] hover:underline font-semibold inline-flex items-center gap-1"
           >
             Preview Public Profile <ExternalLink className="w-3.5 h-3.5" />
           </a>
 
           <button
             onClick={onClose}
-            className="px-4 py-1.5 text-xs font-semibold rounded-lg bg-[#111722] text-[#F8FAFC] hover:bg-[#151B26] border border-white/[0.06] transition-all"
+            className="px-4 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-[#111722] text-slate-700 dark:text-[#F8FAFC] hover:bg-slate-200 dark:hover:bg-[#151B26] border border-slate-200 dark:border-white/[0.06] transition-all"
           >
             Done
           </button>

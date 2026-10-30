@@ -1,12 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { CompanyWorkspaceService, DEFAULT_COMPANY_ID } from '@/services/company/workspace';
-import { getSessionUser } from '@/services/supabase';
+import { CompanyWorkspaceService } from '@/services/company/workspace';
+import { AuthorizationGuard } from '@/services/security/authorizer';
+import { CompanyRole } from '@/types/company';
 import { Logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const companyId = searchParams.get('companyId') || DEFAULT_COMPANY_ID;
+    const companyId = searchParams.get('companyId');
+
+    if (!companyId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Bad Request',
+        message: 'companyId query parameter is required.',
+      }, { status: 400 });
+    }
+
+    const auth = await AuthorizationGuard.requireCompanyMembership(req, companyId);
+    if (!auth.authorized) {
+      return auth.response!;
+    }
 
     const members = await CompanyWorkspaceService.getCompanyMembers(companyId);
 
@@ -26,20 +40,34 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const companyId = body.companyId || DEFAULT_COMPANY_ID;
+    const companyId = body?.companyId;
     const { email, role } = body;
 
-    if (!email) {
+    if (!companyId) {
       return NextResponse.json({
         success: false,
-        error: 'Email address is required for member invitation.',
+        error: 'Bad Request',
+        message: 'companyId is required in request body.',
       }, { status: 400 });
     }
 
-    const sessionUser = await getSessionUser();
-    const inviterId = sessionUser?.id || '00000000-0000-0000-0000-000000000002';
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+      return NextResponse.json({
+        success: false,
+        error: 'Bad Request',
+        message: 'A valid email address is required for member invitation.',
+      }, { status: 400 });
+    }
 
-    const result = await CompanyWorkspaceService.inviteMember(companyId, email, role || 'recruiter', inviterId);
+    const auth = await AuthorizationGuard.requireCompanyMembership(req, companyId, 'company_admin');
+    if (!auth.authorized) {
+      return auth.response!;
+    }
+
+    const targetRole: CompanyRole = role === 'company_admin' ? 'company_admin' : 'recruiter';
+    const inviterId = auth.context.user.id;
+
+    const result = await CompanyWorkspaceService.inviteMember(companyId, email, targetRole, inviterId);
 
     return NextResponse.json(result);
   } catch (error: any) {
@@ -54,19 +82,23 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const companyId = searchParams.get('companyId') || DEFAULT_COMPANY_ID;
+    const companyId = searchParams.get('companyId');
     const memberId = searchParams.get('memberId');
 
-    if (!memberId) {
+    if (!companyId || !memberId) {
       return NextResponse.json({
         success: false,
-        error: 'Member ID is required.',
+        error: 'Bad Request',
+        message: 'Both companyId and memberId query parameters are required.',
       }, { status: 400 });
     }
 
-    const sessionUser = await getSessionUser();
-    const requesterId = sessionUser?.id || '00000000-0000-0000-0000-000000000002';
+    const auth = await AuthorizationGuard.requireCompanyMembership(req, companyId, 'company_admin');
+    if (!auth.authorized) {
+      return auth.response!;
+    }
 
+    const requesterId = auth.context.user.id;
     const result = await CompanyWorkspaceService.removeMember(companyId, memberId, requesterId);
 
     return NextResponse.json(result);

@@ -108,7 +108,26 @@ export class ApiAuthService {
 
     // 2. Try Session Cookie (First-party Web App)
     try {
-      const sessionUser = await getSessionUser();
+      let sessionUser = await getSessionUser();
+
+      // In development/test environments, also inspect request cookies directly
+      if (!sessionUser && isDemoAuthEnabled()) {
+        const demoUserId = req.cookies.get('skillverse_demo_user')?.value;
+        if (demoUserId) {
+          const testUser = DUMMY_USERS.find((u) => u.id === demoUserId);
+          if (testUser) {
+            sessionUser = {
+              id: testUser.id,
+              email: testUser.email,
+              username: testUser.username,
+              name: testUser.name,
+              role: testUser.role,
+              avatarUrl: testUser.avatarUrl,
+            } as any;
+          }
+        }
+      }
+
       if (sessionUser && sessionUser.id) {
         const fullScopes: ApiScope[] = [
           'read:profile',

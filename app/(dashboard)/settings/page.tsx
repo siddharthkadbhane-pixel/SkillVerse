@@ -10,13 +10,16 @@ import {
   Trash2, Plus, Copy, Check, RefreshCw,
   CreditCard, Sparkles, Zap, ShieldCheck, Layers,
   BarChart3, ArrowUpRight, Info, Calendar, ArrowRight,
-  Download, Lock, FileText, Scale, Cookie, UserX, AlertTriangle, UserCheck
+  Download, Lock, FileText, Scale, Cookie, UserX, AlertTriangle, UserCheck,
+  Sun, Moon, Monitor
 } from 'lucide-react';
+import { useTheme, ThemePreference } from '@/components/theme/useTheme';
 
-
-const TABS = ['Profile', 'Billing & Usage', 'Integrations', 'API Keys', 'Webhooks', 'Notifications', 'Privacy'];
+const TABS = ['Profile', 'Appearance', 'Billing & Usage', 'Integrations', 'API Keys', 'Webhooks', 'Notifications', 'Privacy'];
 
 export default function SettingsPage() {
+  const { preference: themePref, effectiveTheme, setTheme } = useTheme();
+  const [themeFeedback, setThemeFeedback] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   const [trustScore, setTrustScore] = useState<any>(null);
@@ -493,6 +496,171 @@ export default function SettingsPage() {
               </div>
             )}
 
+            {/* Appearance Tab */}
+            {activeTab === 'Appearance' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {themeFeedback && (
+                  <div
+                    style={{
+                      padding: '12px 16px',
+                      borderRadius: 10,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      fontSize: 13,
+                      background: 'rgba(16, 185, 129, 0.1)',
+                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                      color: '#10B981',
+                    }}
+                  >
+                    <CheckCircle2 style={{ width: 16, height: 16 }} />
+                    <span>{themeFeedback}</span>
+                  </div>
+                )}
+
+                <div className="sv-card">
+                  <div className="sv-card-header">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Sparkles style={{ width: 14, height: 14, color: '#6366F1' }} />
+                      <span className="sv-card-title">Theme Preference</span>
+                    </div>
+                  </div>
+                  <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <div>
+                      <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: 'var(--sv-text)' }}>
+                        Interface Color Theme
+                      </p>
+                      <p style={{ margin: 0, fontSize: 13, color: 'var(--sv-text-muted)' }}>
+                        Select your preferred theme across all workspaces. Changes are saved to local preferences and synchronized immediately.
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginTop: 8 }}>
+                      {[
+                        {
+                          id: 'light' as ThemePreference,
+                          label: 'Light Theme',
+                          desc: 'Crisp white surfaces with balanced slate typography and refined borders.',
+                          icon: Sun,
+                          accent: '#E0E7FF',
+                          border: '#6366F1',
+                        },
+                        {
+                          id: 'dark' as ThemePreference,
+                          label: 'Dark Theme',
+                          desc: 'Deep cosmic canvas (#08090D) optimized for low-light focus and developer flow.',
+                          icon: Moon,
+                          accent: '#1E1B4B',
+                          border: '#6366F1',
+                        },
+                        {
+                          id: 'system' as ThemePreference,
+                          label: 'System Sync',
+                          desc: 'Matches your OS appearance preferences and updates automatically when they change.',
+                          icon: Monitor,
+                          accent: '#312E81',
+                          border: '#6366F1',
+                        },
+                      ].map((item) => {
+                        const Icon = item.icon;
+                        const isSelected = themePref === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => {
+                              setTheme(item.id);
+                              setThemeFeedback(`Switched to ${item.label}. Applied across all workspaces.`);
+                              setTimeout(() => setThemeFeedback(null), 3500);
+                            }}
+                            className="text-left"
+                            style={{
+                              padding: '16px',
+                              borderRadius: 12,
+                              background: isSelected ? 'var(--sv-surface-2)' : 'var(--sv-surface)',
+                              border: isSelected ? '2px solid #6366F1' : '1px solid var(--sv-border)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 12,
+                              transition: 'all 200ms ease',
+                              position: 'relative',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <div
+                                style={{
+                                  width: 36,
+                                  height: 36,
+                                  borderRadius: 8,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  background: isSelected ? '#6366F1' : 'var(--sv-surface-2)',
+                                  color: isSelected ? '#FFFFFF' : 'var(--sv-text)',
+                                  transition: 'background 200ms, color 200ms',
+                                }}
+                              >
+                                <Icon style={{ width: 18, height: 18 }} />
+                              </div>
+                              {isSelected && (
+                                <span
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                    color: '#6366F1',
+                                    background: 'rgba(99, 102, 241, 0.1)',
+                                    padding: '2px 8px',
+                                    borderRadius: 9999,
+                                    border: '1px solid rgba(99, 102, 241, 0.25)',
+                                  }}
+                                >
+                                  <Check style={{ width: 12, height: 12 }} />
+                                  Active
+                                </span>
+                              )}
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--sv-text)', marginBottom: 4 }}>
+                                {item.label}
+                              </div>
+                              <div style={{ fontSize: 12, color: 'var(--sv-text-muted)', lineHeight: 1.45 }}>
+                                {item.desc}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 12,
+                        padding: '14px 16px',
+                        borderRadius: 10,
+                        background: 'var(--sv-surface-2)',
+                        border: '1px solid var(--sv-border)',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 10,
+                      }}
+                    >
+                      <Info style={{ width: 16, height: 16, color: '#6366F1', marginTop: 2, flexShrink: 0 }} />
+                      <div style={{ fontSize: 12.5, color: 'var(--sv-text-muted)', lineHeight: 1.5 }}>
+                        <span style={{ fontWeight: 600, color: 'var(--sv-text)' }}>Active Runtime Theme: </span>
+                        Currently rendering in <span style={{ textTransform: 'capitalize', fontWeight: 600, color: '#6366F1' }}>{effectiveTheme}</span> mode
+                        {themePref === 'system' ? ' (synced from OS preferences).' : '.'}
+                        {' '}All charts, skill DNA visualizations, and activity feeds adapt their color contrast automatically.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Billing & Usage Tab */}
             {activeTab === 'Billing & Usage' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -518,9 +686,9 @@ export default function SettingsPage() {
                 {/* Top Metrics Grid */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
                   {/* Current Active Plan Card */}
-                  <div className="sv-card" style={{ padding: 18, border: '1px solid rgba(124, 58, 237, 0.3)', background: 'linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, rgba(13, 18, 26, 0.8) 100%)' }}>
+                  <div className="sv-card" style={{ padding: 18, border: '1px solid rgba(99, 102, 241, 0.3)', background: 'linear-gradient(180deg, rgba(99, 102, 241, 0.08) 0%, var(--sv-surface-2) 100%)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#A78BFA' }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6366F1' }}>
                         Active Subscription
                       </span>
                       <span className="sv-badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
@@ -530,10 +698,10 @@ export default function SettingsPage() {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <h2 style={{ fontSize: 18, fontWeight: 700, color: '#F8FAFC', margin: 0 }}>
+                      <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--sv-text)', margin: 0 }}>
                         {billingPlan?.currentPlan?.name || 'Developer Free'}
                       </h2>
-                      <span className="sv-mono" style={{ fontSize: 20, fontWeight: 700, color: '#F8FAFC' }}>
+                      <span className="sv-mono" style={{ fontSize: 20, fontWeight: 700, color: 'var(--sv-text)' }}>
                         ${billingPlan?.currentPlan?.priceMonthly || 0}
                         <span style={{ fontSize: 11, color: 'var(--sv-text-subtle)', fontWeight: 400 }}> / mo</span>
                       </span>
@@ -543,10 +711,10 @@ export default function SettingsPage() {
                       {billingPlan?.currentPlan?.description || 'Core proof-of-capability engine for every software engineer.'}
                     </p>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11.5, color: '#94A3B8', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10 }}>
-                      <Calendar style={{ width: 13, height: 13, color: '#A78BFA' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11.5, color: 'var(--sv-text-muted)', borderTop: '1px solid var(--sv-border)', paddingTop: 10 }}>
+                      <Calendar style={{ width: 13, height: 13, color: '#6366F1' }} />
                       <span>
-                        Period resets in <strong style={{ color: '#F8FAFC' }}>{usageSummary?.period?.daysRemaining ?? 30} days</strong> ({new Date(usageSummary?.period?.periodEnd || Date.now() + 30 * 86400000).toLocaleDateString()})
+                        Period resets in <strong style={{ color: 'var(--sv-text)' }}>{usageSummary?.period?.daysRemaining ?? 30} days</strong> ({new Date(usageSummary?.period?.periodEnd || Date.now() + 30 * 86400000).toLocaleDateString()})
                       </span>
                     </div>
                   </div>

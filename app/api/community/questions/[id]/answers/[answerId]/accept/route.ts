@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CommunityEngine } from '@/services/community/engine';
-import { getSessionUser } from '@/services/supabase';
+import { AuthorizationGuard } from '@/services/security/authorizer';
 import { Logger } from '@/lib/logger';
 
 export async function PATCH(
@@ -8,9 +8,13 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string; answerId: string }> }
 ) {
   try {
+    const auth = await AuthorizationGuard.requireAuth(req);
+    if (!auth.authorized) {
+      return auth.response!;
+    }
+
     const { id, answerId } = await params;
-    const sessionUser = await getSessionUser();
-    const userId = sessionUser?.id || '00000000-0000-0000-0000-000000000005';
+    const userId = auth.context.user.id;
 
     const result = await CommunityEngine.acceptAnswer(id, answerId, userId);
 

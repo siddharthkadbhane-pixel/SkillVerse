@@ -567,7 +567,7 @@ export class OpportunityEngine {
   }
 
   /**
-   * Updates application review status (Company Recruiter / Admin only)
+   * Updates application review status (Company Recruiter / Admin only, scoped to company)
    */
   static async updateApplicationStatus(
     companyId: string,
@@ -575,58 +575,117 @@ export class OpportunityEngine {
     status: ApplicationStatus
   ): Promise<{ success: boolean; message: string }> {
     try {
+      const app = await withDbTimeout(
+        db.query.applications.findFirst({
+          where: eq(applications.id, applicationId as any),
+        }),
+        250
+      );
+
+      if (!app) {
+        return { success: false, message: 'Application not found.' };
+      }
+
+      const job = await withDbTimeout(
+        db.query.jobs.findFirst({
+          where: and(eq(jobs.id, app.jobId), eq(jobs.companyId, companyId)),
+        }),
+        250
+      );
+
+      if (!job) {
+        return { success: false, message: 'Application does not belong to this company workspace.' };
+      }
+
       await withDbTimeout(
         db.update(applications)
           .set({ status, updatedAt: new Date() })
           .where(eq(applications.id, applicationId as any)),
         250
       );
-    } catch {}
 
-    return {
-      success: true,
-      message: `Application status updated to ${status}.`,
-    };
+      return {
+        success: true,
+        message: `Application status updated to ${status}.`,
+      };
+    } catch {
+      return { success: false, message: 'Failed to update application status.' };
+    }
   }
 
   /**
-   * Retrieves applications for a company's opportunities
+   * Retrieves applications for a company's opportunities (scoped strictly to companyId)
    */
   static async getCompanyApplications(
     companyId: string,
     opportunityId?: string
   ): Promise<ApplicationItem[]> {
-    const opp = DUMMY_OPPORTUNITIES[0];
-    const dcc = await DeveloperCapabilityCardService.getFullDCC('00000000-0000-0000-0000-000000000000');
-    const match = this.evaluateDCCMatch(dcc, opp);
+    try {
+      const companyJobs = await withDbTimeout(
+        db.query.jobs.findMany({
+          where: opportunityId
+            ? and(eq(jobs.companyId, companyId), eq(jobs.id, opportunityId as any))
+            : eq(jobs.companyId, companyId),
+        }),
+        300
+      );
 
-    return [
-      {
-        id: 'app-sample-1',
-        opportunityId: opp.id,
-        opportunity: {
-          id: opp.id,
-          title: opp.title,
-          type: opp.type,
-          company: opp.company,
-        },
-        userId: '00000000-0000-0000-0000-000000000000',
-        developer: {
-          name: 'Sidharth Kadbhane',
-          username: 'siddharthkadbhane-pixel',
-          avatarUrl: 'https://avatars.githubusercontent.com/u/84218321?v=4',
-          dccLevel: 'Expert',
-          overallScore: 840,
-          topVerifiedSkills: ['TypeScript', 'React', 'Next.js', 'PostgreSQL'],
-        },
-        coverLetter: 'Passionate full-stack developer with verified AST modularity benchmarks and active Next.js repositories.',
-        status: 'applied',
-        matchScore: match.matchPercentage,
-        matchDetails: match,
-        createdAt: new Date(Date.now() - 3600 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - 3600 * 1000).toISOString(),
-      },
-    ];
+      if (!companyJobs || companyJobs.length === 0) {
+        return [];
+      }
+
+      const jobIds = companyJobs.map(j => j.id);
+      const appRows = await withDbTimeout(
+        db.query.applications.findMany({
+          where: inArray(applications.jobId, jobIds as any[]),
+          orderBy: [desc(applications.createdAt)],
+        }),
+        300
+      );
+
+      if (!appRows || appRows.length === 0) {
+        return [];
+      }
+
+      return appRows.map(app => {
+        const job = companyJobs.find(j => j.id === app.jobId);
+        return {
+          id: app.id,
+          opportunityId: app.jobId,
+          opportunity: {
+            id: job?.id || app.jobId,
+            title: job?.title || 'Job Opportunity',
+            type: (job?.type as any) || 'full_time',
+            company: {
+              id: companyId,
+              name: 'Company',
+              logoUrl: null,
+              website: null,
+              description: null,
+              verificationStatus: 'verified',
+              location: 'Remote',
+            },
+          },
+          userId: app.userId,
+          developer: {
+            name: 'Candidate',
+            username: 'candidate',
+            avatarUrl: null,
+            dccLevel: 'Builder',
+            overallScore: app.matchScore || 700,
+            topVerifiedSkills: ['Full-Stack'],
+          },
+          coverLetter: app.coverLetter || '',
+          status: app.status as ApplicationStatus,
+          matchScore: app.matchScore || 0,
+          matchDetails: (app.matchDetails as any) || {},
+          createdAt: app.createdAt.toISOString(),
+          updatedAt: app.updatedAt.toISOString(),
+        };
+      });
+    } catch {}
+
+    return [];
   }
 
   /**

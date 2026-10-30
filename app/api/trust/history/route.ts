@@ -60,31 +60,14 @@ export async function GET(req: NextRequest) {
         success: true,
         data: historyLogs,
       });
-    } catch {
-      // Fallback mock logs on database error
-      return NextResponse.json({
-        success: true,
-        data: [
-          {
-            id: 'h_mock_1',
-            overallScore: 840,
-            categoryScores: {
-              codeQuality: 85,
-              maintainability: 82,
-              security: 78,
-              performance: 88,
-              testing: 20,
-              gitActivity: 75,
-              documentation: 80,
-            },
-            engineVersion: '1.0.0',
-            explanation: 'Recalculation triggered by NextJS AI Agent codebase review.',
-            createdAt: new Date(Date.now() - 3600000).toISOString(),
-          }
-        ]
-      });
+    } catch (dbErr: any) {
+      console.error('[API Trust History] Database read error:', dbErr?.message);
+      return NextResponse.json(
+        { success: false, error: 'Database operation failed: unable to fetch trust history' },
+        { status: 500 }
+      );
     }
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
   }
 }

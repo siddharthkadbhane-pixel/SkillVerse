@@ -172,8 +172,7 @@ export class PersonalAccessTokenService {
         db
           .update(personalAccessTokens)
           .set({ lastUsedAt: new Date(), updatedAt: new Date() })
-          .where(eq(personalAccessTokens.id, tokenRow.id)),
-        200
+          .where(eq(personalAccessTokens.id, tokenRow.id))
       ).catch(() => {});
     } catch {}
 
@@ -206,8 +205,7 @@ export class PersonalAccessTokenService {
       rows = await withDbTimeout(
         db.query.personalAccessTokens.findMany({
           where: eq(personalAccessTokens.userId, userId),
-        }),
-        300
+        })
       );
     } catch {
       rows = Array.from(inMemoryTokenStore.values()).filter(t => t.userId === userId);
@@ -257,8 +255,7 @@ export class PersonalAccessTokenService {
         db
           .update(personalAccessTokens)
           .set({ revokedAt: new Date(), updatedAt: new Date() })
-          .where(and(eq(personalAccessTokens.id, tokenId), eq(personalAccessTokens.userId, userId))),
-        300
+          .where(and(eq(personalAccessTokens.id, tokenId), eq(personalAccessTokens.userId, userId)))
       );
       found = true;
     } catch (err: any) {
