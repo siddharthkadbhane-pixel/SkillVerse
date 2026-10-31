@@ -88,9 +88,109 @@ In 95% of operational incidents, destructive DDL rollback is **not** required. U
 
 ---
 
-## 6. Least-Privilege Role Rollback Safety
+## 6. Least-Privilege Role Rollback & Mandatory Connection Draining Gate
 
-When executing `phase44-least-privilege-roles-rollback.sql`:
-1. **Revert Environment Variable:** Update `DATABASE_URL` in application secrets back to `neondb_owner` BEFORE revoking role privileges.
-2. **Cluster-Wide Role Warning:** PostgreSQL roles are global to the database cluster. Ensure `skillverse_app` is not utilized by another database on the same Neon project before dropping.
-3. **Clean Dependency Removal:** The script executes `REASSIGN OWNED BY` and `DROP OWNED BY` prior to `DROP ROLE` to prevent `dependent objects exist` fatal errors.
+When executing `database/migrations/phase44-least-privilege-roles-rollback.sql`, operators must follow this strict 7-step sequence. Do NOT execute the SQL rollback script while web runtime connections remain active.
+
+```mermaid
+flowchart TD
+    S1["1. Stop / Redirect Application Traffic"] --> S2["2. Update Vercel Recovery Environment Variables"]
+    S2 --> S3["3. Redeploy or Set Maintenance Mode"]
+    S3 --> S4["4. Drain Application Connection Pools"]
+    S4 --> S5["5. Verification Gate: 0 Active Sessions in pg_stat_activity"]
+    S5 --> S6["6. Execute phase44-least-privilege-roles-rollback.sql as neondb_owner"]
+    S6 --> S7["7. Verify Table Ownership Restoration & Role Removal"]
+```
+
+### Step-by-Step Rollback Execution Sequence:
+
+1. **Stop or Redirect Application Traffic:**
+   Place the application in maintenance mode or redirect ingress traffic to an offline status page.
+2. **Update Vercel Environment Configuration:**
+   Update the Vercel Production environment variables for the intended recovery deployment (see Section 7 for variable compatibility).
+3. **Redeploy or Enforce Maintenance Mode:**
+   Trigger a deployment in Vercel to activate maintenance mode or pre-Phase 44 code, ensuring running pods begin terminating old connection pools.
+4. **Drain Application Connection Pools:**
+   Allow serverless functions and PgBouncer connection pools to drain active connections (minimum 30 seconds).
+5. **Verify Zero Remaining Connections (Mandatory Verification Gate):**
+   Connect as `neondb_owner` over the direct endpoint using `PGPASSFILE` and execute:
+   ```sql
+   SELECT pid, usename, client_addr, application_name, state
+   FROM pg_catalog.pg_stat_activity
+   WHERE usename IN ('skillverse_app', 'skillverse_migrator');
+   ```
+   *Gate Requirement:* This query **MUST return 0 rows** before proceeding. If any connections remain, terminate them manually and re-verify:
+   ```sql
+   SELECT pg_terminate_backend(pid)
+   FROM pg_catalog.pg_stat_activity
+   WHERE usename IN ('skillverse_app', 'skillverse_migrator')
+     AND pid <> pg_backend_pid();
+   ```
+   *Note:* The administrative session executing the query is explicitly excluded (`pid <> pg_backend_pid()`).
+6. **Execute Rollback Only After Verification Gate Passes:**
+   Execute the audited rollback script via direct endpoint using `PGPASSFILE`:
+   ```bash
+   psql -h ep-flat-rice-ao8kdffq.c-2.ap-southeast-1.aws.neon.tech -U neondb_owner -d neondb -p 5432 -v ON_ERROR_STOP=1 -f database/migrations/phase44-least-privilege-roles-rollback.sql
+   ```
+7. **Verify Ownership Restoration & Role Removal:**
+   Run post-rollback verification queries:
+   ```sql
+   -- Verify all public tables restored to neondb_owner
+   SELECT count(*) FROM pg_tables WHERE schemaname = 'public' AND tableowner != 'neondb_owner';
+   -- Expected: 0
+
+   -- Verify drizzle schema and migration ledger preserved and restored to neondb_owner
+   SELECT n.nspname, t.tablename, t.tableowner
+   FROM pg_catalog.pg_tables t
+   JOIN pg_catalog.pg_namespace n ON n.nspname = t.schemaname
+   WHERE n.nspname = 'drizzle' AND t.tableowner != 'neondb_owner';
+   -- Expected: 0 rows (drizzle schema and __drizzle_migrations preserved and owned by neondb_owner)
+
+   -- Verify roles dropped
+   SELECT rolname FROM pg_roles WHERE rolname IN ('skillverse_app', 'skillverse_migrator');
+   -- Expected: 0 rows
+   ```
+
+---
+
+## 7. Vercel Recovery Compatibility & Environment Variable Requirements
+
+> [!IMPORTANT]
+> **Vercel Deployment Rollback Limitation:** Rolling back a Git deployment in Vercel **does NOT automatically restore or revert project environment variables**. Project environment variables are global to the environment. The SRE must explicitly synchronize environment variables when switching between deployment generations.
+
+### Environment Variable Requirements Matrix:
+
+| Deployment Generation | Required Connection Variable | Prohibited Variables | Behavior / Guard |
+| :--- | :--- | :--- | :--- |
+| **Current Phase 44 Application** | `APP_DATABASE_URL` (points to `skillverse_app` on pooled host) | `DATABASE_URL` (with `neondb_owner`) | `lib/db-config.ts` throws fatal error on startup if `APP_DATABASE_URL` is omitted or contains admin roles. |
+| **Pre-Phase 44 Application (Phase 43D Baseline)** | `DATABASE_URL` (points to `neondb_owner` on pooled host) | None | Pre-Phase 44 code reads `DATABASE_URL` only. If `DATABASE_URL` is missing, application crashes with connection error. |
+| **Emergency Break-Glass Recovery** | `DATABASE_URL` (points to `neondb_owner` on pooled host) | N/A | Time-boxed service restoration while investigation occurs. Requires subsequent catalog rollback. |
+
+---
+
+## 8. DBA Credential Security Standard (PGPASSFILE & Non-CLI Ingestion)
+
+To eliminate process inspection (`ps aux`, `/proc/<pid>/cmdline`, Windows Process Explorer) and shell history leaks:
+
+1. **Zero Command-Line Passwords:** Never pass connection URIs containing passwords (`postgres://user:pass@host/db`) as command-line arguments to `psql` or any CLI utility.
+2. **Preferred Mechanism — `PGPASSFILE`:**
+   - Create a temporary, restricted-permission credentials file:
+     ```
+     ep-flat-rice-ao8kdffq.c-2.ap-southeast-1.aws.neon.tech:5432:neondb:<username>:<password>
+     ```
+   - **Linux/macOS:** Ensure permissions are strictly `0600` (`chmod 0600 ~/.pgpass` or `chmod 0600 "$PGPASSFILE"`).
+   - **Windows PowerShell:** Restrict file ACL to current user only:
+     ```powershell
+     icacls $pgpassPath /inheritance:r /grant:r "$($env:USERNAME):R"
+     $env:PGPASSFILE = $pgpassPath
+     ```
+   - Execute CLI with host, port, db, user flags:
+     ```bash
+     psql -h ep-flat-rice-ao8kdffq.c-2.ap-southeast-1.aws.neon.tech -U neondb_owner -d neondb -p 5432 -v ON_ERROR_STOP=1 -f <script.sql>
+     ```
+   - Securely wipe and remove the temporary file immediately after completion (`shred -u` or overwrite with zeros before deletion).
+3. **Alternative — Transient Environment Variable:**
+   If `PGPASSFILE` cannot be created, pass `PGPASSWORD` inside a subshell or `try/finally` block:
+   - **Linux/macOS:** `( export PGPASSWORD="<secret>" && psql -h ... -U ... -d ... )`
+   - **PowerShell:** `$env:PGPASSWORD = "<secret>"; try { psql -h ... -U ... -d ... } finally { $env:PGPASSWORD = $null }`
+   - *Note:* Environment variables are accessible to processes with same UID/privileges; `PGPASSFILE` with `0600` permissions remains the preferred standard.

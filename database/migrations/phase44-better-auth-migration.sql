@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
-CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
+-- Note: UNIQUE constraint on sessions(token) automatically creates unique index 'sessions_token_key'
 
 -- 3. Create accounts table
 CREATE TABLE IF NOT EXISTS accounts (

@@ -30,6 +30,8 @@ export default function Navbar({ user, breadcrumb }: NavbarProps) {
   const activeUsername = user?.username || 'siddharthkadbhane-pixel';
   const activeUser = DUMMY_USERS.find((u) => u.username === activeUsername) || DUMMY_USERS[0];
 
+  const isDev = process.env.NODE_ENV !== 'production';
+
   const isCompanyPath = pathname?.startsWith('/company');
   const searchPlaceholder = isCompanyPath
     ? 'Search developers, skills, jobs...'
@@ -46,13 +48,20 @@ export default function Navbar({ user, breadcrumb }: NavbarProps) {
   }, []);
 
   const switchAccount = async (targetUser: (typeof DUMMY_USERS)[0]) => {
+    if (!isDev) {
+      console.warn('Test account switching is disabled in production.');
+      return;
+    }
     try {
       setSwitching(true);
-      await fetch('/api/auth/demo', {
+      const res = await fetch('/api/auth/demo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: targetUser.id }),
       });
+      if (!res.ok) {
+        throw new Error('Failed to switch test account');
+      }
       setMenuOpen(false);
       const targetUrl =
         targetUser.role === 'recruiter' || targetUser.role === 'company_admin'
@@ -196,54 +205,63 @@ export default function Navbar({ user, breadcrumb }: NavbarProps) {
 
           {menuOpen && (
             <div className="absolute right-0 top-full mt-1.5 w-64 rounded-xl bg-white dark:bg-[#0E1117] border border-slate-200 dark:border-white/[0.10] shadow-xl z-50 overflow-hidden animate-scale-in">
-              {/* Header */}
-              <div className="px-3 py-2.5 border-b border-slate-100 dark:border-white/[0.07] flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-[#64748B]">
-                  <Sparkles className="w-3 h-3 text-[#6366F1]" />
-                  <span className="font-medium">Switch Test Account</span>
-                </div>
-                <span className="text-[10px] text-slate-400 dark:text-[#475569]">5 personas</span>
-              </div>
+              {/* Test account switcher (Dev Sandbox only) */}
+              {isDev ? (
+                <>
+                  <div className="px-3 py-2.5 border-b border-slate-100 dark:border-white/[0.07] flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-[#64748B]">
+                      <Sparkles className="w-3 h-3 text-[#6366F1]" />
+                      <span className="font-medium">Switch Test Account (Dev Sandbox)</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 dark:text-[#475569]">5 personas</span>
+                  </div>
 
-              {/* Account list */}
-              <div className="p-1.5 flex flex-col gap-0.5 max-h-64 overflow-y-auto">
-                {DUMMY_USERS.map((u) => {
-                  const isCurrent = u.id === activeUser.id;
-                  return (
-                    <button
-                      key={u.id}
-                      onClick={() => switchAccount(u)}
-                      disabled={switching}
-                      className={[
-                        'text-left px-2.5 py-2 rounded-lg transition-colors flex items-center gap-2.5 w-full',
-                        isCurrent
-                          ? 'bg-[rgba(99,102,241,0.08)] dark:bg-[rgba(99,102,241,0.15)] text-[#6366F1] dark:text-[#93C5FD]'
-                          : 'text-slate-600 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F1F5F9] hover:bg-slate-100 dark:hover:bg-[#181F2C]',
-                      ].join(' ')}
-                    >
-                      <img
-                        src={u.avatarUrl}
-                        alt=""
-                        className="w-7 h-7 rounded-full object-cover shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[12.5px] font-medium truncate">{u.name}</span>
-                          <span className="text-[10px] text-slate-400 dark:text-[#64748B] shrink-0 font-mono">
-                            {u.role === 'recruiter'
-                              ? 'Recruiter'
-                              : u.role === 'company_admin'
-                              ? 'Admin'
-                              : u.dccLevel}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-400 dark:text-[#475569] truncate">{u.role}</p>
-                      </div>
-                      {isCurrent && <Check className="w-3.5 h-3.5 text-[#6366F1] shrink-0" />}
-                    </button>
-                  );
-                })}
-              </div>
+                  {/* Account list */}
+                  <div className="p-1.5 flex flex-col gap-0.5 max-h-64 overflow-y-auto">
+                    {DUMMY_USERS.map((u) => {
+                      const isCurrent = u.id === activeUser.id;
+                      return (
+                        <button
+                          key={u.id}
+                          onClick={() => switchAccount(u)}
+                          disabled={switching}
+                          className={[
+                            'text-left px-2.5 py-2 rounded-lg transition-colors flex items-center gap-2.5 w-full',
+                            isCurrent
+                              ? 'bg-[rgba(99,102,241,0.08)] dark:bg-[rgba(99,102,241,0.15)] text-[#6366F1] dark:text-[#93C5FD]'
+                              : 'text-slate-600 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F1F5F9] hover:bg-slate-100 dark:hover:bg-[#181F2C]',
+                          ].join(' ')}
+                        >
+                          <img
+                            src={u.avatarUrl}
+                            alt=""
+                            className="w-7 h-7 rounded-full object-cover shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-[12.5px] font-medium truncate">{u.name}</span>
+                              <span className="text-[10px] text-slate-400 dark:text-[#64748B] shrink-0 font-mono">
+                                {u.role === 'recruiter'
+                                  ? 'Recruiter'
+                                  : u.role === 'company_admin'
+                                  ? 'Admin'
+                                  : u.dccLevel}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-400 dark:text-[#475569] truncate">{u.role}</p>
+                          </div>
+                          {isCurrent && <Check className="w-3.5 h-3.5 text-[#6366F1] shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <div className="px-3.5 py-3 border-b border-slate-100 dark:border-white/[0.07]">
+                  <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">{user?.name || activeUser.name}</p>
+                  <p className="text-[11px] text-slate-500 dark:text-[#64748B] truncate font-mono">@{user?.username || activeUser.username}</p>
+                </div>
+              )}
 
               {/* Footer */}
               <div

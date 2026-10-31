@@ -16,7 +16,14 @@ export default function LoginPage() {
   const [emailInput, setEmailInput] = useState('siddharth@skillverse.dev');
   const [passwordInput, setPasswordInput] = useState('password123');
 
+  const isDev = process.env.NODE_ENV !== 'production';
+
   const handleTestUserLogin = async (user: typeof DUMMY_USERS[0]) => {
+    if (!isDev) {
+      setErrorMsg('Test account login is disabled in production.');
+      return;
+    }
+
     try {
       setActiveUserSwitching(user.id);
       setLoading(true);
@@ -29,7 +36,8 @@ export default function LoginPage() {
       });
 
       if (!res.ok) {
-        throw new Error('Failed to set test session');
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to initialize test session');
       }
 
       // Route according to role
@@ -48,26 +56,42 @@ export default function LoginPage() {
     setLoading(true);
     setErrorMsg(null);
 
-    try {
-      // Find matching dummy user or fallback to primary developer
-      const matchedUser = DUMMY_USERS.find(u => u.email.toLowerCase() === emailInput.toLowerCase()) || DUMMY_USERS[0];
-      await handleTestUserLogin(matchedUser);
-    } catch {
-      router.push('/dashboard');
+    if (!isDev) {
+      setErrorMsg('Direct email/password login is not supported in production. Please sign in with GitHub.');
+      setLoading(false);
+      return;
     }
+
+    // In local development sandbox only, find matching test persona if exists
+    const matchedUser = DUMMY_USERS.find(u => u.email.toLowerCase() === emailInput.toLowerCase());
+    if (matchedUser) {
+      await handleTestUserLogin(matchedUser);
+    } else {
+      setErrorMsg('No development test account found for this email. Use an instant test persona or sign in with GitHub.');
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = () => {
+    setErrorMsg('Google OAuth is not configured. Please sign in with GitHub.');
   };
 
   const handleGithubLogin = async () => {
     try {
       setLoading(true);
       setErrorMsg(null);
-      await authClient.signIn.social({
+      const res = await authClient.signIn.social({
         provider: 'github',
         callbackURL: '/dashboard',
       });
+      if (res && (res as any).error) {
+        const msg = (res as any).error.message || 'GitHub OAuth failed. Please verify GitHub configuration or try again.';
+        setErrorMsg(msg);
+        setLoading(false);
+      }
     } catch (err: any) {
       console.error('Github Login Error:', err);
-      setErrorMsg(err.message || 'GitHub OAuth failed. Using instant test account instead.');
+      setErrorMsg(err?.message || 'GitHub OAuth sign-in failed. Please verify your connection or try again.');
       setLoading(false);
     }
   };
@@ -99,95 +123,101 @@ export default function LoginPage() {
             <Shield className="h-6 w-6 text-white" />
           </div>
           <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            SkillVerse Test & Demo Portal
+            {isDev ? 'SkillVerse Test & Demo Portal' : 'Sign in to SkillVerse'}
           </h2>
           <p className="text-slate-600 dark:text-slate-400 text-xs max-w-md">
-            Choose a verified persona below for instant 1-click evaluation, or sign in with custom credentials.
+            {isDev
+              ? 'Choose a verified persona below for instant 1-click evaluation, or sign in with custom credentials.'
+              : 'Sign in securely with your verified GitHub developer credentials.'}
           </p>
         </div>
 
         {/* Login Container */}
         <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0A0B10] shadow-xl p-6 sm:p-8 flex flex-col gap-6">
 
-          {/* ═══ SECTION: 1-CLICK TEST ACCOUNTS ═══ */}
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
-                Instant Test Accounts (1-Click Login)
-              </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">No OAuth required</span>
-            </div>
+          {/* ═══ SECTION: 1-CLICK TEST ACCOUNTS (DEV ONLY) ═══ */}
+          {isDev && (
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
+                  Instant Test Accounts (1-Click Login)
+                </span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">No OAuth required</span>
+              </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {DUMMY_USERS.map((user) => {
-                const isSwitching = activeUserSwitching === user.id;
-                const isDev = user.role === 'developer';
-                const isRecruiter = user.role === 'recruiter';
-                const isAdmin = user.role === 'company_admin';
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {DUMMY_USERS.map((user) => {
+                  const isSwitching = activeUserSwitching === user.id;
+                  const isDevUser = user.role === 'developer';
+                  const isRecruiter = user.role === 'recruiter';
+                  const isAdmin = user.role === 'company_admin';
 
-                return (
-                  <button
-                    key={user.id}
-                    onClick={() => handleTestUserLogin(user)}
-                    disabled={loading}
-                    type="button"
-                    className={`text-left p-3 rounded-xl border transition-all flex items-start gap-3 group relative overflow-hidden ${
-                      user.username === 'siddharthkadbhane-pixel'
-                        ? 'sm:col-span-2 bg-gradient-to-r from-indigo-50/80 dark:from-indigo-950/40 via-blue-50/50 dark:via-blue-900/20 to-teal-50/50 dark:to-teal-950/30 border-indigo-200 dark:border-indigo-500/30 hover:border-indigo-400'
-                        : 'bg-slate-50/70 dark:bg-white/[0.03] border-slate-200/80 dark:border-white/5 hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:bg-slate-100/60 dark:hover:bg-white/[0.06]'
-                    }`}
-                  >
-                    <img
-                      src={user.avatarUrl}
-                      alt={user.name}
-                      className="w-10 h-10 rounded-full object-cover shrink-0 border border-slate-200 dark:border-white/10"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 justify-between">
-                        <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">
-                          {user.name}
-                        </span>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold shrink-0 ${
-                          isAdmin ? 'bg-pink-500/15 text-pink-600 dark:text-pink-300' :
-                          isRecruiter ? 'bg-blue-500/15 text-blue-600 dark:text-blue-300' :
-                          user.dccLevel === 'Elite' ? 'bg-[#14B8A6]/15 text-[#0D9488] dark:text-[#14B8A6]' :
-                          'bg-indigo-500/15 text-indigo-600 dark:text-indigo-300'
-                        }`}>
-                          {isAdmin ? 'Admin' : isRecruiter ? 'Recruiter' : user.dccLevel}
-                        </span>
+                  return (
+                    <button
+                      key={user.id}
+                      onClick={() => handleTestUserLogin(user)}
+                      disabled={loading}
+                      type="button"
+                      className={`text-left p-3 rounded-xl border transition-all flex items-start gap-3 group relative overflow-hidden ${
+                        user.username === 'siddharthkadbhane-pixel'
+                          ? 'sm:col-span-2 bg-gradient-to-r from-indigo-50/80 dark:from-indigo-950/40 via-blue-50/50 dark:via-blue-900/20 to-teal-50/50 dark:to-teal-950/30 border-indigo-200 dark:border-indigo-500/30 hover:border-indigo-400'
+                          : 'bg-slate-50/70 dark:bg-white/[0.03] border-slate-200/80 dark:border-white/5 hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:bg-slate-100/60 dark:hover:bg-white/[0.06]'
+                      }`}
+                    >
+                      <img
+                        src={user.avatarUrl}
+                        alt={user.name}
+                        className="w-10 h-10 rounded-full object-cover shrink-0 border border-slate-200 dark:border-white/10"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 justify-between">
+                          <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">
+                            {user.name}
+                          </span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold shrink-0 ${
+                            isAdmin ? 'bg-pink-500/15 text-pink-600 dark:text-pink-300' :
+                            isRecruiter ? 'bg-blue-500/15 text-blue-600 dark:text-blue-300' :
+                            user.dccLevel === 'Elite' ? 'bg-[#14B8A6]/15 text-[#0D9488] dark:text-[#14B8A6]' :
+                            'bg-indigo-500/15 text-indigo-600 dark:text-indigo-300'
+                          }`}>
+                            {isAdmin ? 'Admin' : isRecruiter ? 'Recruiter' : user.dccLevel}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{user.tagline}</p>
+                        {isDevUser && (
+                          <div className="flex items-center gap-3 text-[10px] text-slate-600 dark:text-slate-400 mt-1 font-mono">
+                            <span>Score: <b className="text-slate-900 dark:text-white">{user.trustScore.overallScore}</b>/1000</span>
+                            <span>@{user.username}</span>
+                          </div>
+                        )}
                       </div>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{user.tagline}</p>
-                      {isDev && (
-                        <div className="flex items-center gap-3 text-[10px] text-slate-600 dark:text-slate-400 mt-1 font-mono">
-                          <span>Score: <b className="text-slate-900 dark:text-white">{user.trustScore.overallScore}</b>/1000</span>
-                          <span>@{user.username}</span>
+                      {isSwitching && (
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center gap-2 text-xs font-bold text-white">
+                          <span className="sv-spinner" style={{ width: 14, height: 14 }} />
+                          Entering...
                         </div>
                       )}
-                    </div>
-                    {isSwitching && (
-                      <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center gap-2 text-xs font-bold text-white">
-                        <span className="sv-spinner" style={{ width: 14, height: 14 }} />
-                        Entering...
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           {errorMsg && (
             <div className="rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 p-3 text-xs text-red-600 dark:text-red-400 flex items-center gap-2">
               <span className="shrink-0">⚠</span>
-              {errorMsg}
+              <span>{errorMsg}</span>
             </div>
           )}
 
           {/* Divider */}
           <div className="flex items-center gap-3">
             <div className="h-[1px] flex-grow bg-slate-200 dark:bg-white/[0.08]" />
-            <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">Or Sign In with OAuth / Email</span>
+            <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">
+              {isDev ? 'Or Sign In with OAuth / Email' : 'Or Continue With'}
+            </span>
             <div className="h-[1px] flex-grow bg-slate-200 dark:bg-white/[0.08]" />
           </div>
 
@@ -203,7 +233,7 @@ export default function LoginPage() {
             </button>
 
             <button
-              onClick={handleLogin}
+              onClick={handleGoogleLogin}
               disabled={loading}
               className="flex items-center justify-center gap-2 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 py-2.5 text-xs font-semibold text-slate-800 dark:text-white transition-all active:scale-98 hover:border-indigo-300 dark:hover:border-indigo-500/30 hover:bg-slate-100 dark:hover:bg-white/[0.06] group"
             >
@@ -269,7 +299,9 @@ export default function LoginPage() {
 
         {/* Footer info */}
         <p className="text-center text-[10px] text-slate-500 dark:text-slate-400 mt-4 leading-normal">
-          SkillVerse Test Suite &bull; Instant multi-role sandbox enabled &bull; Telemetry verification active
+          {isDev
+            ? 'SkillVerse Development Sandbox • Instant multi-role sandbox enabled • Telemetry verification active'
+            : 'SkillVerse • Verified Developer Credentialing & Talent Infrastructure'}
         </p>
       </div>
     </div>

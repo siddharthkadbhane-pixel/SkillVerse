@@ -4,6 +4,7 @@ import { db } from '@/lib/drizzle';
 import { users, sessions, accounts, verifications } from '@/database/schema';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
+import { redactDatabaseUrl } from '@/lib/db-config';
 
 export const DEV_FALLBACK_SECRET = 'skillverse_development_better_auth_secret_minimum_32_bytes_long';
 
@@ -151,8 +152,9 @@ export async function resolveUniqueUsername(
     });
   } catch (err: any) {
     // Fail closed: Do NOT swallow database errors during identity resolution!
-    console.error('[BetterAuth resolveUniqueUsername] Database error during collision check:', err?.message || err);
-    throw new Error(`Database error during username collision check: ${err?.message || 'Database unavailable'}`);
+    const sanitizedMsg = redactDatabaseUrl(err?.message || 'Database unavailable');
+    console.error('[BetterAuth resolveUniqueUsername] Database error during collision check:', sanitizedMsg);
+    throw new Error(`Database error during username collision check: ${sanitizedMsg}`);
   }
 
   // Case 1: Username is completely free
@@ -180,7 +182,8 @@ export async function resolveUniqueUsername(
         return candidateUsername;
       }
     } catch (err: any) {
-      throw new Error(`Database error during collision retry: ${err?.message || 'Database unavailable'}`);
+      const sanitizedMsg = redactDatabaseUrl(err?.message || 'Database unavailable');
+      throw new Error(`Database error during collision retry: ${sanitizedMsg}`);
     }
   }
 

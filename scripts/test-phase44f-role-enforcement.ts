@@ -19,6 +19,8 @@
  */
 
 import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
 import {
   validateRuntimeDatabaseConfig,
   validateMigratorDatabaseConfig,
@@ -250,6 +252,30 @@ async function runPhase44FTests() {
       failed = err.message.includes('Migration runner cannot use application runtime role "skillverse_app"');
     }
     assert(failed, 'Must reject skillverse_app role for running migrations');
+  });
+
+  await test('TEST-7.03: Migration runner rejects PgBouncer connection pooler host (-pooler)', () => {
+    let failed = false;
+    try {
+      validateMigratorDatabaseConfig({
+        NODE_ENV: 'production',
+        MIGRATOR_DATABASE_URL: 'postgresql://skillverse_migrator:pass@ep-staging-pooler.neon.tech/neondb',
+      });
+    } catch (err: any) {
+      failed =
+        err.message.includes('Migration runner rejected connection configured with connection pooler host') &&
+        err.message.includes('ep-staging-pooler.neon.tech');
+    }
+    assert(failed, 'Must reject pooled connections for migration runner');
+  });
+
+  await test('TEST-7.04: Migration runner accepts direct unpooled connection host', () => {
+    const config = validateMigratorDatabaseConfig({
+      NODE_ENV: 'production',
+      MIGRATOR_DATABASE_URL: 'postgresql://skillverse_migrator:pass@ep-staging-direct.neon.tech/neondb',
+    });
+    assert.strictEqual(config.username, 'skillverse_migrator');
+    assert.strictEqual(config.host, 'ep-staging-direct.neon.tech');
   });
 
   // ---------------------------------------------------------------------------
@@ -522,6 +548,156 @@ async function runPhase44FTests() {
     );
     assert(!authResult.authorized, 'Cross-company access must be denied');
     assert(authResult.response !== undefined);
+  });
+
+  // ---------------------------------------------------------------------------
+  // SCENARIO 15: Static SQL Security & Idempotency Invariants (Phase R7B)
+  // ---------------------------------------------------------------------------
+  console.log('\n▶ [15/15] Testing Static Migration SQL Invariants & Ownership Model...');
+
+  await test('TEST-15.01: phase44-least-privilege-roles.sql provisions roles with NOLOGIN and NO placeholder passwords', () => {
+    const sqlPath = path.resolve(__dirname, '../database/migrations/phase44-least-privilege-roles.sql');
+    const content = fs.readFileSync(sqlPath, 'utf-8');
+    assert(!content.includes('REPLACE_WITH_STAGING_APP_SECRET'), 'Must not contain static app placeholder password');
+    assert(!content.includes('REPLACE_WITH_STAGING_MIGRATOR_SECRET'), 'Must not contain static migrator placeholder password');
+    const nonCommentSql = content
+      .split('\n')
+      .filter((line) => !line.trim().startsWith('--'))
+      .join('\n');
+    assert(!nonCommentSql.includes("PASSWORD '"), 'Must not embed static PASSWORD clauses in executable role creation');
+    assert(nonCommentSql.includes('NOLOGIN'), 'Roles must initially be provisioned with NOLOGIN');
+  });
+
+  await test('TEST-15.02: phase44-least-privilege-roles.sql explicitly declares NOBYPASSRLS on both roles', () => {
+    const sqlPath = path.resolve(__dirname, '../database/migrations/phase44-least-privilege-roles.sql');
+    const content = fs.readFileSync(sqlPath, 'utf-8');
+    const matches = content.match(/NOBYPASSRLS/g) || [];
+    assert(matches.length >= 2, `Both skillverse_app and skillverse_migrator must declare NOBYPASSRLS (found ${matches.length})`);
+  });
+
+  await test('TEST-15.03: phase44-least-privilege-roles.sql transfers table and sequence ownership to skillverse_migrator', () => {
+    const sqlPath = path.resolve(__dirname, '../database/migrations/phase44-least-privilege-roles.sql');
+    const content = fs.readFileSync(sqlPath, 'utf-8');
+    assert(content.includes('ALTER TABLE public.%I OWNER TO skillverse_migrator'), 'Must transfer table ownership to skillverse_migrator');
+    assert(content.includes('ALTER SEQUENCE public.%I OWNER TO skillverse_migrator'), 'Must transfer sequence ownership to skillverse_migrator');
+    assert(content.includes('ALTER SCHEMA drizzle OWNER TO skillverse_migrator'), 'Must transfer drizzle schema ownership to skillverse_migrator');
+  });
+
+  await test('TEST-15.04: phase44-least-privilege-roles-rollback.sql guards role commands with existence checks', () => {
+    const sqlPath = path.resolve(__dirname, '../database/migrations/phase44-least-privilege-roles-rollback.sql');
+    const content = fs.readFileSync(sqlPath, 'utf-8');
+    assert(content.includes('v_migrator_exists'), 'Must check if skillverse_migrator exists');
+    assert(content.includes('v_app_exists'), 'Must check if skillverse_app exists');
+    assert(content.includes('DROP ROLE IF EXISTS skillverse_app'), 'Must use DROP ROLE IF EXISTS for skillverse_app');
+    assert(content.includes('DROP ROLE IF EXISTS skillverse_migrator'), 'Must use DROP ROLE IF EXISTS for skillverse_migrator');
+  });
+
+  await test('TEST-15.05: phase44-better-auth-migration.sql does not define redundant secondary index on sessions.token', () => {
+    const sqlPath = path.resolve(__dirname, '../database/migrations/phase44-better-auth-migration.sql');
+    const content = fs.readFileSync(sqlPath, 'utf-8');
+    assert(!content.includes('CREATE INDEX IF NOT EXISTS idx_sessions_token'), 'Must not define redundant secondary index on sessions.token');
+    assert(content.includes('token text NOT NULL UNIQUE'), 'Must define UNIQUE constraint on token');
+  });
+
+  await test('TEST-15.06: Custom enum type ownership transfer is present, scoped, and restored symmetrically', () => {
+    const forwardPath = path.resolve(__dirname, '../database/migrations/phase44-least-privilege-roles.sql');
+    const rollbackPath = path.resolve(__dirname, '../database/migrations/phase44-least-privilege-roles-rollback.sql');
+    const forwardContent = fs.readFileSync(forwardPath, 'utf-8');
+    const rollbackContent = fs.readFileSync(rollbackPath, 'utf-8');
+
+    // Forward verification
+    assert(forwardContent.includes("ALTER TYPE public.%I OWNER TO skillverse_migrator"), 'Must transfer enum types to skillverse_migrator');
+    assert(forwardContent.includes("n.nspname = 'public'"), 'Enum transfer must strictly scope to schema public');
+    assert(forwardContent.includes("t.typtype = 'e'"), 'Type transfer must strictly target enum types (typtype = e)');
+    assert(forwardContent.includes("t.typowner = v_db_owner::regrole"), 'Type transfer must filter to db owner');
+
+    // Rollback symmetry verification
+    assert(rollbackContent.includes("REASSIGN OWNED BY skillverse_migrator TO %I"), 'Rollback must reassign all migrator-owned objects (including types) to db owner');
+  });
+
+  // ---------------------------------------------------------------------------
+  // SCENARIO 16: Operational Runbook, Credential Handling & Draining Gates (Phase 44H)
+  // ---------------------------------------------------------------------------
+  console.log('\n▶ [16/16] Testing Operational Runbooks, Credential Safety & Connection Draining Gates...');
+
+  await test('TEST-16.01: Production runbooks pass zero password-bearing connection URIs to psql', () => {
+    const prodRunbookPath = path.resolve(__dirname, '../docs/PHASE_44_PRODUCTION_RUNBOOK.md');
+    const rollbackRunbookPath = path.resolve(__dirname, '../docs/PHASE_44_ROLLBACK_AND_RECOVERY_RUNBOOK.md');
+    const prodRunbook = fs.readFileSync(prodRunbookPath, 'utf-8');
+    const rollbackRunbook = fs.readFileSync(rollbackRunbookPath, 'utf-8');
+
+    // Reject psql "postgres://...:password@..." or psql "$MIGRATOR_URL" where URL has password
+    const psqlUriRegex = /psql\s+["']?postgres(?:ql)?:\/\/[^:\s]+:[^@\s]+@/i;
+    assert(!psqlUriRegex.test(prodRunbook), 'Production runbook must not pass password-bearing URI to psql CLI');
+    assert(!psqlUriRegex.test(rollbackRunbook), 'Rollback runbook must not pass password-bearing URI to psql CLI');
+    assert(!prodRunbook.includes('psql "$MIGRATOR_URL"'), 'Production runbook must not pass $MIGRATOR_URL CLI argument');
+
+    // Confirm presence of secure PGPASSFILE standard
+    assert(prodRunbook.includes('PGPASSFILE'), 'Production runbook must instruct PGPASSFILE authentication');
+    assert(rollbackRunbook.includes('PGPASSFILE'), 'Rollback runbook must instruct PGPASSFILE authentication');
+  });
+
+  await test('TEST-16.02: Zero hardcoded or static credentials exist in migration scripts and runbooks', () => {
+    const forwardSqlPath = path.resolve(__dirname, '../database/migrations/phase44-least-privilege-roles.sql');
+    const rollbackSqlPath = path.resolve(__dirname, '../database/migrations/phase44-least-privilege-roles-rollback.sql');
+    const authSqlPath = path.resolve(__dirname, '../database/migrations/phase44-better-auth-migration.sql');
+    const prodRunbookPath = path.resolve(__dirname, '../docs/PHASE_44_PRODUCTION_RUNBOOK.md');
+
+    const forwardSql = fs.readFileSync(forwardSqlPath, 'utf-8');
+    const rollbackSql = fs.readFileSync(rollbackSqlPath, 'utf-8');
+    const authSql = fs.readFileSync(authSqlPath, 'utf-8');
+    const prodRunbook = fs.readFileSync(prodRunbookPath, 'utf-8');
+
+    assert(!forwardSql.includes('__APP_ROLE_PASSWORD__'), 'Must not contain old placeholder password');
+    assert(!forwardSql.includes('__MIGRATOR_ROLE_PASSWORD__'), 'Must not contain old placeholder password');
+    assert(!prodRunbook.includes('__APP_ROLE_PASSWORD__'), 'Runbook must not reference outdated placeholders');
+    assert(!rollbackSql.includes('PASSWORD'), 'Rollback SQL must not contain credentials');
+    assert(!authSql.includes('PASSWORD'), 'Auth SQL must not contain credentials');
+  });
+
+  await test('TEST-16.03: Rollback instructions enforce mandatory connection draining gate before role drop', () => {
+    const rollbackRunbookPath = path.resolve(__dirname, '../docs/PHASE_44_ROLLBACK_AND_RECOVERY_RUNBOOK.md');
+    const content = fs.readFileSync(rollbackRunbookPath, 'utf-8');
+
+    // Confirm the required 7-step operational lifecycle is documented
+    assert(content.includes('Stop or Redirect Application Traffic'), 'Must document traffic redirection');
+    assert(content.includes('Update Vercel Environment Configuration'), 'Must document Vercel env update');
+    assert(content.includes('Redeploy or Enforce Maintenance Mode'), 'Must document redeployment/maintenance mode');
+    assert(content.includes('Drain Application Connection Pools'), 'Must document pool draining');
+    assert(content.includes('Verify Zero Remaining Connections'), 'Must document mandatory verification gate');
+    assert(content.includes('Execute Rollback Only After Verification Gate Passes'), 'Must enforce gate before rollback');
+    assert(content.includes('Verify Ownership Restoration & Role Removal'), 'Must document verification of ownership and role removal');
+
+    // Confirm pg_stat_activity query for verification gate
+    assert(content.includes('pg_catalog.pg_stat_activity'), 'Must query pg_stat_activity for verification gate');
+    assert(content.includes("WHERE usename IN ('skillverse_app', 'skillverse_migrator')"), 'Must filter to target roles');
+  });
+
+  await test('TEST-16.04: Administrative connections are strictly excluded from termination in rollback SQL', () => {
+    const rollbackSqlPath = path.resolve(__dirname, '../database/migrations/phase44-least-privilege-roles-rollback.sql');
+    const content = fs.readFileSync(rollbackSqlPath, 'utf-8');
+
+    assert(content.includes('SELECT pg_terminate_backend(pid)'), 'Must call pg_terminate_backend');
+    assert(content.includes("WHERE usename IN ('skillverse_app', 'skillverse_migrator')"), 'Termination must target only app and migrator roles');
+    assert(content.includes('AND pid <> pg_backend_pid()'), 'Must explicitly exclude administrative caller session from termination');
+  });
+
+  await test('TEST-16.05: Production runtime configuration continues rejecting administrative credentials', () => {
+    const adminRoles = ['neondb_owner', 'postgres', 'root', 'superuser'];
+    for (const role of adminRoles) {
+      let rejected = false;
+      try {
+        validateRuntimeDatabaseConfig({
+          NODE_ENV: 'production',
+          APP_DATABASE_URL: `postgresql://${role}:StrongPass123@ep-staging-pooler.neon.tech/neondb?sslmode=require`,
+        });
+      } catch (err: any) {
+        rejected =
+          err.message.includes('rejected connection configured with administrative/owner role') &&
+          !err.message.includes('StrongPass123');
+      }
+      assert(rejected, `Runtime must reject administrative role "${role}" in production`);
+    }
   });
 
   console.log('\n=====================================================================');

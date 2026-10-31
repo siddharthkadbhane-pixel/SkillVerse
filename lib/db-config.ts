@@ -296,6 +296,14 @@ export function validateMigratorDatabaseConfig(
     );
   }
 
+  // Reject connection poolers for migration runner (advisory locks & DDL require direct unpooled connection)
+  if (parsed.isPooler) {
+    throw new Error(
+      `[DB Security Failure] Migration runner rejected connection configured with connection pooler host "${parsed.host}". ` +
+      'Database migrations require a direct (unpooled) connection to ensure schema lock and advisory lock consistency.'
+    );
+  }
+
   // Staging-only guard: prevent accidental production target selection
   if (isStagingOnly) {
     const isProductionHost =
