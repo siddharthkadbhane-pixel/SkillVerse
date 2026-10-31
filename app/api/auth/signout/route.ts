@@ -14,7 +14,7 @@ const COOKIES_TO_DECONTAMINATE = [
   'sb-refresh-token',
 ];
 
-export async function POST(req?: Request) {
+export async function POST(req: Request) {
   try {
     try {
       const cookieStore = await cookies();

@@ -286,7 +286,7 @@ async function runAdversarialTests() {
   console.log('\n▶ [3/5] Testing Signout Cookie Decontamination...');
 
   await test('TEST-3.01: POST /api/auth/signout deletes Better Auth session cookies', async () => {
-    const res = await signoutPost();
+    const res = await signoutPost(new Request('http://localhost:3000/api/auth/signout', { method: 'POST' }));
     assert.strictEqual(res.status, 200);
 
     const cookieObj = res.cookies.get('better-auth.session_token');
