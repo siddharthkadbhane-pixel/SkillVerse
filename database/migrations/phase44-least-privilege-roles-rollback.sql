@@ -31,6 +31,21 @@ BEGIN
   SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'skillverse_app') INTO v_app_exists;
 
   -- ---------------------------------------------------------------------------
+  -- Part 0: Ensure Role Membership Prerequisites
+  -- ---------------------------------------------------------------------------
+  -- Grant target roles to database administrative owner prior to altering default
+  -- privileges or reassigning/dropping owned objects. This guarantees safe execution
+  -- even after partial forward-migration failures before Step 3.
+  IF v_db_owner IS NOT NULL THEN
+    IF v_migrator_exists THEN
+      EXECUTE format('GRANT skillverse_migrator TO %I', v_db_owner);
+    END IF;
+    IF v_app_exists THEN
+      EXECUTE format('GRANT skillverse_app TO %I', v_db_owner);
+    END IF;
+  END IF;
+
+  -- ---------------------------------------------------------------------------
   -- Part 1: Revert Default Privileges
   -- ---------------------------------------------------------------------------
   IF v_db_owner IS NOT NULL AND v_app_exists THEN
@@ -60,22 +75,14 @@ BEGIN
     REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public FROM skillverse_app;
     REVOKE USAGE ON SCHEMA public FROM skillverse_app;
     EXECUTE format('REVOKE CONNECT ON DATABASE %I FROM skillverse_app', current_database());
-    IF v_db_owner IS NOT NULL THEN
-      EXECUTE format('GRANT skillverse_app TO %I', v_db_owner);
-    END IF;
     DROP OWNED BY skillverse_app;
-    IF v_db_owner IS NOT NULL THEN
-      EXECUTE format('REVOKE skillverse_app FROM %I', v_db_owner);
-    END IF;
   END IF;
 
   -- ---------------------------------------------------------------------------
   -- Part 3: Reassign Objects & Revoke Migrator Role Privileges
   -- ---------------------------------------------------------------------------
   IF v_migrator_exists THEN
-    -- Ensure membership before reassigning and dropping owned objects
     IF v_db_owner IS NOT NULL THEN
-      EXECUTE format('GRANT skillverse_migrator TO %I', v_db_owner);
       EXECUTE format('REASSIGN OWNED BY skillverse_migrator TO %I', v_db_owner);
     END IF;
 
@@ -88,7 +95,16 @@ BEGIN
     END IF;
     EXECUTE format('REVOKE CONNECT ON DATABASE %I FROM skillverse_migrator', current_database());
     DROP OWNED BY skillverse_migrator;
-    IF v_db_owner IS NOT NULL THEN
+  END IF;
+
+  -- ---------------------------------------------------------------------------
+  -- Part 3b: Revoke Temporary Administrative Role Memberships
+  -- ---------------------------------------------------------------------------
+  IF v_db_owner IS NOT NULL THEN
+    IF v_app_exists THEN
+      EXECUTE format('REVOKE skillverse_app FROM %I', v_db_owner);
+    END IF;
+    IF v_migrator_exists THEN
       EXECUTE format('REVOKE skillverse_migrator FROM %I', v_db_owner);
     END IF;
   END IF;

@@ -615,6 +615,33 @@ async function runPhase44FTests() {
     assert(rollbackContent.includes("REASSIGN OWNED BY skillverse_migrator TO %I"), 'Rollback must reassign all migrator-owned objects (including types) to db owner');
   });
 
+  await test('TEST-15.07: Routine ownership transfer handles overloaded routines, procedures, and excludes extensions & aggregates', () => {
+    const forwardPath = path.resolve(__dirname, '../database/migrations/phase44-least-privilege-roles.sql');
+    const content = fs.readFileSync(forwardPath, 'utf-8');
+
+    assert(content.includes('ALTER ROUTINE public.%I(%s) OWNER TO skillverse_migrator'), 'Must transfer routine ownership using ALTER ROUTINE');
+    assert(content.includes('pg_get_function_identity_arguments'), 'Must use pg_get_function_identity_arguments to handle overloaded routines');
+    assert(content.includes("p.prokind IN ('f', 'p', 'w')"), 'Must include functions (f), procedures (p), and window functions (w)');
+    assert(!content.includes("prokind IN ('f', 'p', 'w', 'a')"), 'Must intentionally exclude aggregates (prokind = a)');
+    assert(content.includes("d.deptype = 'e'"), 'Must filter out extension-owned routines (pg_depend deptype = e)');
+    assert(content.includes("p.proowner = v_db_owner::regrole"), 'Must filter routines to database administrative owner');
+  });
+
+  await test('TEST-15.08: Rollback script establishes role membership (Part 0) before executing default-privilege revocations (Part 1)', () => {
+    const rollbackPath = path.resolve(__dirname, '../database/migrations/phase44-least-privilege-roles-rollback.sql');
+    const content = fs.readFileSync(rollbackPath, 'utf-8');
+
+    const part0Idx = content.indexOf('Part 0: Ensure Role Membership Prerequisites');
+    const part1Idx = content.indexOf('Part 1: Revert Default Privileges');
+    const grantMigratorIdx = content.indexOf("GRANT skillverse_migrator TO %I");
+    const revokeDefPrivIdx = content.indexOf("ALTER DEFAULT PRIVILEGES FOR ROLE skillverse_migrator");
+
+    assert(part0Idx !== -1, 'Rollback must contain Part 0 role membership section');
+    assert(part1Idx !== -1, 'Rollback must contain Part 1 default privileges section');
+    assert(part0Idx < part1Idx, 'Part 0 must precede Part 1 in rollback script');
+    assert(grantMigratorIdx !== -1 && grantMigratorIdx < revokeDefPrivIdx, 'GRANT skillverse_migrator must precede ALTER DEFAULT PRIVILEGES in rollback script');
+  });
+
   // ---------------------------------------------------------------------------
   // SCENARIO 16: Operational Runbook, Credential Handling & Draining Gates (Phase 44H)
   // ---------------------------------------------------------------------------
@@ -698,6 +725,43 @@ async function runPhase44FTests() {
       }
       assert(rejected, `Runtime must reject administrative role "${role}" in production`);
     }
+  });
+
+  await test('TEST-16.06: Operational runbook enforces fail-closed preview host verification with zero hardcoded production hosts', () => {
+    const prodRunbookPath = path.resolve(__dirname, '../docs/PHASE_44_PRODUCTION_RUNBOOK.md');
+    const content = fs.readFileSync(prodRunbookPath, 'utf-8');
+
+    // Confirm fail-closed host check exists
+    assert(content.includes('ep-flat-rice-ao8kdffq'), 'Must check against production endpoint signature');
+    assert(content.includes('Production mutation is strictly unauthorized'), 'Must state production mutation is strictly unauthorized');
+    assert(content.includes('TARGET_DB_HOST is unset! Aborting immediately'), 'Must fail closed when TARGET_DB_HOST is empty');
+
+    // Confirm executable commands use ${TARGET_DB_HOST} placeholder rather than hardcoded endpoint
+    const psqlHardcodedRegex = /psql\s+-h\s+["']?ep-flat-rice-ao8kdffq/i;
+    assert(!psqlHardcodedRegex.test(content), 'Runbook must not execute psql directly against hardcoded production host');
+    assert(content.includes('psql -h "$TARGET_DB_HOST"'), 'Runbook must use $TARGET_DB_HOST for psql connections');
+  });
+
+  // ---------------------------------------------------------------------------
+  // SCENARIO 17: Routine Ownership & Signature Formatting Verification
+  // ---------------------------------------------------------------------------
+  console.log('\n▶ [17/17] Testing Routine Ownership & Overloaded Signature Generation...');
+
+  await test('TEST-17.01: Routine signature formatter uniquely generates valid DDL for overloaded and zero-arg routines', () => {
+    function formatRoutineDdl(name: string, args: string, targetRole: string): string {
+      return `ALTER ROUTINE public.${name}(${args}) OWNER TO ${targetRole};`;
+    }
+
+    // Overloaded routine case
+    const ddl1 = formatRoutineDdl('verify_record', 'uuid', 'skillverse_migrator');
+    const ddl2 = formatRoutineDdl('verify_record', 'uuid, boolean', 'skillverse_migrator');
+    assert.strictEqual(ddl1, 'ALTER ROUTINE public.verify_record(uuid) OWNER TO skillverse_migrator;');
+    assert.strictEqual(ddl2, 'ALTER ROUTINE public.verify_record(uuid, boolean) OWNER TO skillverse_migrator;');
+    assert.notStrictEqual(ddl1, ddl2, 'Overloaded signatures must generate distinct non-colliding DDL');
+
+    // Zero-arg procedure case
+    const ddl3 = formatRoutineDdl('vacuum_cache', '', 'skillverse_migrator');
+    assert.strictEqual(ddl3, 'ALTER ROUTINE public.vacuum_cache() OWNER TO skillverse_migrator;');
   });
 
   console.log('\n=====================================================================');

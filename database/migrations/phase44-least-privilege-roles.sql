@@ -141,7 +141,29 @@ BEGIN
     v_type_count := v_type_count + 1;
   END LOOP;
 
-  RAISE NOTICE 'Transferred % tables, % sequences, and % enum types to skillverse_migrator', v_table_count, v_seq_count, v_type_count;
+  -- Transfer existing application routines (functions, procedures, window functions) owned by the database admin to skillverse_migrator.
+  -- Excludes extension-owned routines (deptype = 'e'), aggregates (prokind = 'a'), and non-public objects.
+  -- Uses pg_get_function_identity_arguments to handle overloaded routines safely.
+  FOR r IN (
+    SELECT p.proname,
+           pg_catalog.pg_get_function_identity_arguments(p.oid) AS args
+    FROM pg_catalog.pg_proc p
+    JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proowner = v_db_owner::regrole
+      AND p.prokind IN ('f', 'p', 'w')
+      AND NOT EXISTS (
+        SELECT 1 FROM pg_catalog.pg_depend d
+        WHERE d.objid = p.oid
+          AND d.classid = 'pg_proc'::regclass
+          AND d.deptype = 'e'
+      )
+  ) LOOP
+    EXECUTE format('ALTER ROUTINE public.%I(%s) OWNER TO skillverse_migrator', r.proname, r.args);
+    v_type_count := v_type_count + 1; -- Counted towards transferred objects
+  END LOOP;
+
+  RAISE NOTICE 'Transferred % tables, % sequences, and % enum/routine objects to skillverse_migrator', v_table_count, v_seq_count, v_type_count;
 END $$;
 
 -- Step 8: Grant DML to runtime role across all application tables
