@@ -36,8 +36,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`dark ${inter.variable} ${outfit.variable} ${jetbrainsMono.variable}`}>
-      <body className="font-sans antialiased bg-[#070A0F] text-[#F8FAFC]">
+    <html lang="en" className={`${inter.variable} ${outfit.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){
+              try {
+                var theme = localStorage.getItem('skillverse_theme') || 'system';
+                var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                var isDark = theme === 'dark' || (theme === 'system' && prefersDark);
+                if (isDark) {
+                  document.documentElement.classList.add('dark');
+                } else {
+                  document.documentElement.classList.remove('dark');
+                }
+              } catch (e) {}
+            })()`,
+          }}
+        />
+      </head>
+      <body className="font-sans antialiased bg-slate-50 dark:bg-[#070A0F] text-slate-900 dark:text-[#F8FAFC] transition-colors">
         {children}
       </body>
     </html>

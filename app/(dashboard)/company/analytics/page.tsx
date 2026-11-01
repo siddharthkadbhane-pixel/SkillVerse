@@ -46,7 +46,7 @@ export default function CompanyAnalyticsPage() {
   ];
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#070A0F] text-[#F8FAFC]">
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-[#08090D] text-slate-900 dark:text-[#F1F5F9] transition-colors">
       <Sidebar user={profile} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -95,28 +95,28 @@ export default function CompanyAnalyticsPage() {
           </div>
 
           {/* Funnel & Conversion Rates */}
-          <div className="bg-[#0D121A] border border-white/[0.08] rounded-xl p-6 shadow-sm space-y-5">
-            <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
+          <div className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] rounded-xl p-6 shadow-sm space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.06]">
               <div className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-[#7C3AED]" />
-                <h3 className="font-bold text-sm text-[#F8FAFC]">
+                <h3 className="font-bold text-sm text-slate-900 dark:text-[#F8FAFC]">
                   End-to-End Recruitment Funnel Conversion
                 </h3>
               </div>
-              <span className="text-xs font-mono text-[#94A3B8]">Last 90 Days</span>
+              <span className="text-xs font-mono text-slate-500 dark:text-[#94A3B8]">Last 90 Days</span>
             </div>
 
             <div className="space-y-4">
               {funnelStages.map((st, i) => (
                 <div key={i} className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-[#F8FAFC]">{st.label}</span>
+                    <span className="font-semibold text-slate-800 dark:text-[#F8FAFC]">{st.label}</span>
                     <div className="flex items-center gap-3 font-mono">
-                      <span className="text-[#94A3B8]">{st.count} candidates</span>
+                      <span className="text-slate-500 dark:text-[#94A3B8]">{st.count} candidates</span>
                       <span className="font-bold text-[#10B981]">{st.conversion}</span>
                     </div>
                   </div>
-                  <div className="w-full h-2 bg-[#151B26] rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-slate-100 dark:bg-[#151B26] rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all"
                       style={{
@@ -131,20 +131,20 @@ export default function CompanyAnalyticsPage() {
           </div>
 
           {/* Skill Demand Breakdown */}
-          <div className="bg-[#0D121A] border border-white/[0.08] rounded-xl p-6 shadow-sm space-y-4">
-            <div className="flex items-center gap-2 pb-3 border-b border-white/[0.06]">
+          <div className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] rounded-xl p-6 shadow-sm space-y-4">
+            <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-white/[0.06]">
               <Layers className="w-4 h-4 text-[#38BDF8]" />
-              <h3 className="font-bold text-sm text-[#F8FAFC]">
+              <h3 className="font-bold text-sm text-slate-900 dark:text-[#F8FAFC]">
                 Engineering Skill Demand across Vacancies
               </h3>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {skillDemand.map((sd, i) => (
-                <div key={i} className="p-3.5 bg-[#111722] border border-white/[0.04] rounded-lg flex items-center justify-between">
+                <div key={i} className="p-3.5 bg-slate-50 dark:bg-[#111722] border border-slate-200/80 dark:border-white/[0.04] rounded-lg flex items-center justify-between">
                   <div>
-                    <span className="font-bold text-xs text-[#F8FAFC] block">{sd.skill}</span>
-                    <span className="text-[11px] text-[#64748B]">{sd.positions} active openings</span>
+                    <span className="font-bold text-xs text-slate-900 dark:text-[#F8FAFC] block">{sd.skill}</span>
+                    <span className="text-[11px] text-slate-500 dark:text-[#64748B]">{sd.positions} active openings</span>
                   </div>
                   <span className="font-mono text-xs font-bold text-[#10B981]">
                     {sd.growth}

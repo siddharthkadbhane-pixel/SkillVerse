@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { users, privacySettings } from '@/database/schema';
-import { getSessionUser } from '@/services/supabase';
+import { AuthorizationGuard } from '@/services/security/authorizer';
 import { CapabilityGrowthService } from '@/services/dcc/growth';
 import { eq } from 'drizzle-orm';
 import { Logger } from '@/lib/logger';
@@ -34,12 +34,11 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: false, error: 'Profile is private' }, { status: 403 });
       }
     } else {
-      const user = await getSessionUser();
-      targetUserId = user?.id || '00000000-0000-0000-0000-000000000000';
-    }
-
-    if (!targetUserId) {
-      targetUserId = '00000000-0000-0000-0000-000000000000';
+      const auth = await AuthorizationGuard.requireAuth(req);
+      if (!auth.authorized) {
+        return auth.response!;
+      }
+      targetUserId = auth.context.user.id;
     }
 
     // If a specific skill's progression was requested

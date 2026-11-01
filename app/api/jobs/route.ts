@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OpportunityEngine } from '@/services/opportunity/engine';
+import { AuthorizationGuard } from '@/services/security/authorizer';
 import { getSessionUser } from '@/services/supabase';
 import { OpportunityFilter, OpportunityType, WorkplaceType } from '@/types/opportunity';
 import { Logger } from '@/lib/logger';
@@ -8,7 +9,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const sessionUser = await getSessionUser();
-    const userId = sessionUser?.id || '00000000-0000-0000-0000-000000000000';
+    const userId = sessionUser?.id || undefined;
 
     const filter: OpportunityFilter = {
       q: searchParams.get('q') || undefined,
@@ -39,10 +40,22 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const sessionUser = await getSessionUser();
-    const recruiterId = sessionUser?.id || '00000000-0000-0000-0000-000000000002';
-    const companyId = body.companyId || '00000000-0000-0000-0000-000000000001';
+    const companyId = body?.companyId;
 
+    if (!companyId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Bad Request',
+        message: 'companyId is required in request body.',
+      }, { status: 400 });
+    }
+
+    const auth = await AuthorizationGuard.requireCompanyMembership(req, companyId);
+    if (!auth.authorized) {
+      return auth.response!;
+    }
+
+    const recruiterId = auth.context.user.id;
     const result = await OpportunityEngine.createOpportunity(companyId, recruiterId, body);
 
     return NextResponse.json(result);

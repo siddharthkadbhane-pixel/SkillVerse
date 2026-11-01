@@ -84,7 +84,7 @@ export default function CompanyChallengesManagementPage() {
   };
 
   return (
-    <div className="flex h-screen bg-[#070A0F] text-[#F8FAFC]">
+    <div className="flex h-screen bg-slate-50 dark:bg-[#08090D] text-slate-900 dark:text-[#F1F5F9] transition-colors">
       <Sidebar />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -96,14 +96,14 @@ export default function CompanyChallengesManagementPage() {
             <div>
               <div className="flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-[#F59E0B]" />
-                <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
                   Company Verification Competitions
                 </h1>
                 <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/25">
                   Recruiter Workspace
                 </span>
               </div>
-              <p className="text-xs text-[#94A3B8] mt-1">
+              <p className="text-xs text-slate-600 dark:text-[#94A3B8] mt-1">
                 Evaluate engineering candidates by hosting real technical problem challenges backed by automated AST code verification.
               </p>
             </div>
@@ -118,28 +118,28 @@ export default function CompanyChallengesManagementPage() {
           </div>
 
           {/* Challenges List */}
-          <div className="bg-[#0D121A] border border-white/[0.08] rounded-2xl overflow-hidden shadow-sm">
-            <div className="p-5 border-b border-white/[0.06] flex items-center justify-between">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+          <div className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] rounded-2xl overflow-hidden shadow-sm">
+            <div className="p-5 border-b border-slate-100 dark:border-white/[0.06] flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                 Hosted Competitions ({challenges.length})
               </h3>
             </div>
 
             {loading ? (
-              <div className="p-12 text-center text-xs text-[#64748B]">
+              <div className="p-12 text-center text-xs text-slate-500 dark:text-[#64748B]">
                 Loading company competitions...
               </div>
             ) : (
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-slate-100 dark:divide-white/[0.04]">
                 {challenges.map((ch) => (
                   <div
                     key={ch.id}
-                    className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-white/[0.01] transition-colors"
+                    className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50/80 dark:hover:bg-white/[0.01] transition-colors"
                   >
                     <div className="space-y-1.5">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h4 className="text-sm font-bold text-white">{ch.title}</h4>
-                        <span className="text-[10px] font-mono px-2 py-0.2 rounded bg-[#111722] text-[#F59E0B] border border-[#F59E0B]/20 uppercase">
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">{ch.title}</h4>
+                        <span className="text-[10px] font-mono px-2 py-0.2 rounded bg-slate-100 dark:bg-[#111722] text-[#F59E0B] border border-[#F59E0B]/20 uppercase">
                           {ch.difficulty}
                         </span>
                         <span className="text-[10px] font-mono px-2 py-0.2 rounded bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/25">
@@ -147,7 +147,7 @@ export default function CompanyChallengesManagementPage() {
                         </span>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-[#64748B]">
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-[#64748B]">
                         <span>Prize: {ch.prizePool || 'None'}</span>
                         <span>•</span>
                         <span>{ch.participantsCount} Participants</span>
@@ -160,7 +160,7 @@ export default function CompanyChallengesManagementPage() {
                       <Link
                         href={`/challenges/${ch.id}`}
                         target="_blank"
-                        className="px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs font-semibold text-[#38BDF8] border border-white/[0.06] flex items-center gap-1 transition-colors"
+                        className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-white/[0.04] hover:bg-slate-200 dark:hover:bg-white/[0.08] text-xs font-semibold text-sky-600 dark:text-[#38BDF8] border border-slate-200 dark:border-white/[0.06] flex items-center gap-1 transition-colors"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span>View Leaderboard</span>
@@ -175,17 +175,17 @@ export default function CompanyChallengesManagementPage() {
           {/* Create Modal */}
           {isModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-              <div className="bg-[#0D121A] border border-white/[0.1] rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
-                <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
+              <div className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.1] rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.06]">
                   <div className="flex items-center gap-2">
                     <Trophy className="w-5 h-5 text-[#F59E0B]" />
-                    <h3 className="text-sm font-bold text-white">Create Capability Challenge</h3>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Create Capability Challenge</h3>
                   </div>
                 </div>
 
                 <form onSubmit={handleCreateChallenge} className="space-y-4 text-xs">
                   <div>
-                    <label className="text-[11px] font-mono text-[#64748B] block mb-1">
+                    <label className="text-[11px] font-mono text-slate-500 dark:text-[#64748B] block mb-1">
                       Challenge Title *
                     </label>
                     <input
@@ -194,12 +194,12 @@ export default function CompanyChallengesManagementPage() {
                       onChange={(e) => setTitle(e.target.value)}
                       placeholder="e.g. Distributed Consensus Engine"
                       required
-                      className="w-full bg-[#111722] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#F59E0B]"
+                      className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#F59E0B]"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-mono text-[#64748B] block mb-1">
+                    <label className="text-[11px] font-mono text-slate-500 dark:text-[#64748B] block mb-1">
                       Problem Statement & Deliverables *
                     </label>
                     <textarea
@@ -208,19 +208,19 @@ export default function CompanyChallengesManagementPage() {
                       rows={3}
                       placeholder="Specify the functional requirements, expected AST performance, and unit test criteria..."
                       required
-                      className="w-full bg-[#111722] border border-white/[0.08] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[#F59E0B]"
+                      className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl p-3 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#F59E0B]"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[11px] font-mono text-[#64748B] block mb-1">
+                      <label className="text-[11px] font-mono text-slate-500 dark:text-[#64748B] block mb-1">
                         Challenge Type
                       </label>
                       <select
                         value={type}
                         onChange={(e) => setType(e.target.value as ChallengeType)}
-                        className="w-full bg-[#111722] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                        className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none"
                       >
                         <option value="coding">Coding</option>
                         <option value="frontend">Frontend</option>
@@ -232,13 +232,13 @@ export default function CompanyChallengesManagementPage() {
                     </div>
 
                     <div>
-                      <label className="text-[11px] font-mono text-[#64748B] block mb-1">
+                      <label className="text-[11px] font-mono text-slate-500 dark:text-[#64748B] block mb-1">
                         Difficulty
                       </label>
                       <select
                         value={difficulty}
                         onChange={(e) => setDifficulty(e.target.value as ChallengeDifficulty)}
-                        className="w-full bg-[#111722] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                        className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none"
                       >
                         <option value="Beginner">Beginner</option>
                         <option value="Intermediate">Intermediate</option>
@@ -249,7 +249,7 @@ export default function CompanyChallengesManagementPage() {
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-mono text-[#64748B] block mb-1">
+                    <label className="text-[11px] font-mono text-slate-500 dark:text-[#64748B] block mb-1">
                       Required Skills (Comma-separated)
                     </label>
                     <input
@@ -258,13 +258,13 @@ export default function CompanyChallengesManagementPage() {
                       onChange={(e) => setRequiredSkillsStr(e.target.value)}
                       placeholder="e.g. TypeScript, Redis, Docker"
                       required
-                      className="w-full bg-[#111722] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[11px] font-mono text-[#64748B] block mb-1">
+                      <label className="text-[11px] font-mono text-slate-500 dark:text-[#64748B] block mb-1">
                         Prize / Bounty Pool
                       </label>
                       <input
@@ -272,7 +272,7 @@ export default function CompanyChallengesManagementPage() {
                         value={prizePool}
                         onChange={(e) => setPrizePool(e.target.value)}
                         placeholder="e.g. $2,500 Bounty"
-                        className="w-full bg-[#111722] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                        className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none"
                       />
                     </div>
 
@@ -282,19 +282,19 @@ export default function CompanyChallengesManagementPage() {
                         id="hiringCheck"
                         checked={isHiring}
                         onChange={(e) => setIsHiring(e.target.checked)}
-                        className="w-4 h-4 rounded bg-[#111722] border-white/[0.2] accent-[#F59E0B]"
+                        className="w-4 h-4 rounded bg-slate-100 dark:bg-[#111722] border-slate-300 dark:border-white/[0.2] accent-[#F59E0B]"
                       />
-                      <label htmlFor="hiringCheck" className="text-[11px] font-semibold text-white cursor-pointer">
+                      <label htmlFor="hiringCheck" className="text-[11px] font-semibold text-slate-800 dark:text-white cursor-pointer">
                         Hiring Opportunity
                       </label>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/[0.06]">
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-white/[0.06]">
                     <button
                       type="button"
                       onClick={() => setIsModalOpen(false)}
-                      className="px-4 py-2 text-xs text-[#94A3B8] hover:text-white"
+                      className="px-4 py-2 text-xs text-slate-500 hover:text-slate-900 dark:text-[#94A3B8] dark:hover:text-white"
                     >
                       Cancel
                     </button>

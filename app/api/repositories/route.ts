@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/drizzle';
+import { db, withDbTimeout } from '@/lib/drizzle';
 import { repositories, users } from '@/database/schema';
-import { getSessionUser } from '@/services/supabase';
-import { DUMMY_REPOSITORIES, getDummyUserById } from '@/lib/dummyData';
+import { getSessionUser, isDemoAuthEnabled } from '@/services/supabase';
+import { DUMMY_REPOSITORIES, DUMMY_USERS } from '@/lib/dummyData';
 import { eq, and } from 'drizzle-orm';
 
 export async function GET(req: NextRequest) {
@@ -16,9 +16,12 @@ export async function GET(req: NextRequest) {
     let gitToken = process.env.GITHUB_ACCESS_TOKEN || '';
 
     try {
-      const dbUser = await db.query.users.findFirst({
-        where: eq(users.id, user.id),
-      });
+      const dbUser = await withDbTimeout(
+        db.query.users.findFirst({
+          where: eq(users.id, user.id),
+        }),
+        3000
+      );
       if (dbUser?.githubToken) gitToken = dbUser.githubToken;
     } catch {}
 
@@ -30,7 +33,7 @@ export async function GET(req: NextRequest) {
             Authorization: `Bearer ${gitToken}`,
             'User-Agent': 'SkillVerse-AI-Agent',
           },
-          signal: AbortSignal.timeout(600),
+          signal: AbortSignal.timeout(3000),
         });
 
         if (response.ok) {
@@ -42,44 +45,55 @@ export async function GET(req: NextRequest) {
       } catch {}
     }
 
-    // Fallback to verified dummy repositories
+    // Fallback to verified dummy repositories ONLY in demo/test environments for dummy users
     if (gitRepos.length === 0) {
-      const isAlex = user.username === 'alex-chen';
-      const isSarah = user.username === 'sarah-connor';
-      
-      const filtered = DUMMY_REPOSITORIES.filter(r => {
-        if (isAlex) return r.userId === user.id || r.name.includes('ui');
-        if (isSarah) return r.userId === user.id || r.language === 'Python';
-        return true;
-      });
+      if (isDemoAuthEnabled() && DUMMY_USERS.some(u => u.id === user.id)) {
+        const isAlex = user.username === 'alex-chen';
+        const isSarah = user.username === 'sarah-connor';
+        
+        const filtered = DUMMY_REPOSITORIES.filter(r => {
+          if (isAlex) return r.userId === user.id || r.name.includes('ui');
+          if (isSarah) return r.userId === user.id || r.language === 'Python';
+          return true;
+        });
 
+        return NextResponse.json({
+          success: true,
+          data: filtered.map(r => ({
+            id: r.githubRepoId,
+            name: r.name,
+            fullName: r.fullName,
+            description: r.description,
+            htmlUrl: r.htmlUrl,
+            language: r.language,
+            stars: r.stars,
+            forks: r.forks,
+            isAnalyzed: r.isAnalyzed,
+            analyzedAt: r.analyzedAt,
+            reviewId: r.id,
+            aiScore: r.overallScore,
+            healthScore: r.healthScore,
+          })),
+        });
+      }
+
+      // In production or for real users, return empty array without fabricating repos
       return NextResponse.json({
         success: true,
-        data: filtered.map(r => ({
-          id: r.githubRepoId,
-          name: r.name,
-          fullName: r.fullName,
-          description: r.description,
-          htmlUrl: r.htmlUrl,
-          language: r.language,
-          stars: r.stars,
-          forks: r.forks,
-          isAnalyzed: r.isAnalyzed,
-          analyzedAt: r.analyzedAt,
-          reviewId: r.id,
-          aiScore: r.overallScore,
-          healthScore: r.healthScore,
-        })),
+        data: [],
       });
     }
 
     // Fetch already analyzed repositories from DB
     let analyzedRepos: any[] = [];
     try {
-      analyzedRepos = await db
-        .select()
-        .from(repositories)
-        .where(eq(repositories.userId, user.id));
+      analyzedRepos = await withDbTimeout(
+        db
+          .select()
+          .from(repositories)
+          .where(eq(repositories.userId, user.id)),
+        3000
+      );
     } catch {}
 
     const analyzedMap = new Map(analyzedRepos.map(r => [r.githubRepoId, r]));
@@ -109,6 +123,9 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('API Error in repositories fetch:', error);
+    if (!isDemoAuthEnabled()) {
+      return NextResponse.json({ success: false, error: 'Failed to fetch repositories' }, { status: 500 });
+    }
     return NextResponse.json({
       success: true,
       data: DUMMY_REPOSITORIES.map(r => ({
@@ -149,15 +166,24 @@ export async function DELETE(req: NextRequest) {
     }
 
     try {
-      await db
-        .delete(repositories)
-        .where(
-          and(
-            eq(repositories.githubRepoId, githubRepoId),
-            eq(repositories.userId, user.id)
-          )
-        );
-    } catch {}
+      await withDbTimeout(
+        db
+          .delete(repositories)
+          .where(
+            and(
+              eq(repositories.githubRepoId, githubRepoId),
+              eq(repositories.userId, user.id)
+            )
+          ),
+        3000
+      );
+    } catch (dbErr: any) {
+      console.error('Database deletion error:', dbErr);
+      return NextResponse.json(
+        { success: false, error: 'Failed to delete repository from database' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
@@ -167,3 +193,4 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+

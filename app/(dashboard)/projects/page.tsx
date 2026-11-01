@@ -65,7 +65,7 @@ export default function ProjectsPage() {
   });
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#08090D] text-[#F1F5F9]">
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-[#08090D] text-slate-900 dark:text-[#F1F5F9]">
       <Sidebar user={profile} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -79,14 +79,14 @@ export default function ProjectsPage() {
           >
             <button
               onClick={loadData}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-medium bg-[#131720] hover:bg-[#181F2C] border border-white/[0.07] text-[#94A3B8] hover:text-[#F1F5F9] transition-colors"
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-medium bg-white dark:bg-[#131720] hover:bg-slate-100 dark:hover:bg-[#181F2C] border border-slate-200 dark:border-white/[0.07] text-slate-700 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F1F5F9] transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               Sync GitHub
             </button>
             <button
               onClick={() => alert('Connect your GitHub account in Settings to import more repos.')}
-              className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg text-[12px] font-medium bg-[#7C3AED] hover:bg-[#8B5CF6] text-white transition-colors"
+              className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg text-[12px] font-medium bg-[#6366F1] hover:bg-[#4F46E5] text-white transition-colors shadow-sm"
             >
               <Plus className="w-3.5 h-3.5" />
               Import Repository
@@ -99,7 +99,7 @@ export default function ProjectsPage() {
               label="Analyzed codebases"
               value={filteredRepos.length}
               icon={FolderGit2}
-              iconColor="text-[#7C3AED]"
+              iconColor="text-[#6366F1]"
               subtitle="100% AST passed"
             />
             <StatCard
@@ -107,7 +107,7 @@ export default function ProjectsPage() {
               value="94.2%"
               trend={{ value: 'Elite', isPositive: true }}
               icon={ShieldCheck}
-              iconColor="text-[#10B981]"
+              iconColor="text-[#14B8A6]"
               subtitle="Zero high-severity flaws"
             />
             <StatCard
@@ -136,8 +136,8 @@ export default function ProjectsPage() {
                   className={[
                     'h-8 px-3 rounded-lg text-[12px] font-medium whitespace-nowrap transition-colors',
                     selectedLanguage === lang
-                      ? 'bg-[#7C3AED] text-white'
-                      : 'text-[#64748B] hover:text-[#F1F5F9] hover:bg-[#181F2C]',
+                      ? 'bg-[#6366F1] text-white shadow-sm'
+                      : 'text-slate-600 dark:text-[#64748B] hover:text-slate-900 dark:hover:text-[#F1F5F9] hover:bg-slate-200/70 dark:hover:bg-[#181F2C]',
                   ].join(' ')}
                 >
                   {lang}
@@ -146,14 +146,14 @@ export default function ProjectsPage() {
             </div>
 
             <div className="relative w-full sm:w-56">
-              <Search className="w-3.5 h-3.5 text-[#475569] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Search className="w-3.5 h-3.5 text-slate-400 dark:text-[#475569] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Search projects..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 aria-label="Search projects"
-                className="w-full h-8 bg-[#131720] border border-white/[0.07] hover:border-white/[0.12] focus:border-[#7C3AED]/40 rounded-lg pl-8 pr-3 text-[12.5px] text-[#F1F5F9] placeholder-[#475569] outline-none transition-colors"
+                className="w-full h-8 bg-white dark:bg-[#131720] border border-slate-200 dark:border-white/[0.07] hover:border-slate-300 dark:hover:border-white/[0.12] focus:border-[#6366F1]/50 rounded-lg pl-8 pr-3 text-[12.5px] text-slate-900 dark:text-[#F1F5F9] placeholder-slate-400 dark:placeholder-[#475569] outline-none transition-colors"
               />
             </div>
           </div>

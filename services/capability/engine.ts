@@ -9,7 +9,7 @@ import {
   developerCapabilities,
   capabilityHistory 
 } from '@/database/schema';
-import { eq, and, desc, inArray } from 'drizzle-orm';
+import { eq, and, desc, inArray, sql } from 'drizzle-orm';
 import { 
   DeveloperCapabilityItem, 
   EngineeringCapabilityLevel, 
@@ -24,6 +24,7 @@ import { Logger } from '@/lib/logger';
 import { CachingService } from '@/lib/caching/service';
 
 export class SkillIntelligenceService {
+  private static inFlightCalculations = new Map<string, Promise<DeveloperCapabilityItem[]>>();
 
   /**
    * Calculates evidence-backed engineering capabilities from verified skills and AST reviews
@@ -33,6 +34,17 @@ export class SkillIntelligenceService {
     const cached = CachingService.get<DeveloperCapabilityItem[]>(cacheKey);
     if (cached) return cached;
 
+    const inFlight = this.inFlightCalculations.get(userId);
+    if (inFlight) return inFlight;
+
+    const promise = this.doCalculateDeveloperCapabilities(userId, cacheKey).finally(() => {
+      this.inFlightCalculations.delete(userId);
+    });
+    this.inFlightCalculations.set(userId, promise);
+    return promise;
+  }
+
+  private static async doCalculateDeveloperCapabilities(userId: string, cacheKey: string): Promise<DeveloperCapabilityItem[]> {
     Logger.info(`Calculating Skill Intelligence & Capability Mapping for user: ${userId}`);
 
     // 1. Fetch verified skills & evidence
@@ -51,7 +63,7 @@ export class SkillIntelligenceService {
         db.query.repositories.findMany({
           where: eq(repositories.userId, userId),
         }),
-        300
+        5000
       );
 
       const repoIds = userRepos.map(r => r.id);
@@ -60,7 +72,7 @@ export class SkillIntelligenceService {
           db.query.reviews.findMany({
             where: inArray(reviews.repositoryId, repoIds),
           }),
-          300
+          5000
         );
       }
     } catch (err: any) {
@@ -199,27 +211,19 @@ export class SkillIntelligenceService {
 
       calculatedCapabilities.push(capabilityItem);
 
-      // 3. Persist to database safely with idempotent upsert
-      try {
-        await withDbTimeout(
-          db
-            .insert(developerCapabilities)
-            .values({
-              userId,
-              capabilityName: capabilityItem.capabilityName,
-              category: capabilityItem.category,
-              level: capabilityItem.level,
-              verificationState: capabilityItem.verificationState,
-              confidenceScore: capabilityItem.confidenceScore,
-              analyzedProjectsCount: capabilityItem.analyzedProjectsCount,
-              supportingSkills: capabilityItem.supportingSkills,
-              whyExplanation: capabilityItem.whyExplanation,
-              evidenceRepos: capabilityItem.evidenceRepos,
-              updatedAt: new Date(),
-            })
-            .onConflictDoUpdate({
-              target: [developerCapabilities.userId, developerCapabilities.capabilityName],
-              set: {
+    }
+
+    // 3. Persist to database safely with batched upsert
+    try {
+      await withDbTimeout(
+        Promise.all(
+          calculatedCapabilities.map((capabilityItem) =>
+            db
+              .insert(developerCapabilities)
+              .values({
+                userId,
+                capabilityName: capabilityItem.capabilityName,
+                category: capabilityItem.category,
                 level: capabilityItem.level,
                 verificationState: capabilityItem.verificationState,
                 confidenceScore: capabilityItem.confidenceScore,
@@ -228,11 +232,26 @@ export class SkillIntelligenceService {
                 whyExplanation: capabilityItem.whyExplanation,
                 evidenceRepos: capabilityItem.evidenceRepos,
                 updatedAt: new Date(),
-              },
-            }),
-          250
-        );
-      } catch {}
+              })
+              .onConflictDoUpdate({
+                target: [developerCapabilities.userId, developerCapabilities.capabilityName],
+                set: {
+                  level: capabilityItem.level,
+                  verificationState: capabilityItem.verificationState,
+                  confidenceScore: capabilityItem.confidenceScore,
+                  analyzedProjectsCount: capabilityItem.analyzedProjectsCount,
+                  supportingSkills: capabilityItem.supportingSkills,
+                  whyExplanation: capabilityItem.whyExplanation,
+                  evidenceRepos: capabilityItem.evidenceRepos,
+                  updatedAt: new Date(),
+                },
+              })
+          )
+        ),
+        5000
+      );
+    } catch (err: any) {
+      Logger.warn(`Capability batch persist notice: ${err?.message}`);
     }
 
     // 4. Sort capabilities by Level & Confidence
@@ -270,7 +289,7 @@ export class SkillIntelligenceService {
         db.query.developerCapabilities.findMany({
           where: eq(developerCapabilities.userId, userId),
         }),
-        300
+        5000
       );
     } catch (err: any) {
       Logger.warn(`DB read warning in getDeveloperCapabilities: ${err.message}`);
@@ -278,7 +297,7 @@ export class SkillIntelligenceService {
 
     if (rows && rows.length > 0) {
       const levelWeights: Record<string, number> = { Strong: 4, Proficient: 3, Developing: 2, Emerging: 1 };
-      return rows
+      const result = rows
         .map(r => ({
           id: r.id,
           userId: r.userId,
@@ -295,6 +314,8 @@ export class SkillIntelligenceService {
           updatedAt: r.updatedAt instanceof Date ? r.updatedAt.toISOString() : (r.updatedAt || new Date().toISOString()),
         }))
         .sort((a, b) => (levelWeights[b.level] || 0) - (levelWeights[a.level] || 0) || b.confidenceScore - a.confidenceScore);
+      CachingService.set(cacheKey, result, 60);
+      return result;
     }
 
     return await this.calculateDeveloperCapabilities(userId);
@@ -308,8 +329,12 @@ export class SkillIntelligenceService {
     const cleanUsername = username.trim().toLowerCase();
 
     try {
-      const allUsers = await db.query.users.findMany();
-      userRecord = allUsers.find(u => u.username.toLowerCase() === cleanUsername);
+      userRecord = await withDbTimeout(
+        db.query.users.findFirst({
+          where: eq(sql`lower(${users.username})`, cleanUsername),
+        }),
+        3000
+      );
     } catch {}
 
     if (!userRecord) {
@@ -346,7 +371,23 @@ export class SkillIntelligenceService {
   private static async syncCapabilityMilestones(userId: string, capabilities: DeveloperCapabilityItem[]): Promise<void> {
     try {
       const strongCaps = capabilities.filter(c => c.level === 'Strong');
+      if (strongCaps.length === 0) return;
+
+      const recentHistory = await withDbTimeout(
+        db.query.capabilityHistory.findMany({
+          where: eq(capabilityHistory.userId, userId),
+          orderBy: [desc(capabilityHistory.changedAt)],
+          limit: 10,
+        }),
+        5000
+      ).catch(() => []);
+
       for (const cap of strongCaps) {
+        const alreadyRecorded = recentHistory.some(
+          h => h.skillName === cap.capabilityName && h.changeType === 'skill_verified'
+        );
+        if (alreadyRecorded) continue;
+
         await CapabilityGrowthService.recordGrowthEvent({
           userId,
           overallScore: 860,

@@ -330,8 +330,12 @@ export class ContributionIntelligenceService {
     const cleanUsername = username.trim().toLowerCase();
 
     try {
-      const allUsers = await db.query.users.findMany();
-      userRecord = allUsers.find(u => u.username.toLowerCase() === cleanUsername);
+      userRecord = await withDbTimeout(
+        db.query.users.findFirst({
+          where: eq(sql`lower(${users.username})`, cleanUsername),
+        }),
+        3000
+      );
     } catch {}
 
     if (!userRecord) {

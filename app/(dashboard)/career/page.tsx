@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Navbar from '@/components/shared/Navbar';
 import Sidebar from '@/components/shared/Sidebar';
 import {
@@ -55,16 +55,14 @@ export default function CareerIntelligencePage() {
   const [targetLevel, setTargetLevel] = useState<string>('Proficient');
   const [isPublic, setIsPublic] = useState(false);
 
-  useEffect(() => {
-    fetchCareerData();
-  }, []);
+  const isMountedRef = useRef(true);
 
-  const fetchCareerData = async () => {
+  const fetchCareerData = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch('/api/career');
       const json = await res.json();
-      if (json.success && json.data) {
+      if (isMountedRef.current && json.success && json.data) {
         setData(json.data);
         if (json.data.goal) {
           setSelectedRole(json.data.goal.targetRoleId);
@@ -81,9 +79,19 @@ export default function CareerIntelligencePage() {
     } catch (err) {
       console.error('Failed to fetch career intelligence', err);
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    fetchCareerData();
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, [fetchCareerData]);
 
   const handleToggleTask = async (taskId: string, currentStatus: string) => {
     if (!data) return;
@@ -148,13 +156,13 @@ export default function CareerIntelligencePage() {
   const getTierBadge = (tier?: string) => {
     switch (tier) {
       case 'Ready':
-        return 'text-[#10B981] bg-[#10B981]/15 border-[#10B981]/30';
+        return 'text-[#0D9488] dark:text-[#14B8A6] bg-[#14B8A6]/15 border-[#14B8A6]/30';
       case 'Developing':
-        return 'text-[#8B5CF6] bg-[#8B5CF6]/15 border-[#8B5CF6]/30';
+        return 'text-[#6366F1] bg-[#6366F1]/15 border-[#6366F1]/30';
       case 'Emerging':
-        return 'text-[#F59E0B] bg-[#F59E0B]/15 border-[#F59E0B]/30';
+        return 'text-[#3B82F6] bg-[#3B82F6]/15 border-[#3B82F6]/30';
       default:
-        return 'text-[#94A3B8] bg-[#94A3B8]/15 border-[#94A3B8]/30';
+        return 'text-slate-500 dark:text-[#94A3B8] bg-slate-100 dark:bg-[#94A3B8]/15 border-slate-200 dark:border-[#94A3B8]/30';
     }
   };
 
@@ -167,7 +175,7 @@ export default function CareerIntelligencePage() {
   const progress = data?.progress;
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#070A0F] text-[#F8FAFC]">
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-[#070A0F] text-slate-900 dark:text-[#F8FAFC]">
       <Sidebar user={DUMMY_USERS[0]} trustScore={{ overallScore: 940 }} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -175,22 +183,22 @@ export default function CareerIntelligencePage() {
 
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 max-w-[1600px] w-full mx-auto space-y-6">
           {/* TOP HERO BANNER */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#7C3AED]/20 via-[#0D121A] to-[#0D121A] border border-white/[0.08] p-5 sm:p-6">
-            <div className="absolute -right-10 -top-10 w-60 h-60 bg-[#7C3AED]/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-500/10 dark:from-[#6366F1]/20 via-white dark:via-[#0D121A] to-slate-50 dark:to-[#0D121A] border border-slate-200 dark:border-white/[0.08] p-5 sm:p-6 shadow-sm">
+            <div className="absolute -right-10 -top-10 w-60 h-60 bg-indigo-500/10 dark:bg-[#6366F1]/15 rounded-full blur-3xl pointer-events-none" />
 
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
               <div className="space-y-1.5 max-w-2xl">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#7C3AED]/25 text-[#C4B5FD] border border-[#7C3AED]/40 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-[#A78BFA]" />
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#6366F1]/15 text-[#6366F1] dark:text-[#C4B5FD] border border-[#6366F1]/30 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-[#6366F1]" />
                     AI Career Intelligence
                   </span>
-                  <span className="text-[10px] font-mono text-[#64748B]">• Evidence-grounded</span>
+                  <span className="text-[10px] font-mono text-slate-500 dark:text-[#64748B]">• Evidence-grounded</span>
                 </div>
-                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#F8FAFC]">
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-[#F8FAFC]">
                   Personalized Engineering Roadmap & Role Fit
                 </h1>
-                <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-[#94A3B8] leading-relaxed">
                   Understand your demonstrated capabilities, discover matching engineering roles, identify genuine skill
                   gaps, and follow actionable project paths to level up.
                 </p>
@@ -198,35 +206,35 @@ export default function CareerIntelligencePage() {
 
               {/* KPI Snapshot Pills */}
               <div className="flex flex-wrap items-center gap-3">
-                <div className="p-3 rounded-xl bg-[#111722]/80 border border-white/[0.06] flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-[#7C3AED]/15 border border-[#7C3AED]/30 flex items-center justify-center">
-                    <Target className="w-4 h-4 text-[#A78BFA]" />
+                <div className="p-3 rounded-xl bg-white/80 dark:bg-[#111722]/80 border border-slate-200 dark:border-white/[0.06] flex items-center gap-3 shadow-xs">
+                  <div className="w-9 h-9 rounded-lg bg-[#6366F1]/15 border border-[#6366F1]/30 flex items-center justify-center">
+                    <Target className="w-4 h-4 text-[#6366F1]" />
                   </div>
                   <div>
-                    <span className="text-[10px] uppercase font-mono text-[#64748B]">Active Goal</span>
-                    <p className="text-xs font-bold text-[#F8FAFC]">{data?.goal?.targetRoleName || 'Backend Dev'}</p>
+                    <span className="text-[10px] uppercase font-mono text-slate-500 dark:text-[#64748B]">Active Goal</span>
+                    <p className="text-xs font-bold text-slate-900 dark:text-[#F8FAFC]">{data?.goal?.targetRoleName || 'Backend Dev'}</p>
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-[#111722]/80 border border-white/[0.06] flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-[#10B981]/15 border border-[#10B981]/30 flex items-center justify-center">
-                    <TrendingUp className="w-4 h-4 text-[#34D399]" />
+                <div className="p-3 rounded-xl bg-white/80 dark:bg-[#111722]/80 border border-slate-200 dark:border-white/[0.06] flex items-center gap-3 shadow-xs">
+                  <div className="w-9 h-9 rounded-lg bg-[#14B8A6]/15 border border-[#14B8A6]/30 flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 text-[#0D9488] dark:text-[#14B8A6]" />
                   </div>
                   <div>
-                    <span className="text-[10px] uppercase font-mono text-[#64748B]">Readiness</span>
-                    <p className="text-xs font-bold text-[#10B981]">
+                    <span className="text-[10px] uppercase font-mono text-slate-500 dark:text-[#64748B]">Readiness</span>
+                    <p className="text-xs font-bold text-[#0D9488] dark:text-[#14B8A6]">
                       {activeRoleFit?.readinessTier || 'Developing'} ({activeRoleFit?.fitScore || 78}%)
                     </p>
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-[#111722]/80 border border-white/[0.06] flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center">
-                    <CheckCircle2 className="w-4 h-4 text-indigo-400" />
+                <div className="p-3 rounded-xl bg-white/80 dark:bg-[#111722]/80 border border-slate-200 dark:border-white/[0.06] flex items-center gap-3 shadow-xs">
+                  <div className="w-9 h-9 rounded-lg bg-[#3B82F6]/15 border border-[#3B82F6]/30 flex items-center justify-center">
+                    <CheckCircle2 className="w-4 h-4 text-[#3B82F6]" />
                   </div>
                   <div>
-                    <span className="text-[10px] uppercase font-mono text-[#64748B]">Plan Tasks</span>
-                    <p className="text-xs font-bold text-[#F8FAFC]">
+                    <span className="text-[10px] uppercase font-mono text-slate-500 dark:text-[#64748B]">Plan Tasks</span>
+                    <p className="text-xs font-bold text-slate-900 dark:text-[#F8FAFC]">
                       {progress?.completedTasksCount || 0}/{progress?.totalTasksCount || 5} Done
                     </p>
                   </div>
@@ -235,7 +243,7 @@ export default function CareerIntelligencePage() {
             </div>
 
             {/* TAB NAVIGATION BAR */}
-            <div className="flex items-center gap-2 mt-6 pt-4 border-t border-white/[0.06] overflow-x-auto pb-1">
+            <div className="flex items-center gap-2 mt-6 pt-4 border-t border-slate-200 dark:border-white/[0.06] overflow-x-auto pb-1">
               {[
                 { id: 'roadmap', label: 'Roadmap & Action Plan', icon: Compass },
                 { id: 'roles', label: 'Role Fit Matrix', icon: Layers },
@@ -250,8 +258,8 @@ export default function CareerIntelligencePage() {
                     onClick={() => setActiveTab(tab.id as any)}
                     className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                       isActive
-                        ? 'bg-[#7C3AED] text-white shadow-md shadow-[#7C3AED]/20'
-                        : 'bg-[#111722] text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-[#151D2A] border border-white/[0.04]'
+                        ? 'bg-[#6366F1] text-white shadow-md shadow-indigo-500/20'
+                        : 'bg-slate-100 dark:bg-[#111722] text-slate-600 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F8FAFC] hover:bg-slate-200/80 dark:hover:bg-[#151D2A] border border-slate-200 dark:border-white/[0.04]'
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5" />

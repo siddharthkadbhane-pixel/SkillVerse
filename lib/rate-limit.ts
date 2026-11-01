@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { DistributedRateLimiter } from '@/services/security/distributedRateLimiter';
 
 interface RateLimitRecord {
   tokens: number;
@@ -7,15 +8,12 @@ interface RateLimitRecord {
 
 export class RateLimiter {
   private static records = new Map<string, RateLimitRecord>();
+  private static readonly MAX_ENTRIES = 10000;
   private static LIMIT = 100; // max requests
   private static INTERVAL_MS = 60 * 1000; // 1 minute window
 
   private static getClientIp(req: NextRequest): string {
-    const xForwardedFor = req.headers.get('x-forwarded-for');
-    if (xForwardedFor) {
-      return xForwardedFor.split(',')[0].trim();
-    }
-    return '127.0.0.1';
+    return DistributedRateLimiter.getClientIp(req);
   }
 
   static isAllowed(req: NextRequest, customKey?: string): { allowed: boolean; remaining: number; reset: number } {
@@ -36,6 +34,12 @@ export class RateLimiter {
 
     const resetTime = Math.max(0, Math.ceil(this.INTERVAL_MS - (now - record.lastRefilled)));
 
+    // Prevent unbounded memory growth
+    if (this.records.size >= this.MAX_ENTRIES && !this.records.has(key)) {
+      const oldestKey = this.records.keys().next().value;
+      if (oldestKey) this.records.delete(oldestKey);
+    }
+
     if (refilledTokens >= 1) {
       // Consume 1 token
       const nextRecord = {
@@ -50,6 +54,14 @@ export class RateLimiter {
       return { allowed: false, remaining: 0, reset: resetTime };
     }
   }
+
+  /**
+   * Resets rate limiter records (useful for test isolation)
+   */
+  static reset(): void {
+    this.records.clear();
+  }
 }
 
 export default RateLimiter;
+

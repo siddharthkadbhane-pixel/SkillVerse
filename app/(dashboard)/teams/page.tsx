@@ -79,7 +79,7 @@ export default function TeamsPage() {
   };
 
   return (
-    <div className="flex h-screen bg-[#070A0F] text-[#F8FAFC]">
+    <div className="flex h-screen bg-slate-50 dark:bg-[#070A0F] text-slate-900 dark:text-[#F8FAFC]">
       <Sidebar />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -91,21 +91,21 @@ export default function TeamsPage() {
             <div>
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-[#38BDF8]" />
-                <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
                   Team Formation & Collaboration
                 </h1>
-                <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-[#38BDF8]/10 text-[#38BDF8] border border-[#38BDF8]/25">
+                <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-[#38BDF8]/10 text-cyan-700 dark:text-[#38BDF8] border border-[#38BDF8]/25">
                   Granular Attribution
                 </span>
               </div>
-              <p className="text-xs text-[#94A3B8] mt-1">
+              <p className="text-xs text-slate-600 dark:text-[#94A3B8] mt-1">
                 Form high-caliber engineering teams, tackle challenges together, and maintain distinct verified contribution evidence on your DCC.
               </p>
             </div>
 
             <button
               onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#38BDF8] hover:bg-[#0284C7] text-black text-xs font-bold shadow-lg shadow-[#38BDF8]/25 transition-all self-start sm:self-auto"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#38BDF8] hover:bg-[#0284C7] text-slate-950 text-xs font-bold shadow-lg shadow-[#38BDF8]/25 transition-all self-start sm:self-auto"
             >
               <Plus className="w-4 h-4" />
               <span>Create Team</span>
@@ -113,22 +113,22 @@ export default function TeamsPage() {
           </div>
 
           {/* Search & Filter Bar */}
-          <div className="bg-[#0D121A] border border-white/[0.08] p-5 rounded-2xl flex flex-col sm:flex-row items-center gap-3">
+          <div className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] p-5 rounded-2xl flex flex-col sm:flex-row items-center gap-3 shadow-sm">
             <div className="relative flex-1 w-full">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-[#64748B]" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') loadTeams(); }}
                 placeholder="Search teams by name, description, or complementary skill stack..."
-                className="w-full bg-[#111722] border border-white/[0.08] rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#38BDF8]"
+                className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#64748B] focus:outline-none focus:border-[#38BDF8]"
               />
             </div>
 
             <button
               onClick={loadTeams}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-white text-xs font-semibold border border-white/[0.08] transition-colors"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.1] text-slate-700 dark:text-white text-xs font-semibold border border-slate-200 dark:border-white/[0.08] transition-colors"
             >
               Search Teams
             </button>
@@ -136,14 +136,14 @@ export default function TeamsPage() {
 
           {/* Teams Grid */}
           {loading ? (
-            <div className="text-center py-20 text-xs text-[#64748B]">
+            <div className="text-center py-20 text-xs text-slate-500 dark:text-[#64748B]">
               Loading verified teams...
             </div>
           ) : teams.length === 0 ? (
-            <div className="bg-[#0D121A] border border-white/[0.08] rounded-2xl p-12 text-center space-y-3">
-              <Users className="w-8 h-8 text-[#64748B] mx-auto" />
-              <h3 className="text-sm font-bold text-white">No teams found</h3>
-              <p className="text-xs text-[#94A3B8]">
+            <div className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-12 text-center space-y-3 shadow-sm">
+              <Users className="w-8 h-8 text-slate-400 dark:text-[#64748B] mx-auto" />
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">No teams found</h3>
+              <p className="text-xs text-slate-600 dark:text-[#94A3B8]">
                 Build your first team by inviting developers with complementary verified skills.
               </p>
             </div>
@@ -152,7 +152,7 @@ export default function TeamsPage() {
               {teams.map((t) => (
                 <div
                   key={t.id}
-                  className="bg-[#0D121A] border border-white/[0.08] hover:border-white/[0.16] rounded-2xl p-6 transition-all flex flex-col justify-between space-y-5"
+                  className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.16] rounded-2xl p-6 transition-all flex flex-col justify-between space-y-5 shadow-sm"
                 >
                   <div className="space-y-4">
                     <div className="flex items-start justify-between gap-3">
@@ -160,23 +160,23 @@ export default function TeamsPage() {
                         <img
                           src={t.avatarUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80'}
                           alt={t.name}
-                          className="w-12 h-12 rounded-xl border border-white/[0.1] object-cover"
+                          className="w-12 h-12 rounded-xl border border-slate-200 dark:border-white/[0.1] object-cover"
                         />
                         <div>
-                          <h3 className="text-sm font-bold text-white leading-tight">{t.name}</h3>
-                          <span className="text-[11px] font-mono text-[#38BDF8]">
+                          <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{t.name}</h3>
+                          <span className="text-[11px] font-mono text-cyan-600 dark:text-[#38BDF8]">
                             Lead: {t.ownerName}
                           </span>
                         </div>
                       </div>
 
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#111722] text-[#94A3B8] border border-white/[0.06] flex items-center gap-1">
-                        {t.visibility === 'public' ? <Globe className="w-3 h-3 text-[#10B981]" /> : <Lock className="w-3 h-3 text-[#F59E0B]" />}
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-[#111722] text-slate-600 dark:text-[#94A3B8] border border-slate-200 dark:border-white/[0.06] flex items-center gap-1">
+                        {t.visibility === 'public' ? <Globe className="w-3 h-3 text-emerald-600 dark:text-[#10B981]" /> : <Lock className="w-3 h-3 text-amber-600 dark:text-[#F59E0B]" />}
                         <span className="capitalize">{t.visibility}</span>
                       </span>
                     </div>
 
-                    <p className="text-xs text-[#94A3B8] leading-relaxed line-clamp-3">
+                    <p className="text-xs text-slate-600 dark:text-[#94A3B8] leading-relaxed line-clamp-3">
                       {t.description}
                     </p>
 
@@ -184,7 +184,7 @@ export default function TeamsPage() {
                       {t.skills.map(sk => (
                         <span
                           key={sk}
-                          className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#070A0F] border border-white/[0.06] text-[#E2E8F0]"
+                          className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-[#070A0F] border border-slate-200 dark:border-white/[0.06] text-slate-700 dark:text-[#E2E8F0]"
                         >
                           {sk}
                         </span>
@@ -192,8 +192,8 @@ export default function TeamsPage() {
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-white/[0.06] flex items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center gap-3 text-[11px] font-mono text-[#64748B]">
+                  <div className="pt-4 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-3 text-[11px] font-mono text-slate-500 dark:text-[#64748B]">
                       <span>{t.membersCount} Members</span>
                       <span>•</span>
                       <span>{t.projectsCount} Projects</span>
@@ -201,7 +201,7 @@ export default function TeamsPage() {
 
                     <Link
                       href={`/teams/${t.slug}`}
-                      className="px-3.5 py-1.5 rounded-lg bg-[#38BDF8] hover:bg-[#0284C7] text-black text-xs font-bold transition-all flex items-center gap-1 shadow-md shadow-[#38BDF8]/20"
+                      className="px-3.5 py-1.5 rounded-lg bg-[#38BDF8] hover:bg-[#0284C7] text-slate-950 text-xs font-bold transition-all flex items-center gap-1 shadow-md shadow-[#38BDF8]/20"
                     >
                       <span>Workspace</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -214,18 +214,18 @@ export default function TeamsPage() {
 
           {/* Create Team Modal */}
           {isModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-              <div className="bg-[#0D121A] border border-white/[0.1] rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
-                <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <div className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.1] rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl text-slate-900 dark:text-white">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.06]">
                   <div className="flex items-center gap-2">
-                    <Users className="w-5 h-5 text-[#38BDF8]" />
-                    <h3 className="text-sm font-bold text-white">Create Engineering Team</h3>
+                    <Users className="w-5 h-5 text-cyan-600 dark:text-[#38BDF8]" />
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Create Engineering Team</h3>
                   </div>
                 </div>
 
                 <form onSubmit={handleCreateTeam} className="space-y-4 text-xs">
                   <div>
-                    <label className="text-[11px] font-mono text-[#64748B] block mb-1">
+                    <label className="text-[11px] font-mono text-slate-600 dark:text-[#64748B] block mb-1">
                       Team Name *
                     </label>
                     <input
@@ -234,12 +234,12 @@ export default function TeamsPage() {
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g. Distributed Core Guild"
                       required
-                      className="w-full bg-[#111722] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#38BDF8]"
+                      className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#38BDF8]"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-mono text-[#64748B] block mb-1">
+                    <label className="text-[11px] font-mono text-slate-600 dark:text-[#64748B] block mb-1">
                       Team Purpose & Technical Focus *
                     </label>
                     <textarea
@@ -248,12 +248,12 @@ export default function TeamsPage() {
                       rows={3}
                       placeholder="Describe what your team builds and the technical stack you specialize in..."
                       required
-                      className="w-full bg-[#111722] border border-white/[0.08] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[#38BDF8]"
+                      className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl p-3 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#38BDF8]"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-mono text-[#64748B] block mb-1">
+                    <label className="text-[11px] font-mono text-slate-600 dark:text-[#64748B] block mb-1">
                       Core Technology Stack (Comma-separated)
                     </label>
                     <input
@@ -262,36 +262,36 @@ export default function TeamsPage() {
                       onChange={(e) => setSkillsStr(e.target.value)}
                       placeholder="e.g. TypeScript, Next.js, PostgreSQL, Docker"
                       required
-                      className="w-full bg-[#111722] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-mono text-[#64748B] block mb-1">
+                    <label className="text-[11px] font-mono text-slate-600 dark:text-[#64748B] block mb-1">
                       Visibility
                     </label>
                     <select
                       value={visibility}
                       onChange={(e) => setVisibility(e.target.value as 'public' | 'private')}
-                      className="w-full bg-[#111722] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none"
                     >
                       <option value="public">Public (Discoverable by other engineers)</option>
                       <option value="private">Private (Invite only)</option>
                     </select>
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/[0.06]">
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-white/[0.06]">
                     <button
                       type="button"
                       onClick={() => setIsModalOpen(false)}
-                      className="px-4 py-2 text-xs text-[#94A3B8] hover:text-white"
+                      className="px-4 py-2 text-xs text-slate-600 hover:text-slate-900 dark:text-[#94A3B8] dark:hover:text-white"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={creating}
-                      className="px-5 py-2 rounded-xl bg-[#38BDF8] hover:bg-[#0284C7] disabled:opacity-50 text-black text-xs font-bold shadow-lg shadow-[#38BDF8]/25"
+                      className="px-5 py-2 rounded-xl bg-[#38BDF8] hover:bg-[#0284C7] disabled:opacity-50 text-slate-950 text-xs font-bold shadow-lg shadow-[#38BDF8]/25"
                     >
                       {creating ? 'Creating...' : 'Create Team'}
                     </button>

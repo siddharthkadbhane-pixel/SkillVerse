@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db, withDbTimeout } from '@/lib/drizzle';
 import { users, trustScores, skillDna } from '@/database/schema';
-import { getSessionUser } from '@/services/supabase';
-import { getDummyUserById, getDummyUserByUsername } from '@/lib/dummyData';
+import { getSessionUser, isDemoAuthEnabled } from '@/services/supabase';
+import { DUMMY_USERS, getDummyUserById, getDummyUserByUsername } from '@/lib/dummyData';
 import { eq } from 'drizzle-orm';
 
 const ProfileUpdateSchema = z.object({
@@ -33,14 +33,14 @@ export async function GET(req: NextRequest) {
           db.query.users.findFirst({
             where: eq(users.username, targetUsername),
           }),
-          200
+          3000
         );
       } else {
         dbUser = await withDbTimeout(
           db.query.users.findFirst({
             where: eq(users.id, user.id),
           }),
-          200
+          3000
         );
       }
 
@@ -49,32 +49,36 @@ export async function GET(req: NextRequest) {
           db.query.trustScores.findFirst({
             where: eq(trustScores.userId, dbUser.id),
           }),
-          200
+          3000
         );
         userSkillDna = await withDbTimeout(
           db.query.skillDna.findFirst({
             where: eq(skillDna.userId, dbUser.id),
           }),
-          200
+          3000
         );
       }
     } catch {}
 
-    // Fallback to rich test user data
+    // Fallback to rich test user data only in demo environments
     if (!dbUser) {
-      const dummy = targetUsername ? getDummyUserByUsername(targetUsername) : getDummyUserById(user.id);
-      dbUser = {
-        id: dummy.id,
-        email: dummy.email,
-        name: dummy.name,
-        username: dummy.username,
-        avatarUrl: dummy.avatarUrl,
-        bio: dummy.bio,
-        website: dummy.website,
-        location: dummy.location,
-        role: dummy.role,
-      };
-      userTrustScore = dummy.trustScore;
+      if (isDemoAuthEnabled()) {
+        const dummy = targetUsername ? getDummyUserByUsername(targetUsername) : getDummyUserById(user.id);
+        dbUser = {
+          id: dummy.id,
+          email: dummy.email,
+          name: dummy.name,
+          username: dummy.username,
+          avatarUrl: dummy.avatarUrl,
+          bio: dummy.bio,
+          website: dummy.website,
+          location: dummy.location,
+          role: dummy.role,
+        };
+        userTrustScore = dummy.trustScore;
+      } else {
+        return NextResponse.json({ success: false, error: 'User profile not found' }, { status: 404 });
+      }
     }
 
     return NextResponse.json({
@@ -110,6 +114,9 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('Profile fetch error:', error);
+    if (!isDemoAuthEnabled()) {
+      return NextResponse.json({ success: false, error: 'Failed to fetch profile' }, { status: 500 });
+    }
     const dummy = getDummyUserById();
     return NextResponse.json({
       success: true,
@@ -139,25 +146,42 @@ export async function PATCH(req: NextRequest) {
     }
 
     try {
-      const updated = await db
-        .update(users)
-        .set({
-          ...parsedData.data,
-          updatedAt: new Date(),
-        })
-        .where(eq(users.id, user.id))
-        .returning();
+      const updated = await withDbTimeout(
+        db
+          .update(users)
+          .set({
+            ...parsedData.data,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, user.id))
+          .returning(),
+        3000
+      );
 
       if (updated.length > 0) {
         return NextResponse.json({ success: true, data: updated[0] });
       }
-    } catch {}
+    } catch (err: any) {
+      if (!isDemoAuthEnabled()) {
+        return NextResponse.json(
+          { success: false, error: 'Failed to update profile: Database update failed' },
+          { status: 500 }
+        );
+      }
+    }
 
-    const dummy = getDummyUserById(user.id);
-    return NextResponse.json({
-      success: true,
-      data: { ...dummy, ...parsedData.data },
-    });
+    if (isDemoAuthEnabled()) {
+      const dummy = DUMMY_USERS.find(u => u.id === user.id) || DUMMY_USERS[0];
+      return NextResponse.json({
+        success: true,
+        data: { ...dummy, ...parsedData.data },
+      });
+    }
+
+    return NextResponse.json(
+      { success: false, error: 'User profile not found' },
+      { status: 404 }
+    );
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: 'Failed to update profile data', details: error.message },
@@ -165,3 +189,4 @@ export async function PATCH(req: NextRequest) {
     );
   }
 }
+

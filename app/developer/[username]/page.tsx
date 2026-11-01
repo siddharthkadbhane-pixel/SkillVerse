@@ -63,15 +63,15 @@ export default async function PublicDeveloperDCCPage({
 
   if (!publicData) {
     return (
-      <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-[#070A0F] text-[#F8FAFC] p-4 text-center">
-        <div className="p-4 rounded-2xl bg-[#0D121A] border border-white/[0.08] max-w-md w-full space-y-4 shadow-xl">
-          <div className="w-12 h-12 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[#A78BFA] flex items-center justify-center mx-auto">
+      <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-[#070A0F] text-slate-900 dark:text-[#F8FAFC] p-4 text-center">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] max-w-md w-full space-y-4 shadow-xl">
+          <div className="w-12 h-12 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[#7C3AED] dark:text-[#A78BFA] flex items-center justify-center mx-auto">
             <ShieldAlert className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white">Developer Profile Unavailable</h2>
-            <p className="text-xs text-[#94A3B8] mt-1 leading-relaxed">
-              The developer capability profile for <strong className="text-white">@{username}</strong> was not found on SkillVerse.
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Developer Profile Unavailable</h2>
+            <p className="text-xs text-slate-600 dark:text-[#94A3B8] mt-1 leading-relaxed">
+              The developer capability profile for <strong className="text-slate-900 dark:text-white">@{username}</strong> was not found on SkillVerse.
             </p>
           </div>
           <Link

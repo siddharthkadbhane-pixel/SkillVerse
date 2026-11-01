@@ -41,7 +41,25 @@ export async function GET(
   const { id } = await params;
 
   try {
-    const deliveries = await WebhookEngine.getDeliveries(id);
+    // Verify webhook exists and belongs to authenticated context user (Anti-IDOR)
+    const webhook = await WebhookEngine.getWebhook(id);
+    if (!webhook) {
+      return ApiResponse.error('WEBHOOK_NOT_FOUND', 'Webhook subscription was not found.', {
+        status: 404,
+        requestId: context.requestId,
+        headers: rateLimit.headers,
+      });
+    }
+
+    if (webhook.userId !== context.user.id && context.user.role !== 'admin') {
+      return ApiResponse.error('FORBIDDEN_RESOURCE_ACCESS', 'You do not have permission to access this webhook subscription.', {
+        status: 403,
+        requestId: context.requestId,
+        headers: rateLimit.headers,
+      });
+    }
+
+    const deliveries = await WebhookEngine.getDeliveries(id, context.user.id);
 
     ApiAnalyticsService.record({
       requestId: context.requestId,
@@ -105,7 +123,32 @@ export async function DELETE(
   const { id } = await params;
 
   try {
+    // Verify webhook exists and belongs to authenticated context user (Anti-IDOR)
+    const webhook = await WebhookEngine.getWebhook(id);
+    if (!webhook) {
+      return ApiResponse.error('WEBHOOK_NOT_FOUND', 'Webhook subscription was not found.', {
+        status: 404,
+        requestId: context.requestId,
+        headers: rateLimit.headers,
+      });
+    }
+
+    if (webhook.userId !== context.user.id && context.user.role !== 'admin') {
+      return ApiResponse.error('FORBIDDEN_RESOURCE_ACCESS', 'You do not have permission to delete this webhook subscription.', {
+        status: 403,
+        requestId: context.requestId,
+        headers: rateLimit.headers,
+      });
+    }
+
     const deleted = await WebhookEngine.deleteWebhook(context.user.id, id);
+    if (!deleted) {
+      return ApiResponse.error('WEBHOOK_NOT_FOUND', 'Webhook subscription was not found.', {
+        status: 404,
+        requestId: context.requestId,
+        headers: rateLimit.headers,
+      });
+    }
 
     ApiAnalyticsService.record({
       requestId: context.requestId,

@@ -1,6 +1,19 @@
 -- =========================================================================
--- SkillVerse Production Row Level Security (RLS) Policies (Phase 40)
+-- SkillVerse Production Row Level Security (RLS) Policies (Phase 40/43C)
 -- Protects User, Company, Evidence, Application, and Billing Data Isolation
+-- =========================================================================
+-- ARCHITECTURAL NOTICE (Phase 43C Audit Remediation):
+-- 1. These RLS policies were originally drafted for Supabase PostgreSQL where `auth.uid()` is a native function.
+-- 2. In Neon PostgreSQL, `auth.uid()` is not natively defined, and connections made using `neondb_owner`
+--    bypass standard PostgreSQL RLS as the table owner.
+-- 3. Therefore, production tenant isolation is actively enforced by server-side application guards:
+--    - AuthorizationGuard.requireResourceOwner() (Anti-IDOR)
+--    - AuthorizationGuard.requireCompanyMembership() (Anti-cross-company IDOR)
+--    - Explicit SQL WHERE constraints (e.g. `where(eq(table.userId, user.id))`)
+-- 4. To migrate RLS to native Neon execution in future phases:
+--    - Create an unprivileged runtime database role (e.g., `skillverse_runtime_user`)
+--    - Map session identities using `SET LOCAL request.jwt.claim.sub = '...'` or Neon Auth tokens
+--    - Enable `FORCE ROW LEVEL SECURITY` on all multi-tenant tables.
 -- =========================================================================
 
 -- 1. Enable RLS on all primary entities

@@ -1,16 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CompanyWorkspaceService } from '@/services/company/workspace';
+import { AuthorizationGuard } from '@/services/security/authorizer';
 import { Logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = await AuthorizationGuard.requireAuth(req);
+    if (!auth.authorized) {
+      return auth.response!;
+    }
+
     const body = await req.json();
     const { usernames } = body;
 
     if (!Array.isArray(usernames) || usernames.length === 0) {
       return NextResponse.json({
         success: false,
-        error: 'An array of developer usernames is required for comparison.',
+        error: 'Bad Request',
+        message: 'An array of developer usernames is required for comparison.',
       }, { status: 400 });
     }
 

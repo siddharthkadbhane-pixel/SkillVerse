@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { capabilityHistory, users, privacySettings } from '@/database/schema';
-import { getSessionUser } from '@/services/supabase';
+import { AuthorizationGuard } from '@/services/security/authorizer';
 import { eq, and, desc } from 'drizzle-orm';
 import { Logger } from '@/lib/logger';
 
@@ -35,12 +35,11 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: false, error: 'Capability profile is private' }, { status: 403 });
       }
     } else {
-      const user = await getSessionUser();
-      targetUserId = user?.id || '00000000-0000-0000-0000-000000000000';
-    }
-
-    if (!targetUserId) {
-      targetUserId = '00000000-0000-0000-0000-000000000000';
+      const auth = await AuthorizationGuard.requireAuth(req);
+      if (!auth.authorized) {
+        return auth.response!;
+      }
+      targetUserId = auth.context.user.id;
     }
 
     const conditions = [eq(capabilityHistory.userId, targetUserId)];

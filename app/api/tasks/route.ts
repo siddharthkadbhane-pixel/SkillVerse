@@ -26,20 +26,14 @@ export async function POST(req: NextRequest) {
         success: true,
         data: newTask,
       });
-    } catch {
-      // Fallback
-      return NextResponse.json({
-        success: true,
-        data: {
-          id: 'task_mock_created',
-          projectId,
-          title,
-          status,
-          createdAt: new Date().toISOString(),
-        }
-      });
+    } catch (dbErr: any) {
+      console.error('[API Tasks] Database insert error:', dbErr?.message);
+      return NextResponse.json(
+        { success: false, error: 'Database operation failed: unable to create task' },
+        { status: 500 }
+      );
     }
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 505 });
+    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
   }
 }

@@ -1,9 +1,9 @@
-import { db } from '@/lib/drizzle';
+import { db, withDbTimeout } from '@/lib/drizzle';
 import { 
   developerCapabilityCards, capabilityDimensions, capabilityHistory, 
   verificationEvidence, repositories, reviews, userSkills, users, privacySettings 
 } from '@/database/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, inArray } from 'drizzle-orm';
 import { Logger } from '@/lib/logger';
 import { DCCEvidenceService } from './evidence';
 import { DCCInsightsService } from './insights';
@@ -109,10 +109,23 @@ export class DeveloperCapabilityCardService {
     };
   }
 
+  private static inFlightRecalculations = new Map<string, Promise<any>>();
+
   /**
    * Recalculates all DCC dimensions, compiles verified evidence, and syncs to database
    */
   static async recalculateDCC(userId: string): Promise<any> {
+    const inFlight = this.inFlightRecalculations.get(userId);
+    if (inFlight) return inFlight;
+
+    const promise = this.doRecalculateDCC(userId).finally(() => {
+      this.inFlightRecalculations.delete(userId);
+    });
+    this.inFlightRecalculations.set(userId, promise);
+    return promise;
+  }
+
+  private static async doRecalculateDCC(userId: string): Promise<any> {
     Logger.info(`Calculating Developer Capability Card (DCC 2.0) for user: ${userId}`);
 
     // 1. Fetch existing card for audit trail comparison
@@ -198,13 +211,17 @@ export class DeveloperCapabilityCardService {
 
     // 4. Compute Engineering Dimension (AST Code Quality & Modularity)
     let sumScore = 0;
-    for (const r of analyzedRepos) {
+    if (analyzedRepos.length > 0) {
       try {
-        const review = await db.query.reviews.findFirst({
-          where: eq(reviews.repositoryId, r.id),
-        });
-        if (review) {
-          sumScore += review.overallScore || 75;
+        const repoIds = analyzedRepos.map(r => r.id);
+        const reviewRows = await withDbTimeout(
+          db.query.reviews.findMany({
+            where: inArray(reviews.repositoryId, repoIds),
+          }),
+          5000
+        );
+        for (const rev of reviewRows) {
+          sumScore += rev.overallScore || 75;
         }
       } catch {}
     }
@@ -358,16 +375,19 @@ export class DeveloperCapabilityCardService {
           },
         });
 
-      // 12. Record DCC Audit Trail entry
-      await VerificationIntegrityEngine.recordDccAuditTrail({
-        userId,
-        previousScore,
-        newScore: overallScore,
-        previousLevel,
-        newLevel: level,
-        confidenceTier,
-        triggeringEvidence: `Calculated from ${analyzedRepos.length} analyzed repository(ies) with average AST score of ${avgRepoScore}/100.`,
-      });
+      // 12. Record DCC Audit Trail entry only when genuine capability transition occurred
+      const isGenuineTransition = !existingCard || previousScore !== overallScore || previousLevel !== level;
+      if (isGenuineTransition) {
+        await VerificationIntegrityEngine.recordDccAuditTrail({
+          userId,
+          previousScore,
+          newScore: overallScore,
+          previousLevel,
+          newLevel: level,
+          confidenceTier,
+          triggeringEvidence: `Calculated from ${analyzedRepos.length} analyzed repository(ies) with average AST score of ${avgRepoScore}/100.`,
+        });
+      }
 
     } catch (err: any) {
       Logger.warn(`DB write skipped during DCC calculation: ${err.message}`);
@@ -457,14 +477,16 @@ export class DeveloperCapabilityCardService {
       };
     }
 
-    const verifiedSkills = await DCCEvidenceService.compileVerifiedSkills(userId);
-    const engineeringMetrics = await DCCEvidenceService.compileEngineeringMetrics(
-      userId,
-      (dimsRecord?.engineering as any) || { codeQuality: 88, architecture: 90, security: 85, performance: 82, testing: 78, documentation: 80 }
-    );
-    const projectEvidence = await DCCEvidenceService.compileProjectEvidence(userId);
-    const auditTrail = await VerificationIntegrityEngine.getDccAuditTrail(userId);
-    const recentDelta = await this.getCapabilityChangeDelta(userId);
+    const [verifiedSkills, engineeringMetrics, projectEvidence, auditTrail, recentDelta] = await Promise.all([
+      DCCEvidenceService.compileVerifiedSkills(userId),
+      DCCEvidenceService.compileEngineeringMetrics(
+        userId,
+        (dimsRecord?.engineering as any) || { codeQuality: 88, architecture: 90, security: 85, performance: 82, testing: 78, documentation: 80 }
+      ),
+      DCCEvidenceService.compileProjectEvidence(userId),
+      VerificationIntegrityEngine.getDccAuditTrail(userId),
+      this.getCapabilityChangeDelta(userId),
+    ]);
 
     const username = userRecord?.username || (isDemoUser ? 'siddharthkadbhane-pixel' : 'developer');
     const analyzedCount = userRepos.filter(r => r.isAnalyzed).length || (isDemoUser ? 2 : 0);

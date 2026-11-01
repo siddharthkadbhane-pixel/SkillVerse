@@ -31,25 +31,25 @@ export default function DCCEngineeringCapability({ metrics = [] }: DCCEngineerin
 
   const getRatingBadgeClass = (rating: EngineeringMetricEvidence['rating']) => {
     switch (rating) {
-      case 'Exceptional': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-      case 'Strong': return 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20';
-      case 'Adequate': return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-      default: return 'bg-zinc-800 text-zinc-400 border-zinc-700';
+      case 'Exceptional': return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+      case 'Strong': return 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20';
+      case 'Adequate': return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
+      default: return 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-zinc-700';
     }
   };
 
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-[#0E1015] p-6 shadow-sm">
+    <div className="rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0E1015] p-6 shadow-sm">
       
       {/* Header */}
-      <div className="border-b border-white/[0.06] pb-4 mb-5">
+      <div className="border-b border-slate-100 dark:border-white/[0.06] pb-4 mb-5">
         <div className="flex items-center gap-2">
-          <Code2 className="w-4 h-4 text-indigo-400" />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-300">
+          <Code2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-800 dark:text-zinc-300">
             Engineering Capability & Rigor
           </h2>
         </div>
-        <p className="text-xs text-zinc-500 mt-0.5">
+        <p className="text-xs text-slate-500 dark:text-zinc-500 mt-0.5">
           In-depth architectural, security, testing, and clean code metrics verified across codebase trees.
         </p>
       </div>
@@ -61,16 +61,16 @@ export default function DCCEngineeringCapability({ metrics = [] }: DCCEngineerin
           return (
             <div
               key={m.key}
-              className="p-4 rounded-lg bg-zinc-900/50 border border-white/[0.04] flex flex-col justify-between gap-3.5"
+              className="p-4 rounded-lg bg-slate-50 dark:bg-zinc-900/50 border border-slate-200 dark:border-white/[0.04] flex flex-col justify-between gap-3.5"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-md bg-zinc-800 text-indigo-400 border border-white/[0.04]">
+                  <div className="p-1.5 rounded-md bg-slate-200/60 dark:bg-zinc-800 text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-white/[0.04]">
                     <Icon className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-xs font-semibold text-zinc-200">{m.label}</h3>
-                    <span className="text-[11px] font-mono text-zinc-500">Score: {m.score}/100</span>
+                    <h3 className="text-xs font-semibold text-slate-800 dark:text-zinc-200">{m.label}</h3>
+                    <span className="text-[11px] font-mono text-slate-500 dark:text-zinc-500">Score: {m.score}/100</span>
                   </div>
                 </div>
 
@@ -80,7 +80,7 @@ export default function DCCEngineeringCapability({ metrics = [] }: DCCEngineerin
               </div>
 
               {/* Progress track */}
-              <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+              <div className="w-full bg-slate-200 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-300"
                   style={{
@@ -90,19 +90,19 @@ export default function DCCEngineeringCapability({ metrics = [] }: DCCEngineerin
                 />
               </div>
 
-              <p className="text-[11px] text-zinc-400 leading-relaxed">
+              <p className="text-[11px] text-slate-600 dark:text-zinc-400 leading-relaxed">
                 {m.explanation}
               </p>
 
               {/* Verified Repos Evidence footer */}
               {m.evidenceRepos?.length > 0 && (
-                <div className="pt-2.5 border-t border-white/[0.04] flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+                <div className="pt-2.5 border-t border-slate-200 dark:border-white/[0.04] flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-500 font-mono">
                   <span className="inline-flex items-center gap-1">
-                    <FolderGit2 className="w-3 h-3 text-zinc-400" />
+                    <FolderGit2 className="w-3 h-3 text-slate-400 dark:text-zinc-400" />
                     {m.evidenceRepos.length} verified {m.evidenceRepos.length === 1 ? 'repo' : 'repos'}
                   </span>
-                  <span className="text-emerald-400 text-[10px] flex items-center gap-0.5">
-                    <CheckCircle2 className="w-3 h-3" /> Audited
+                  <span className="text-emerald-600 dark:text-emerald-400 text-[10px] flex items-center gap-0.5">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Audited
                   </span>
                 </div>
               )}

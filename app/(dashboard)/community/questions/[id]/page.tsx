@@ -100,9 +100,9 @@ export default function QuestionDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-[#070A0F] text-[#F8FAFC]">
+      <div className="flex h-screen bg-slate-50 dark:bg-[#08090D] text-slate-900 dark:text-[#F1F5F9] transition-colors">
         <Sidebar />
-        <div className="flex-1 flex items-center justify-center text-xs text-[#64748B]">
+        <div className="flex-1 flex items-center justify-center text-xs text-slate-500 dark:text-[#64748B]">
           Loading question discussion...
         </div>
       </div>
@@ -111,11 +111,11 @@ export default function QuestionDetailPage() {
 
   if (!question) {
     return (
-      <div className="flex h-screen bg-[#070A0F] text-[#F8FAFC]">
+      <div className="flex h-screen bg-slate-50 dark:bg-[#08090D] text-slate-900 dark:text-[#F1F5F9] transition-colors">
         <Sidebar />
         <div className="flex-1 flex flex-col items-center justify-center space-y-3">
-          <h3 className="text-sm font-bold text-white">Question Not Found</h3>
-          <Link href="/community" className="text-xs text-[#8B5CF6] underline">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white">Question Not Found</h3>
+          <Link href="/community" className="text-xs text-[#6366F1] underline">
             Return to Community
           </Link>
         </div>
@@ -124,7 +124,7 @@ export default function QuestionDetailPage() {
   }
 
   return (
-    <div className="flex h-screen bg-[#070A0F] text-[#F8FAFC]">
+    <div className="flex h-screen bg-slate-50 dark:bg-[#08090D] text-slate-900 dark:text-[#F1F5F9] transition-colors">
       <Sidebar />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -134,7 +134,7 @@ export default function QuestionDetailPage() {
           <div>
             <Link
               href="/community"
-              className="inline-flex items-center gap-1.5 text-xs text-[#94A3B8] hover:text-white transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs text-slate-600 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-white transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Back to Community Hub</span>
@@ -142,22 +142,22 @@ export default function QuestionDetailPage() {
           </div>
 
           {/* Question Banner */}
-          <div className="bg-[#0D121A] border border-white/[0.08] p-6 sm:p-7 rounded-2xl space-y-4">
+          <div className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] p-6 sm:p-7 rounded-2xl space-y-4 shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
                 <img
                   src={question.author.avatarUrl || 'https://avatars.githubusercontent.com/u/84218321?v=4'}
                   alt={question.author.name}
-                  className="w-11 h-11 rounded-full border border-white/[0.1]"
+                  className="w-11 h-11 rounded-full border border-slate-200 dark:border-white/[0.1]"
                 />
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-white">{question.author.name}</span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-white/[0.04] text-[#A78BFA]">
+                    <span className="text-sm font-bold text-slate-900 dark:text-white">{question.author.name}</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-white/[0.04] text-indigo-600 dark:text-[#A78BFA]">
                       @{question.author.username}
                     </span>
                   </div>
-                  <span className="text-[11px] font-mono text-[#64748B]">
+                  <span className="text-[11px] font-mono text-slate-500 dark:text-[#64748B]">
                     Asked on {new Date(question.createdAt).toLocaleDateString()}
                   </span>
                 </div>
@@ -173,12 +173,12 @@ export default function QuestionDetailPage() {
             </div>
 
             <div className="space-y-2">
-              <h1 className="text-lg sm:text-xl font-bold text-white">{question.title}</h1>
-              <p className="text-xs text-[#94A3B8] leading-relaxed whitespace-pre-line">{question.content}</p>
+              <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">{question.title}</h1>
+              <p className="text-xs text-slate-600 dark:text-[#94A3B8] leading-relaxed whitespace-pre-line">{question.content}</p>
             </div>
 
             {question.codeSnippet && (
-              <div className="p-3.5 rounded-xl bg-[#070A0F] border border-white/[0.06] overflow-x-auto">
+              <div className="p-3.5 rounded-xl bg-slate-900 dark:bg-[#070A0F] border border-slate-800 dark:border-white/[0.06] overflow-x-auto">
                 <pre className="font-mono text-xs text-[#38BDF8] leading-relaxed">
                   <code>{question.codeSnippet}</code>
                 </pre>
@@ -187,7 +187,7 @@ export default function QuestionDetailPage() {
 
             <div className="flex flex-wrap items-center gap-1.5 pt-2">
               {question.tags.map(t => (
-                <span key={t} className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#111722] text-[#E2E8F0]">
+                <span key={t} className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-[#111722] text-slate-700 dark:text-[#E2E8F0]">
                   #{t}
                 </span>
               ))}
@@ -203,15 +203,15 @@ export default function QuestionDetailPage() {
 
           {/* Answers List */}
           <div className="space-y-4">
-            <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+            <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
               Answers & Technical Solutions ({question.answers?.length || 0})
             </h3>
 
             {question.answers?.map((ans) => (
               <div
                 key={ans.id}
-                className={`bg-[#0D121A] border rounded-2xl p-6 space-y-3 transition-all ${
-                  ans.isAccepted ? 'border-[#10B981]/40 shadow-lg shadow-[#10B981]/5' : 'border-white/[0.08]'
+                className={`bg-white dark:bg-[#0D121A] border rounded-2xl p-6 space-y-3 transition-all ${
+                  ans.isAccepted ? 'border-[#10B981]/40 shadow-lg shadow-[#10B981]/5' : 'border-slate-200 dark:border-white/[0.08]'
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -219,14 +219,14 @@ export default function QuestionDetailPage() {
                     <img
                       src={ans.author.avatarUrl || 'https://avatars.githubusercontent.com/u/84218321?v=4'}
                       alt={ans.author.name}
-                      className="w-9 h-9 rounded-full border border-white/[0.1]"
+                      className="w-9 h-9 rounded-full border border-slate-200 dark:border-white/[0.1]"
                     />
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-white">{ans.author.name}</span>
-                        <span className="text-[10px] font-mono text-[#64748B]">@{ans.author.username}</span>
+                        <span className="text-xs font-bold text-slate-900 dark:text-white">{ans.author.name}</span>
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-[#64748B]">@{ans.author.username}</span>
                       </div>
-                      <span className="text-[10px] font-mono text-[#64748B]">
+                      <span className="text-[10px] font-mono text-slate-500 dark:text-[#64748B]">
                         {new Date(ans.createdAt).toLocaleDateString()}
                       </span>
                     </div>
@@ -240,17 +240,17 @@ export default function QuestionDetailPage() {
                   ) : (
                     <button
                       onClick={() => handleAcceptAnswer(ans.id)}
-                      className="text-[11px] font-mono px-3 py-1 rounded-lg bg-white/[0.04] hover:bg-[#10B981]/20 text-[#10B981] border border-white/[0.06] transition-colors"
+                      className="text-[11px] font-mono px-3 py-1 rounded-lg bg-emerald-50 dark:bg-white/[0.04] hover:bg-emerald-100 dark:hover:bg-[#10B981]/20 text-emerald-600 dark:text-[#10B981] border border-emerald-200 dark:border-white/[0.06] transition-colors"
                     >
                       Accept Answer
                     </button>
                   )}
                 </div>
 
-                <p className="text-xs text-[#E2E8F0] leading-relaxed whitespace-pre-line">{ans.content}</p>
+                <p className="text-xs text-slate-700 dark:text-[#E2E8F0] leading-relaxed whitespace-pre-line">{ans.content}</p>
 
                 {ans.codeSnippet && (
-                  <div className="p-3.5 rounded-xl bg-[#070A0F] border border-white/[0.06] overflow-x-auto">
+                  <div className="p-3.5 rounded-xl bg-slate-900 dark:bg-[#070A0F] border border-slate-800 dark:border-white/[0.06] overflow-x-auto">
                     <pre className="font-mono text-xs text-[#38BDF8]">
                       <code>{ans.codeSnippet}</code>
                     </pre>
@@ -261,8 +261,8 @@ export default function QuestionDetailPage() {
           </div>
 
           {/* Submit Answer Form */}
-          <div className="bg-[#0D121A] border border-white/[0.08] rounded-2xl p-6 space-y-3">
-            <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+          <div className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-6 space-y-3 shadow-sm">
+            <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
               Submit Your Solution
             </h3>
             <form onSubmit={handleSubmitAnswer} className="space-y-3 text-xs">
@@ -272,19 +272,19 @@ export default function QuestionDetailPage() {
                 rows={4}
                 placeholder="Explain the solution, root cause, or best practice..."
                 required
-                className="w-full bg-[#111722] border border-white/[0.08] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[#8B5CF6]"
+                className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl p-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#64748B] focus:outline-none focus:border-[#6366F1]"
               />
               <textarea
                 value={answerSnippet}
                 onChange={(e) => setAnswerSnippet(e.target.value)}
                 rows={3}
                 placeholder="// Optional code snippet..."
-                className="w-full bg-[#111722] border border-white/[0.08] rounded-xl p-3 text-xs text-[#38BDF8] font-mono focus:outline-none"
+                className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl p-3 text-xs text-[#38BDF8] font-mono focus:outline-none focus:border-[#6366F1]"
               />
               <button
                 type="submit"
                 disabled={submittingAns}
-                className="px-5 py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] disabled:opacity-50 text-white text-xs font-bold transition-all shadow-md shadow-[#8B5CF6]/20 flex items-center gap-1.5"
+                className="px-5 py-2.5 rounded-xl bg-[#6366F1] hover:bg-[#4F46E5] disabled:opacity-50 text-white text-xs font-bold transition-all shadow-md shadow-[#6366F1]/20 flex items-center gap-1.5"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>{submittingAns ? 'Submitting...' : 'Post Answer'}</span>

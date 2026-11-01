@@ -27,26 +27,26 @@ export default function SkillChip({
   return (
     <div
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 bg-[#111722] hover:bg-[#151B26] border border-white/[0.08] hover:border-white/[0.14] rounded-lg transition-all ${
+      className={`inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#111722] dark:hover:bg-[#151B26] border border-slate-200 hover:border-slate-300 dark:border-white/[0.08] dark:hover:border-white/[0.14] rounded-lg transition-all ${
         isSmall ? 'px-2 py-1 text-xs' : 'px-3 py-1.5 text-xs'
       } ${onClick ? 'cursor-pointer' : ''} ${className}`}
     >
-      <span className="font-medium text-[#F8FAFC]">{name}</span>
+      <span className="font-medium text-slate-800 dark:text-[#F8FAFC]">{name}</span>
 
       {level !== undefined && (
-        <span className="font-mono text-[11px] font-semibold text-[#A78BFA] bg-[#7C3AED]/15 px-1.5 py-0.2 rounded">
+        <span className="font-mono text-[11px] font-semibold text-[#6366F1] dark:text-[#C4B5FD] bg-[#6366F1]/10 px-1.5 py-0.5 rounded">
           {level}
         </span>
       )}
 
       {growth !== undefined && (
-        <span className="font-mono text-[10px] text-[#10B981] font-medium">
+        <span className="font-mono text-[10px] text-[#14B8A6] font-medium">
           ↑{growth}%
         </span>
       )}
 
       {verified && (
-        <CheckCircle2 className="w-3.5 h-3.5 text-[#10B981] shrink-0" />
+        <CheckCircle2 className="w-3.5 h-3.5 text-[#14B8A6] shrink-0" />
       )}
     </div>
   );

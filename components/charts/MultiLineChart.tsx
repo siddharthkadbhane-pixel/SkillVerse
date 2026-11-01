@@ -12,6 +12,8 @@ import {
   Legend,
 } from 'recharts';
 
+import { useTheme } from '@/components/theme/useTheme';
+
 export interface LineDataPoint {
   date: string;
   commits?: number;
@@ -43,6 +45,13 @@ export default function MultiLineChart({
   ],
   showLegend = true,
 }: MultiLineChartProps) {
+  const { effectiveTheme } = useTheme();
+  const isDark = effectiveTheme === 'dark';
+
+  const gridStroke = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(15, 23, 42, 0.08)';
+  const axisLineStroke = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(15, 23, 42, 0.12)';
+  const tickFill = isDark ? '#94A3B8' : '#64748B';
+
   return (
     <div style={{ width: '100%', height }}>
       <ResponsiveContainer width="100%" height="100%">
@@ -56,30 +65,31 @@ export default function MultiLineChart({
             ))}
           </defs>
 
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
 
           <XAxis
             dataKey="date"
-            stroke="#64748B"
-            tick={{ fill: '#64748B', fontSize: 10, fontFamily: 'monospace' }}
-            axisLine={{ stroke: 'rgba(255, 255, 255, 0.08)' }}
+            stroke={tickFill}
+            tick={{ fill: tickFill, fontSize: 10, fontFamily: 'monospace' }}
+            axisLine={{ stroke: axisLineStroke }}
             tickLine={false}
           />
           <YAxis
-            stroke="#64748B"
-            tick={{ fill: '#64748B', fontSize: 10, fontFamily: 'monospace' }}
+            stroke={tickFill}
+            tick={{ fill: tickFill, fontSize: 10, fontFamily: 'monospace' }}
             axisLine={false}
             tickLine={false}
           />
 
           <Tooltip
             contentStyle={{
-              backgroundColor: '#0D121A',
-              borderColor: 'rgba(255, 255, 255, 0.1)',
+              backgroundColor: isDark ? '#0D121A' : '#FFFFFF',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(15, 23, 42, 0.12)',
               borderRadius: '8px',
-              color: '#F8FAFC',
+              color: isDark ? '#F8FAFC' : '#0F172A',
               fontSize: '11px',
               fontFamily: 'monospace',
+              boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.5)' : '0 4px 16px rgba(15,23,42,0.10)',
             }}
           />
 

@@ -41,6 +41,24 @@ export async function POST(
   const { id } = await params;
 
   try {
+    // Verify webhook exists and belongs to authenticated context user (Anti-IDOR)
+    const webhook = await WebhookEngine.getWebhook(id);
+    if (!webhook) {
+      return ApiResponse.error('WEBHOOK_NOT_FOUND', 'Webhook subscription was not found.', {
+        status: 404,
+        requestId: context.requestId,
+        headers: rateLimit.headers,
+      });
+    }
+
+    if (webhook.userId !== context.user.id && context.user.role !== 'admin') {
+      return ApiResponse.error('FORBIDDEN_RESOURCE_ACCESS', 'You do not have permission to test this webhook subscription.', {
+        status: 403,
+        requestId: context.requestId,
+        headers: rateLimit.headers,
+      });
+    }
+
     const testPayload = {
       test: true,
       event: 'developer.updated',

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CommunityEngine } from '@/services/community/engine';
-import { getSessionUser } from '@/services/supabase';
+import { AuthorizationGuard } from '@/services/security/authorizer';
 import { Logger } from '@/lib/logger';
 
 export async function POST(
@@ -8,11 +8,15 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
-    const sessionUser = await getSessionUser();
-    const reviewerId = sessionUser?.id || '00000000-0000-0000-0000-000000000004';
+    const auth = await AuthorizationGuard.requireAuth(req);
+    if (!auth.authorized) {
+      return auth.response!;
+    }
 
+    const { id } = await params;
+    const reviewerId = auth.context.user.id;
     const body = await req.json();
+
     const result = await CommunityEngine.submitPeerReviewResponse(id, reviewerId, body);
 
     return NextResponse.json(result);

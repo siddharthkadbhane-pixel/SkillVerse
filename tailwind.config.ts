@@ -11,30 +11,34 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Global Visual System Surfaces
-        canvas:      '#070A0F',
-        surface:     '#0D121A',
-        elevated:    '#111722',
-        hover:       '#151B26',
-        subtle:      '#1C2433',
-        'muted-bg':  '#222B3D',
-        border:      'rgba(255, 255, 255, 0.08)',
-        'border-strong': 'rgba(255, 255, 255, 0.14)',
+        // Global Visual System Surfaces - Theme Variable Aware
+        canvas:      'var(--canvas)',
+        surface:     'var(--surface)',
+        elevated:    'var(--elevated)',
+        hover:       'var(--hover)',
+        subtle:      'var(--subtle)',
+        'muted-bg':  'var(--muted-bg)',
+        border:      'var(--border)',
+        'border-strong': 'var(--border-strong)',
         'border-glow': 'rgba(124, 58, 237, 0.25)',
 
-        // Primary: Electric Violet / Indigo
-        primary:     '#7C3AED',
-        'primary-hover': '#8B5CF6',
-        'primary-light': '#A78BFA',
-        accent:      '#8B5CF6',
-        'accent-hover': '#A78BFA',
-        'accent-dim': 'rgba(124, 58, 237, 0.12)',
-        'accent-muted': 'rgba(124, 58, 237, 0.24)',
-        'accent-glow': 'rgba(124, 58, 237, 0.35)',
+        // Primary: Electric Indigo & Deep Blue
+        primary:     '#6366F1',
+        'primary-hover': '#4F46E5',
+        'primary-light': '#818CF8',
+        accent:      '#6366F1',
+        'accent-hover': '#818CF8',
+        'accent-dim': 'rgba(99, 102, 241, 0.12)',
+        'accent-muted': 'rgba(99, 102, 241, 0.24)',
+        'accent-glow': 'rgba(99, 102, 241, 0.35)',
 
-        // Secondary: Blue / Cyan
-        secondary:   '#38BDF8',
-        'secondary-hover': '#0EA5E9',
+        // Secondary & Extensions: Deep Blue & Ice Blue
+        secondary:   '#3B82F6',
+        'secondary-hover': '#2563EB',
+        'ice-blue':  '#93C5FD',
+        'ice-blue-dim': 'rgba(147, 197, 253, 0.15)',
+        verified:    '#14B8A6',
+        'verified-dim': 'rgba(20, 184, 166, 0.14)',
         accent2:     '#06B6D4',
         'accent2-dim': 'rgba(6, 182, 212, 0.12)',
 
@@ -48,11 +52,11 @@ const config: Config = {
         info:        '#3B82F6',
         'info-dim':  'rgba(59, 130, 246, 0.12)',
 
-        // Text
-        'text-primary':   '#F8FAFC',
-        'text-secondary': '#94A3B8',
-        'text-muted':     '#64748B',
-        'text-dim':       '#475569',
+        // Text - Theme Variable Aware
+        'text-primary':   'var(--text)',
+        'text-secondary': 'var(--text-secondary)',
+        'text-muted':     'var(--text-muted)',
+        'text-dim':       'var(--text-dim)',
       },
       fontFamily: {
         sans: ['var(--font-inter)', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'system-ui', 'sans-serif'],

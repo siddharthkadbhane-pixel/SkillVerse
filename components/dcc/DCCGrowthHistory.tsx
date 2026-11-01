@@ -73,17 +73,17 @@ export default function DCCGrowthHistory({
   return (
     <div className="space-y-4">
       {/* Section Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-white/[0.06]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-slate-200 dark:border-white/[0.06]">
         <div>
-          <h2 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
+          <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-[#7C3AED]" />
             Capability Growth
           </h2>
-          <p className="text-xs text-[#94A3B8] mt-0.5">
+          <p className="text-xs text-slate-600 dark:text-[#94A3B8] mt-0.5">
             How your verified engineering capabilities have evolved.
           </p>
         </div>
-        <span className="font-mono text-[10px] text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded border border-[#10B981]/20 self-start sm:self-auto">
+        <span className="font-mono text-[10px] text-emerald-700 dark:text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded border border-[#10B981]/20 self-start sm:self-auto">
           ✓ Real-Time Evidence Telemetry
         </span>
       </div>
@@ -94,30 +94,30 @@ export default function DCCGrowthHistory({
         {/* LEFT / MAIN AREA (7 cols) -> Capability Growth Chart + Growth Timeline */}
         <div className="lg:col-span-7 space-y-5">
           {/* 1. Capability Growth Chart */}
-          <div className="rounded-xl border border-white/[0.08] bg-[#0D121A] p-5 shadow-sm space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+          <div className="rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0D121A] p-5 shadow-sm space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-white/[0.06]">
               <div className="flex items-center gap-2">
                 <LineChart className="w-4 h-4 text-[#7C3AED]" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#F8FAFC]">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-[#F8FAFC]">
                   Capability Trajectory
                 </h3>
               </div>
-              <span className="text-[11px] font-mono text-[#64748B]">Score & Skills Over Time</span>
+              <span className="text-[11px] font-mono text-slate-500 dark:text-[#64748B]">Score & Skills Over Time</span>
             </div>
 
             <DCCCapabilityTrendChart data={growthChart} height={200} />
           </div>
 
           {/* 2. Growth Timeline */}
-          <div className="rounded-xl border border-white/[0.08] bg-[#0D121A] p-5 shadow-sm space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+          <div className="rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0D121A] p-5 shadow-sm space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-white/[0.06]">
               <div className="flex items-center gap-2">
                 <History className="w-4 h-4 text-[#7C3AED]" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#F8FAFC]">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-[#F8FAFC]">
                   Growth Timeline
                 </h3>
               </div>
-              <span className="text-[11px] font-mono text-[#64748B]">Chronological Log</span>
+              <span className="text-[11px] font-mono text-slate-500 dark:text-[#64748B]">Chronological Log</span>
             </div>
 
             <DCCGrowthTimeline timeline={timeline} />
@@ -128,15 +128,15 @@ export default function DCCGrowthHistory({
         <div className="lg:col-span-5 space-y-5">
           
           {/* 1. Recent Capability Changes (Visually similar to Recent Activity) */}
-          <div className="rounded-xl border border-white/[0.08] bg-[#0D121A] p-5 shadow-sm space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+          <div className="rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0D121A] p-5 shadow-sm space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-white/[0.06]">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#A78BFA]" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#F8FAFC]">
+                <Sparkles className="w-4 h-4 text-[#7C3AED] dark:text-[#A78BFA]" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-[#F8FAFC]">
                   Recent Capability Changes
                 </h3>
               </div>
-              <span className="text-[10px] font-mono text-[#64748B]">Verified Events</span>
+              <span className="text-[10px] font-mono text-slate-500 dark:text-[#64748B]">Verified Events</span>
             </div>
 
             {recentChanges.length > 0 ? (
@@ -144,7 +144,7 @@ export default function DCCGrowthHistory({
                 {recentChanges.map((change, idx) => (
                   <div
                     key={change.id || idx}
-                    className="p-3 rounded-lg bg-[#111722] border border-white/[0.04] hover:border-white/[0.08] transition-all flex items-start gap-3"
+                    className="p-3 rounded-lg bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.04] hover:border-slate-300 dark:hover:border-white/[0.08] transition-all flex items-start gap-3"
                   >
                     <div className={`p-1.5 rounded-lg border ${change.iconBg} shrink-0 mt-0.5`}>
                       {change.icon}
@@ -152,22 +152,22 @@ export default function DCCGrowthHistory({
 
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex items-center justify-between gap-2">
-                        <h4 className="font-bold text-xs text-[#F8FAFC] truncate">
+                        <h4 className="font-bold text-xs text-slate-900 dark:text-[#F8FAFC] truncate">
                           {change.title}
                         </h4>
-                        <span className="font-mono text-[10px] text-[#64748B] shrink-0">
+                        <span className="font-mono text-[10px] text-slate-500 dark:text-[#64748B] shrink-0">
                           {change.date}
                         </span>
                       </div>
 
-                      <p className="text-[11px] text-[#94A3B8] leading-tight line-clamp-2">
+                      <p className="text-[11px] text-slate-600 dark:text-[#94A3B8] leading-tight line-clamp-2">
                         {change.explanation}
                       </p>
 
                       {change.evidenceRepo && (
-                        <div className="flex items-center gap-1 text-[10px] font-mono text-[#64748B] pt-0.5">
+                        <div className="flex items-center gap-1 text-[10px] font-mono text-slate-500 dark:text-[#64748B] pt-0.5">
                           <FolderGit2 className="w-3 h-3 text-[#7C3AED]" />
-                          <span>Repo: <strong className="text-zinc-300 font-normal">{change.evidenceRepo}</strong></span>
+                          <span>Repo: <strong className="text-slate-700 dark:text-zinc-300 font-normal">{change.evidenceRepo}</strong></span>
                         </div>
                       )}
                     </div>
@@ -175,34 +175,34 @@ export default function DCCGrowthHistory({
                 ))}
               </div>
             ) : (
-              <div className="p-6 rounded-lg bg-[#111722]/50 border border-white/[0.04] text-center space-y-1">
-                <History className="w-5 h-5 text-zinc-600 mx-auto" />
-                <p className="text-xs text-zinc-400 font-medium">No Capability Changes Yet</p>
-                <p className="text-[11px] text-zinc-500">Analyze repositories to build your verified change history.</p>
+              <div className="p-6 rounded-lg bg-slate-50 dark:bg-[#111722]/50 border border-slate-200 dark:border-white/[0.04] text-center space-y-1">
+                <History className="w-5 h-5 text-slate-400 dark:text-zinc-600 mx-auto" />
+                <p className="text-xs text-slate-700 dark:text-zinc-400 font-medium">No Capability Changes Yet</p>
+                <p className="text-[11px] text-slate-500 dark:text-zinc-500">Analyze repositories to build your verified change history.</p>
               </div>
             )}
           </div>
 
           {/* 2. Actionable Growth Vectors / Targeted Upgrades */}
-          <div className="rounded-xl border border-white/[0.08] bg-[#0D121A] p-5 shadow-sm space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+          <div className="rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0D121A] p-5 shadow-sm space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-white/[0.06]">
               <div className="flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-[#7C3AED]" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#F8FAFC]">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-[#F8FAFC]">
                   Actionable Growth Vectors
                 </h3>
               </div>
-              <span className="text-[10px] font-mono text-[#64748B]">Targeted Upgrades</span>
+              <span className="text-[10px] font-mono text-slate-500 dark:text-[#64748B]">Targeted Upgrades</span>
             </div>
 
             <div className="space-y-3">
               {insights?.weaknesses && insights.weaknesses.length > 0 && (
-                <div className="p-3 rounded-lg bg-[#111722] border border-white/[0.04] space-y-1.5">
-                  <span className="text-[11px] font-bold text-[#F59E0B] flex items-center gap-1.5">
-                    <AlertCircle className="w-3.5 h-3.5 text-[#F59E0B]" />
+                <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.04] space-y-1.5">
+                  <span className="text-[11px] font-bold text-amber-600 dark:text-[#F59E0B] flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-[#F59E0B]" />
                     Key Capability Opportunities:
                   </span>
-                  <ul className="text-xs text-[#94A3B8] space-y-1 list-disc list-inside">
+                  <ul className="text-xs text-slate-600 dark:text-[#94A3B8] space-y-1 list-disc list-inside">
                     {insights.weaknesses.slice(0, 2).map((w, i) => (
                       <li key={i} className="leading-relaxed">{w}</li>
                     ))}
@@ -212,17 +212,17 @@ export default function DCCGrowthHistory({
 
               {insights?.learningSuggestions && insights.learningSuggestions.length > 0 && (
                 <div className="space-y-1.5">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-[#64748B] block">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-[#64748B] block">
                     Suggested Action Modules:
                   </span>
                   <div className="space-y-1.5">
                     {insights.learningSuggestions.slice(0, 2).map((sugg, i) => (
                       <div
                         key={i}
-                        className="flex items-center justify-between p-2.5 rounded-lg bg-[#111722] border border-white/[0.04] text-xs"
+                        className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.04] text-xs"
                       >
-                        <span className="font-medium text-zinc-200">{sugg.topic}</span>
-                        <span className="text-[11px] font-mono text-[#A78BFA] flex items-center gap-0.5">
+                        <span className="font-medium text-slate-800 dark:text-zinc-200">{sugg.topic}</span>
+                        <span className="text-[11px] font-mono text-[#7C3AED] dark:text-[#A78BFA] flex items-center gap-0.5">
                           {sugg.resource} <ArrowUpRight className="w-3 h-3" />
                         </span>
                       </div>
@@ -232,8 +232,8 @@ export default function DCCGrowthHistory({
               )}
 
               {insights?.advice && (
-                <div className="pt-2 border-t border-white/[0.04]">
-                  <p className="text-xs text-[#94A3B8] italic leading-relaxed">
+                <div className="pt-2 border-t border-slate-200 dark:border-white/[0.04]">
+                  <p className="text-xs text-slate-600 dark:text-[#94A3B8] italic leading-relaxed">
                     "{insights.advice}"
                   </p>
                 </div>

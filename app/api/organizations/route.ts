@@ -1,47 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/drizzle';
-import { organizations } from '@/database/schema';
-import { getSessionUser } from '@/services/supabase';
+import { db, withDbTimeout } from '@/lib/drizzle';
+import { organizations, organizationMembers } from '@/database/schema';
+import { AuthorizationGuard } from '@/services/security/authorizer';
+import { eq } from 'drizzle-orm';
 import { Logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await getSessionUser();
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    const auth = await AuthorizationGuard.requireAuth(req);
+    if (!auth.authorized) {
+      return auth.response!;
     }
 
-    let list = await db.select().from(organizations);
+    const userId = auth.context.user.id;
+    let list: any[] = [];
 
-    // Auto-seed mock tenants if empty
-    if (list.length === 0) {
-      const partners = [
-        { name: 'MIT Computer Science Dept', type: 'university' },
-        { name: 'Stanford Engineering Lab', type: 'university' },
-        { name: 'Assembly Bootcamp', type: 'bootcamp' },
-        { name: 'PixelCorp hiring team', type: 'company' },
-      ];
-
-      const seeded = [];
-      for (const p of partners) {
-        const [inserted] = await db
-          .insert(organizations)
-          .values({
-            name: p.name,
-            type: p.type,
+    try {
+      list = await withDbTimeout(
+        db
+          .select({
+            id: organizations.id,
+            name: organizations.name,
+            type: organizations.type,
+            createdAt: organizations.createdAt,
           })
-          .returning();
-        seeded.push(inserted);
-      }
-      list = seeded;
-    }
+          .from(organizations)
+          .innerJoin(organizationMembers, eq(organizations.id, organizationMembers.organizationId))
+          .where(eq(organizationMembers.userId, userId)),
+        1000
+      );
+    } catch {}
 
+    // Return user's actual organization affiliations; do not leak mock organizations
     return NextResponse.json({
       success: true,
-      data: list,
+      data: list || [],
     });
   } catch (error: any) {
     Logger.error('API Error in /api/organizations:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({
+      success: false,
+      error: 'An unexpected error occurred while fetching organizations.',
+    }, { status: 500 });
   }
 }

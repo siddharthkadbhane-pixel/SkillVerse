@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SkillIntelligenceService } from '@/services/capability/engine';
-import { getSessionUser } from '@/services/supabase';
+import { AuthorizationGuard } from '@/services/security/authorizer';
 import { Logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
@@ -16,8 +16,12 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const sessionUser = await getSessionUser();
-    const targetUserId = sessionUser?.id || '00000000-0000-0000-0000-000000000001';
+    const auth = await AuthorizationGuard.requireAuth(req);
+    if (!auth.authorized) {
+      return auth.response!;
+    }
+
+    const targetUserId = auth.context.user.id;
 
     const capabilities = await SkillIntelligenceService.getDeveloperCapabilities(targetUserId);
 
@@ -36,8 +40,12 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const sessionUser = await getSessionUser();
-    const targetUserId = sessionUser?.id || '00000000-0000-0000-0000-000000000001';
+    const auth = await AuthorizationGuard.requireAuth(req);
+    if (!auth.authorized) {
+      return auth.response!;
+    }
+
+    const targetUserId = auth.context.user.id;
 
     const calculatedCapabilities = await SkillIntelligenceService.calculateDeveloperCapabilities(targetUserId);
 

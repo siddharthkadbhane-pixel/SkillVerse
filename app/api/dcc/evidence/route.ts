@@ -3,6 +3,7 @@ import { db } from '@/lib/drizzle';
 import { users, privacySettings } from '@/database/schema';
 import { eq } from 'drizzle-orm';
 import { DCCEvidenceService } from '@/services/dcc/evidence';
+import { AuthorizationGuard } from '@/services/security/authorizer';
 import { Logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
@@ -11,34 +12,48 @@ export async function GET(request: NextRequest) {
     const username = searchParams.get('username');
     const skill = searchParams.get('skill');
 
-    let targetUserId = '00000000-0000-0000-0000-000000000001';
+    let targetUserId: string;
     let isPublicRequest = false;
 
     if (username) {
       isPublicRequest = true;
+      let foundUser: any = null;
       try {
-        const foundUser = await db.query.users.findFirst({
+        foundUser = await db.query.users.findFirst({
           where: eq(users.username, username),
         });
-
-        if (foundUser) {
-          targetUserId = foundUser.id;
-
-          // Check privacy settings
-          const privacy = await db.query.privacySettings.findFirst({
-            where: eq(privacySettings.userId, foundUser.id),
-          });
-
-          if (privacy && privacy.profileVisibility === 'private') {
-            return NextResponse.json(
-              { success: false, error: 'User profile is private.' },
-              { status: 403 }
-            );
-          }
-        }
       } catch (err: any) {
         Logger.warn(`DB read error fetching user by username: ${err.message}`);
       }
+
+      if (!foundUser) {
+        return NextResponse.json(
+          { success: false, error: 'User not found.' },
+          { status: 404 }
+        );
+      }
+
+      targetUserId = foundUser.id;
+
+      // Check privacy settings
+      try {
+        const privacy = await db.query.privacySettings.findFirst({
+          where: eq(privacySettings.userId, foundUser.id),
+        });
+
+        if (privacy && privacy.profileVisibility === 'private') {
+          return NextResponse.json(
+            { success: false, error: 'User profile is private.' },
+            { status: 403 }
+          );
+        }
+      } catch {}
+    } else {
+      const auth = await AuthorizationGuard.requireAuth(request);
+      if (!auth.authorized) {
+        return auth.response!;
+      }
+      targetUserId = auth.context.user.id;
     }
 
     if (skill) {

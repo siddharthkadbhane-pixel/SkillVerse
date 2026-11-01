@@ -9,6 +9,7 @@ import MultiLineChart from '@/components/charts/MultiLineChart';
 import ActivityItem from '@/components/ui/ActivityItem';
 import DashboardGrowthSection from '@/components/dashboard/DashboardGrowthSection';
 import CareerWidget from '@/components/dashboard/CareerWidget';
+import DashboardChallengesWidget from '@/components/dashboard/DashboardChallengesWidget';
 import {
   ShieldCheck,
   Activity,
@@ -74,7 +75,7 @@ export default function DeveloperOverviewPage() {
       trendPositive: true,
       meta: 'Elite · Verified by AST',
       icon: ShieldCheck,
-      iconColor: '#10B981',
+      iconColor: '#14B8A6',
     },
     {
       label: 'GitHub activity',
@@ -84,7 +85,7 @@ export default function DeveloperOverviewPage() {
       trendPositive: true,
       meta: 'Commits & contributions',
       icon: Activity,
-      iconColor: '#06B6D4',
+      iconColor: '#3B82F6',
     },
     {
       label: 'Projects',
@@ -94,7 +95,7 @@ export default function DeveloperOverviewPage() {
       trendPositive: true,
       meta: '4 active · All AST audited',
       icon: FolderGit2,
-      iconColor: '#7C3AED',
+      iconColor: '#6366F1',
     },
     {
       label: 'Commits',
@@ -104,7 +105,7 @@ export default function DeveloperOverviewPage() {
       trendPositive: true,
       meta: '48-day streak',
       icon: GitCommit,
-      iconColor: '#F59E0B',
+      iconColor: '#93C5FD',
     },
     {
       label: 'Pull requests',
@@ -114,12 +115,12 @@ export default function DeveloperOverviewPage() {
       trendPositive: true,
       meta: '24 peer reviews given',
       icon: GitPullRequest,
-      iconColor: '#A78BFA',
+      iconColor: '#6366F1',
     },
   ] as const;
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#08090D] text-[#F1F5F9]">
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-[#08090D] text-slate-900 dark:text-[#F1F5F9] transition-colors">
       <Sidebar user={profile} trustScore={trustScore} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -128,50 +129,50 @@ export default function DeveloperOverviewPage() {
         <main className="flex-1 overflow-y-auto px-5 sm:px-6 py-5 max-w-[1600px] w-full mx-auto space-y-6">
 
           {/* PAGE HEADER */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/[0.07]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-white/[0.07]">
             <div>
-              <h1 className="text-[18px] font-semibold tracking-tight text-[#F1F5F9] leading-tight">
+              <h1 className="text-[18px] font-semibold tracking-tight text-slate-900 dark:text-[#F1F5F9] leading-tight">
                 Overview
               </h1>
-              <p className="text-[12.5px] text-[#64748B] mt-0.5">
+              <p className="text-[12.5px] text-slate-500 dark:text-[#64748B] mt-0.5">
                 Engineering growth, verified skills, and technical contributions — in real time.
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <button className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-medium bg-[#131720] hover:bg-[#181F2C] border border-white/[0.07] text-[#94A3B8] hover:text-[#F1F5F9] transition-colors">
-                <Calendar className="w-3.5 h-3.5 text-[#7C3AED]" />
+              <button className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-medium bg-white dark:bg-[#131720] hover:bg-slate-100 dark:hover:bg-[#181F2C] border border-slate-200 dark:border-white/[0.07] text-slate-700 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F1F5F9] transition-colors shadow-sm">
+                <Calendar className="w-3.5 h-3.5 text-[#6366F1]" />
                 {dateRange}
-                <ChevronDown className="w-3 h-3 text-[#475569]" />
+                <ChevronDown className="w-3 h-3 text-slate-400 dark:text-[#475569]" />
               </button>
             </div>
           </div>
 
-          {/* KPI ROW — uniform cards, no rainbow icon badges */}
+          {/* KPI ROW — uniform cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             {kpis.map((kpi) => {
               const Icon = kpi.icon;
               return (
                 <div
                   key={kpi.label}
-                  className="bg-[#0E1117] border border-white/[0.07] rounded-xl p-4 flex flex-col gap-1.5"
+                  className="bg-white dark:bg-[#0E1117] border border-slate-200 dark:border-white/[0.07] rounded-xl p-4 flex flex-col gap-1.5 shadow-sm transition-colors"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11.5px] font-medium text-[#64748B]">{kpi.label}</span>
+                    <span className="text-[11.5px] font-medium text-slate-500 dark:text-[#64748B]">{kpi.label}</span>
                     <Icon className="w-3.5 h-3.5 shrink-0" style={{ color: kpi.iconColor }} />
                   </div>
 
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-[22px] font-semibold tracking-tight text-[#F1F5F9] leading-none">
+                    <span className="text-[22px] font-semibold tracking-tight text-slate-900 dark:text-[#F1F5F9] leading-none">
                       {kpi.value}
                     </span>
                     {kpi.unit && (
-                      <span className="text-[11px] text-[#475569]">{kpi.unit}</span>
+                      <span className="text-[11px] text-slate-400 dark:text-[#475569]">{kpi.unit}</span>
                     )}
                     <span
                       className={[
                         'text-[10.5px] font-medium px-1.5 py-0.5 rounded ml-auto',
                         kpi.trendPositive
-                          ? 'text-[#10B981] bg-[rgba(16,185,129,0.10)]'
+                          ? 'text-[#14B8A6] bg-[#14B8A6]/10'
                           : 'text-[#EF4444] bg-[rgba(239,68,68,0.10)]',
                       ].join(' ')}
                     >
@@ -179,7 +180,7 @@ export default function DeveloperOverviewPage() {
                     </span>
                   </div>
 
-                  <p className="text-[11px] text-[#475569] truncate">{kpi.meta}</p>
+                  <p className="text-[11px] text-slate-400 dark:text-[#475569] truncate">{kpi.meta}</p>
                 </div>
               );
             })}
@@ -188,29 +189,29 @@ export default function DeveloperOverviewPage() {
           {/* CHARTS ROW */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Skill DNA Radar */}
-            <div className="lg:col-span-4 bg-[#0E1117] border border-white/[0.07] rounded-xl p-4 flex flex-col">
-              <div className="flex items-center justify-between pb-3 border-b border-white/[0.07] mb-3">
+            <div className="lg:col-span-4 bg-white dark:bg-[#0E1117] border border-slate-200 dark:border-white/[0.07] rounded-xl p-4 flex flex-col shadow-sm transition-colors">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.07] mb-3">
                 <div>
-                  <h3 className="text-[13px] font-medium text-[#F1F5F9]">Skill DNA snapshot</h3>
-                  <p className="text-[11.5px] text-[#64748B] mt-0.5">6 technical dimensions</p>
+                  <h3 className="text-[13px] font-medium text-slate-900 dark:text-[#F1F5F9]">Skill DNA snapshot</h3>
+                  <p className="text-[11.5px] text-slate-500 dark:text-[#64748B] mt-0.5">6 technical dimensions</p>
                 </div>
                 <Link
                   href="/skill-dna"
-                  className="text-[11.5px] font-medium text-[#A78BFA] hover:text-[#C4B5FD] transition-colors"
+                  className="text-[11.5px] font-medium text-[#6366F1] dark:text-[#93C5FD] hover:underline transition-colors"
                 >
                   Explore →
                 </Link>
               </div>
 
               <div className="flex-1">
-                <RadarChartComponent data={radarData} color="#7C3AED" height={210} />
+                <RadarChartComponent data={radarData} color="#6366F1" height={210} />
               </div>
 
-              <div className="pt-3 border-t border-white/[0.07] flex flex-wrap gap-1.5">
+              <div className="pt-3 border-t border-slate-100 dark:border-white/[0.07] flex flex-wrap gap-1.5">
                 {['React', 'TypeScript', 'Next.js 15', 'Rust', 'PostgreSQL'].map((s) => (
                   <span
                     key={s}
-                    className="text-[11px] px-2 py-0.5 rounded bg-[#131720] text-[#64748B] border border-white/[0.05]"
+                    className="text-[11px] px-2 py-0.5 rounded bg-slate-100 dark:bg-[#131720] text-slate-600 dark:text-[#64748B] border border-slate-200 dark:border-white/[0.05]"
                   >
                     {s}
                   </span>
@@ -219,17 +220,17 @@ export default function DeveloperOverviewPage() {
             </div>
 
             {/* Activity Chart */}
-            <div className="lg:col-span-5 bg-[#0E1117] border border-white/[0.07] rounded-xl p-4 flex flex-col">
-              <div className="flex items-center justify-between pb-3 border-b border-white/[0.07] mb-3">
+            <div className="lg:col-span-5 bg-white dark:bg-[#0E1117] border border-slate-200 dark:border-white/[0.07] rounded-xl p-4 flex flex-col shadow-sm transition-colors">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.07] mb-3">
                 <div>
-                  <h3 className="text-[13px] font-medium text-[#F1F5F9]">Activity overview</h3>
-                  <p className="text-[11.5px] text-[#64748B] mt-0.5">
+                  <h3 className="text-[13px] font-medium text-slate-900 dark:text-[#F1F5F9]">Activity overview</h3>
+                  <p className="text-[11.5px] text-slate-500 dark:text-[#64748B] mt-0.5">
                     Commits, contributions & PR merges
                   </p>
                 </div>
                 <Link
                   href="/github"
-                  className="text-[11.5px] font-medium text-[#A78BFA] hover:text-[#C4B5FD] transition-colors"
+                  className="text-[11.5px] font-medium text-[#6366F1] dark:text-[#93C5FD] hover:underline transition-colors"
                 >
                   GitHub →
                 </Link>
@@ -240,31 +241,31 @@ export default function DeveloperOverviewPage() {
                   data={activityTrendData}
                   height={210}
                   series={[
-                    { key: 'commits',       label: 'Commits',       color: '#7C3AED' },
-                    { key: 'contributions', label: 'Contributions', color: '#06B6D4' },
-                    { key: 'prs',           label: 'PRs',           color: '#10B981' },
+                    { key: 'commits',       label: 'Commits',       color: '#6366F1' },
+                    { key: 'contributions', label: 'Contributions', color: '#3B82F6' },
+                    { key: 'prs',           label: 'PRs',           color: '#14B8A6' },
                   ]}
                 />
               </div>
 
-              <div className="pt-3 border-t border-white/[0.07] flex items-center justify-between text-[11.5px] text-[#64748B]">
+              <div className="pt-3 border-t border-slate-100 dark:border-white/[0.07] flex items-center justify-between text-[11.5px] text-slate-500 dark:text-[#64748B]">
                 <span>
                   Continuous streak:{' '}
-                  <strong className="text-[#10B981] font-medium">48 days</strong>
+                  <strong className="text-[#14B8A6] font-medium">48 days</strong>
                 </span>
                 <span>
-                  Velocity: <strong className="text-[#F1F5F9] font-medium">+22%</strong>
+                  Velocity: <strong className="text-slate-900 dark:text-[#F1F5F9] font-medium">+22%</strong>
                 </span>
               </div>
             </div>
 
             {/* Recent Activity */}
-            <div className="lg:col-span-3 bg-[#0E1117] border border-white/[0.07] rounded-xl p-4 flex flex-col">
-              <div className="flex items-center justify-between pb-3 border-b border-white/[0.07] mb-1">
-                <h3 className="text-[13px] font-medium text-[#F1F5F9]">Recent activity</h3>
+            <div className="lg:col-span-3 bg-white dark:bg-[#0E1117] border border-slate-200 dark:border-white/[0.07] rounded-xl p-4 flex flex-col shadow-sm transition-colors">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.07] mb-1">
+                <h3 className="text-[13px] font-medium text-slate-900 dark:text-[#F1F5F9]">Recent activity</h3>
                 <Link
                   href="/activity"
-                  className="text-[11.5px] font-medium text-[#A78BFA] hover:text-[#C4B5FD] transition-colors"
+                  className="text-[11.5px] font-medium text-[#6366F1] dark:text-[#93C5FD] hover:underline transition-colors"
                 >
                   All →
                 </Link>
@@ -293,41 +294,57 @@ export default function DeveloperOverviewPage() {
           {/* CAPABILITY GROWTH */}
           <DashboardGrowthSection />
 
-          {/* BOTTOM ROW */}
+          {/* CAREER & CHALLENGES ACCELERATOR SECTION */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            {/* Career & Learning Pathway */}
+            <div className="lg:col-span-6 flex flex-col">
+              <CareerWidget />
+            </div>
+
+            {/* Challenges & Competitions */}
+            <div className="lg:col-span-6 flex flex-col">
+              <DashboardChallengesWidget />
+            </div>
+          </div>
+
+          {/* RECENT PROJECTS & ACHIEVEMENTS */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Recent projects */}
-            <div className="lg:col-span-4 bg-[#0E1117] border border-white/[0.07] rounded-xl p-4">
-              <div className="flex items-center justify-between pb-3 border-b border-white/[0.07] mb-3">
-                <h3 className="text-[13px] font-medium text-[#F1F5F9]">Recent projects</h3>
+            <div className="lg:col-span-6 bg-white dark:bg-[#0E1117] border border-slate-200 dark:border-white/[0.07] rounded-xl p-4 sm:p-5 shadow-sm transition-colors">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.07] mb-3">
+                <div>
+                  <h3 className="text-[13px] font-semibold text-slate-900 dark:text-[#F1F5F9]">Recent projects</h3>
+                  <p className="text-[11px] text-slate-500 dark:text-[#64748B] mt-0.5">Audited repositories with verified health</p>
+                </div>
                 <Link
                   href="/projects"
-                  className="text-[11.5px] font-medium text-[#A78BFA] hover:text-[#C4B5FD] transition-colors"
+                  className="text-[11.5px] font-medium text-[#6366F1] dark:text-[#93C5FD] hover:underline transition-colors"
                 >
                   All ({DUMMY_REPOSITORIES.length}) →
                 </Link>
               </div>
 
-              <div className="space-y-2">
-                {DUMMY_REPOSITORIES.slice(0, 2).map((repo) => (
+              <div className="space-y-2.5">
+                {DUMMY_REPOSITORIES.slice(0, 3).map((repo) => (
                   <div
                     key={repo.id}
-                    className="p-3 rounded-lg bg-[#131720] border border-white/[0.05] hover:border-white/[0.09] transition-colors flex items-start justify-between gap-3"
+                    className="p-3 rounded-lg bg-slate-50 dark:bg-[#131720] border border-slate-200 dark:border-white/[0.05] hover:border-slate-300 dark:hover:border-white/[0.09] transition-colors flex items-start justify-between gap-3"
                   >
                     <div className="min-w-0 space-y-1">
                       <div className="flex items-center gap-2">
-                        <h4 className="text-[12.5px] font-medium text-[#F1F5F9] truncate">{repo.name}</h4>
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-[rgba(16,185,129,0.10)] text-[#10B981] shrink-0">
+                        <h4 className="text-[12.5px] font-semibold text-slate-900 dark:text-[#F1F5F9] truncate">{repo.name}</h4>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#14B8A6]/10 text-[#14B8A6] shrink-0 font-medium">
                           Active
                         </span>
                       </div>
-                      <p className="text-[11.5px] text-[#64748B] line-clamp-1">{repo.description}</p>
-                      <div className="flex items-center gap-3 text-[10.5px] text-[#475569]">
-                        <span>{repo.language}</span>
+                      <p className="text-[11.5px] text-slate-500 dark:text-[#64748B] line-clamp-1">{repo.description}</p>
+                      <div className="flex items-center gap-3 text-[10.5px] text-slate-400 dark:text-[#475569]">
+                        <span className="font-mono">{repo.language}</span>
                         <span>★ {repo.stars}</span>
                         <span>Health {repo.healthScore}%</span>
                       </div>
                     </div>
-                    <span className="text-[13px] font-semibold text-[#10B981] shrink-0 mt-0.5">
+                    <span className="text-[13px] font-semibold text-[#14B8A6] shrink-0 mt-0.5">
                       {repo.overallScore}
                     </span>
                   </div>
@@ -336,46 +353,44 @@ export default function DeveloperOverviewPage() {
             </div>
 
             {/* Achievements */}
-            <div className="lg:col-span-4 bg-[#0E1117] border border-white/[0.07] rounded-xl p-4">
-              <div className="flex items-center justify-between pb-3 border-b border-white/[0.07] mb-3">
-                <h3 className="text-[13px] font-medium text-[#F1F5F9]">Achievements</h3>
+            <div className="lg:col-span-6 bg-white dark:bg-[#0E1117] border border-slate-200 dark:border-white/[0.07] rounded-xl p-4 sm:p-5 shadow-sm transition-colors">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.07] mb-3">
+                <div>
+                  <h3 className="text-[13px] font-semibold text-slate-900 dark:text-[#F1F5F9]">Achievements & Honors</h3>
+                  <p className="text-[11px] text-slate-500 dark:text-[#64748B] mt-0.5">Empirical milestones and verified capability benchmarks</p>
+                </div>
                 <Link
                   href="/achievements"
-                  className="text-[11.5px] font-medium text-[#A78BFA] hover:text-[#C4B5FD] transition-colors"
+                  className="text-[11.5px] font-medium text-[#6366F1] dark:text-[#93C5FD] hover:underline transition-colors"
                 >
                   View all →
                 </Link>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {[
-                  { title: 'Elite Developer Status',    desc: 'Sustained 900+ score across 5 codebases',      date: 'Feb 2026', color: '#10B981' },
-                  { title: 'Zero Memory Leak Audit',    desc: 'Raft consensus verified with 0 unsafe leaks',   date: 'Jan 2026', color: '#7C3AED' },
-                  { title: 'Global Hackathon Finalist', desc: 'Top 1% in Distributed Raft Challenge',          date: 'Dec 2025', color: '#F59E0B' },
+                  { title: 'Elite Developer Status',    desc: 'Sustained 900+ score across 5 codebases',      date: 'Feb 2026', color: '#14B8A6' },
+                  { title: 'Zero Memory Leak Audit',    desc: 'Raft consensus verified with 0 unsafe leaks',   date: 'Jan 2026', color: '#6366F1' },
+                  { title: 'Global Hackathon Finalist', desc: 'Top 1% in Distributed Raft Challenge',          date: 'Dec 2025', color: '#3B82F6' },
                 ].map((ach, i) => (
                   <div
                     key={i}
-                    className="p-2.5 rounded-lg bg-[#131720] border border-white/[0.05] flex items-start gap-2.5"
+                    className="p-3 rounded-lg bg-slate-50 dark:bg-[#131720] border border-slate-200 dark:border-white/[0.05] flex items-start gap-3"
                   >
                     <div
-                      className="w-1.5 h-1.5 rounded-full mt-2 shrink-0"
+                      className="w-2 h-2 rounded-full mt-1.5 shrink-0"
                       style={{ backgroundColor: ach.color }}
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <h4 className="text-[12.5px] font-medium text-[#F1F5F9] truncate">{ach.title}</h4>
-                        <span className="text-[10.5px] text-[#475569] shrink-0">{ach.date}</span>
+                        <h4 className="text-[12.5px] font-semibold text-slate-900 dark:text-[#F1F5F9] truncate">{ach.title}</h4>
+                        <span className="text-[10.5px] text-slate-400 dark:text-[#475569] shrink-0 font-mono">{ach.date}</span>
                       </div>
-                      <p className="text-[11.5px] text-[#64748B] truncate">{ach.desc}</p>
+                      <p className="text-[11.5px] text-slate-500 dark:text-[#64748B] truncate mt-0.5">{ach.desc}</p>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-
-            {/* Career Intelligence Widget */}
-            <div className="lg:col-span-4">
-              <CareerWidget />
             </div>
           </div>
         </main>

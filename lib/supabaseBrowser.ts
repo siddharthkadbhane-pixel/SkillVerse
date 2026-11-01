@@ -1,7 +1,13 @@
-import { createBrowserClient } from '@supabase/ssr';
+// Legacy client compatibility stub (Phase 44 Supabase Exit)
+// Browser authentication is now handled via Better Auth client (lib/authClient.ts)
 
-export const createSupabaseBrowserClient = () =>
-  createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-  );
+export const createSupabaseBrowserClient = () => ({
+  auth: {
+    signInWithOAuth: async () => ({
+      data: null,
+      error: new Error('Supabase client OAuth is deprecated. Use authClient.signIn.social() from @/lib/authClient.'),
+    }),
+    signOut: async () => ({ error: null }),
+    getUser: async () => ({ data: { user: null }, error: null }),
+  },
+});

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ChallengeEngine } from '@/services/challenge/engine';
-import { getSessionUser } from '@/services/supabase';
+import { AuthorizationGuard } from '@/services/security/authorizer';
 import { Logger } from '@/lib/logger';
 
 export async function POST(
@@ -8,9 +8,13 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await AuthorizationGuard.requireAuth(req);
+    if (!auth.authorized) {
+      return auth.response!;
+    }
+
     const { id } = await params;
-    const sessionUser = await getSessionUser();
-    const userId = sessionUser?.id || '00000000-0000-0000-0000-000000000000';
+    const userId = auth.context.user.id;
 
     const body = await req.json();
     const result = await ChallengeEngine.submitSolution(userId, id, body);

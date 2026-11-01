@@ -230,7 +230,7 @@ export default function CommunityHubPage() {
   ];
 
   return (
-    <div className="flex h-screen bg-[#070A0F] text-[#F8FAFC]">
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-[#08090D] text-slate-900 dark:text-[#F1F5F9] transition-colors">
       <Sidebar />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -238,18 +238,18 @@ export default function CommunityHubPage() {
 
         <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-8 space-y-6 max-w-[1400px] w-full mx-auto">
           {/* Header Banner */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-white/[0.08]">
             <div>
               <div className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-[#8B5CF6]" />
-                <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                <MessageSquare className="w-5 h-5 text-[#6366F1]" />
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
                   Developer Community & Knowledge Network
                 </h1>
-                <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-[#8B5CF6]/10 text-[#A78BFA] border border-[#8B5CF6]/25">
+                <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-indigo-50 dark:bg-[#6366F1]/10 text-indigo-700 dark:text-[#A78BFA] border border-indigo-200 dark:border-[#6366F1]/25">
                   High Signal
                 </span>
               </div>
-              <p className="text-xs text-[#94A3B8] mt-1">
+              <p className="text-xs text-slate-600 dark:text-[#94A3B8] mt-1">
                 Share verified projects, ask technical questions, request peer code reviews, and build auditable community reputation without vanity noise.
               </p>
             </div>
@@ -258,7 +258,7 @@ export default function CommunityHubPage() {
               {activeTab === 'feed' && (
                 <button
                   onClick={() => setIsPostModalOpen(true)}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-bold shadow-lg shadow-[#8B5CF6]/25 transition-all"
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#6366F1] hover:bg-indigo-600 text-white text-xs font-bold shadow-md shadow-[#6366F1]/25 transition-all"
                 >
                   <Plus className="w-4 h-4" />
                   <span>New Technical Writeup</span>
@@ -267,7 +267,7 @@ export default function CommunityHubPage() {
               {activeTab === 'qa' && (
                 <button
                   onClick={() => setIsQuestionModalOpen(true)}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-bold shadow-lg shadow-[#8B5CF6]/25 transition-all"
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#6366F1] hover:bg-indigo-600 text-white text-xs font-bold shadow-md shadow-[#6366F1]/25 transition-all"
                 >
                   <HelpCircle className="w-4 h-4" />
                   <span>Ask Question</span>
@@ -276,7 +276,7 @@ export default function CommunityHubPage() {
               {activeTab === 'reviews' && (
                 <button
                   onClick={() => setIsReviewModalOpen(true)}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-bold shadow-lg shadow-[#8B5CF6]/25 transition-all"
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#6366F1] hover:bg-indigo-600 text-white text-xs font-bold shadow-md shadow-[#6366F1]/25 transition-all"
                 >
                   <Code2 className="w-4 h-4" />
                   <span>Request Peer Review</span>
@@ -286,13 +286,13 @@ export default function CommunityHubPage() {
           </div>
 
           {/* Navigation Tabs */}
-          <div className="flex items-center gap-2 border-b border-white/[0.08] pb-1 text-xs">
+          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/[0.08] pb-1 text-xs">
             <button
               onClick={() => setActiveTab('feed')}
               className={`px-4 py-2 rounded-t-xl font-mono transition-colors ${
                 activeTab === 'feed'
-                  ? 'bg-[#111722] text-[#A78BFA] border-b-2 border-[#8B5CF6] font-bold'
-                  : 'text-[#94A3B8] hover:text-white'
+                  ? 'bg-white dark:bg-[#111722] text-[#6366F1] dark:text-[#A78BFA] border-b-2 border-[#6366F1] font-bold shadow-xs'
+                  : 'text-slate-600 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Engineering Feed ({posts.length})
@@ -301,8 +301,8 @@ export default function CommunityHubPage() {
               onClick={() => setActiveTab('qa')}
               className={`px-4 py-2 rounded-t-xl font-mono transition-colors ${
                 activeTab === 'qa'
-                  ? 'bg-[#111722] text-[#A78BFA] border-b-2 border-[#8B5CF6] font-bold'
-                  : 'text-[#94A3B8] hover:text-white'
+                  ? 'bg-white dark:bg-[#111722] text-[#6366F1] dark:text-[#A78BFA] border-b-2 border-[#6366F1] font-bold shadow-xs'
+                  : 'text-slate-600 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Technical Q&A ({questions.length})
@@ -311,8 +311,8 @@ export default function CommunityHubPage() {
               onClick={() => setActiveTab('reviews')}
               className={`px-4 py-2 rounded-t-xl font-mono transition-colors ${
                 activeTab === 'reviews'
-                  ? 'bg-[#111722] text-[#A78BFA] border-b-2 border-[#8B5CF6] font-bold'
-                  : 'text-[#94A3B8] hover:text-white'
+                  ? 'bg-white dark:bg-[#111722] text-[#6366F1] dark:text-[#A78BFA] border-b-2 border-[#6366F1] font-bold shadow-xs'
+                  : 'text-slate-600 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Peer Code Reviews ({peerReviews.length})
@@ -321,8 +321,8 @@ export default function CommunityHubPage() {
               onClick={() => setActiveTab('reputation')}
               className={`px-4 py-2 rounded-t-xl font-mono transition-colors ${
                 activeTab === 'reputation'
-                  ? 'bg-[#111722] text-[#A78BFA] border-b-2 border-[#8B5CF6] font-bold'
-                  : 'text-[#94A3B8] hover:text-white'
+                  ? 'bg-white dark:bg-[#111722] text-[#6366F1] dark:text-[#A78BFA] border-b-2 border-[#6366F1] font-bold shadow-xs'
+                  : 'text-slate-600 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               My Community Reputation
@@ -330,23 +330,23 @@ export default function CommunityHubPage() {
           </div>
 
           {/* Search & Topic Filters */}
-          <div className="bg-[#0D121A] border border-white/[0.08] p-5 rounded-2xl space-y-4">
+          <div className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] p-5 rounded-2xl space-y-4 shadow-sm">
             <div className="flex flex-col sm:flex-row items-center gap-3">
               <div className="relative flex-1 w-full">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-[#64748B]" />
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') loadData(); }}
                   placeholder="Search technical discussions, code help, repositories, or topics..."
-                  className="w-full bg-[#111722] border border-white/[0.08] rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#8B5CF6]"
+                  className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#64748B] focus:outline-none focus:border-[#6366F1] transition-colors"
                 />
               </div>
 
               <button
                 onClick={loadData}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-bold transition-all shadow-md shadow-[#8B5CF6]/20"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#6366F1] hover:bg-indigo-600 text-white text-xs font-bold transition-all shadow-md shadow-[#6366F1]/20"
               >
                 Search Knowledge
               </button>
@@ -361,8 +361,8 @@ export default function CommunityHubPage() {
                     onClick={() => setSelectedTag(t)}
                     className={`px-3 py-1.5 rounded-lg text-[11px] font-mono transition-colors shrink-0 ${
                       selectedTag === t
-                        ? 'bg-[#8B5CF6] text-white font-bold'
-                        : 'bg-[#111722] text-[#94A3B8] hover:text-white border border-white/[0.06]'
+                        ? 'bg-[#6366F1] text-white font-bold shadow-xs'
+                        : 'bg-slate-100 dark:bg-[#111722] text-slate-600 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-white/[0.06]'
                     }`}
                   >
                     {t}
@@ -378,8 +378,8 @@ export default function CommunityHubPage() {
                       onClick={() => setContentTypeFilter(ct.value)}
                       className={`px-2.5 py-1 rounded text-[10px] font-mono transition-colors ${
                         contentTypeFilter === ct.value
-                          ? 'bg-white/[0.1] text-white font-semibold'
-                          : 'text-[#64748B] hover:text-white'
+                          ? 'bg-slate-200 dark:bg-white/[0.1] text-slate-900 dark:text-white font-semibold'
+                          : 'text-slate-500 dark:text-[#64748B] hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
                       {ct.label}
@@ -394,18 +394,18 @@ export default function CommunityHubPage() {
           {activeTab === 'feed' && (
             <div className="space-y-4">
               {loading ? (
-                <div className="text-center py-20 text-xs text-[#64748B]">Loading community feed...</div>
+                <div className="text-center py-20 text-xs text-slate-500 dark:text-[#64748B]">Loading community feed...</div>
               ) : posts.length === 0 ? (
-                <div className="bg-[#0D121A] border border-white/[0.08] rounded-2xl p-12 text-center space-y-3">
-                  <MessageSquare className="w-8 h-8 text-[#64748B] mx-auto" />
-                  <h3 className="text-sm font-bold text-white">No discussions found</h3>
-                  <p className="text-xs text-[#94A3B8]">Be the first to publish a project showcase or technical breakdown.</p>
+                <div className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-12 text-center space-y-3 shadow-sm">
+                  <MessageSquare className="w-8 h-8 text-slate-400 dark:text-[#64748B] mx-auto" />
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">No discussions found</h3>
+                  <p className="text-xs text-slate-500 dark:text-[#94A3B8]">Be the first to publish a project showcase or technical breakdown.</p>
                 </div>
               ) : (
                 posts.map((post) => (
                   <div
                     key={post.id}
-                    className="bg-[#0D121A] border border-white/[0.08] hover:border-white/[0.16] rounded-2xl p-6 transition-all space-y-4"
+                    className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.16] rounded-2xl p-6 transition-all space-y-4 shadow-sm"
                   >
                     {/* Top Author & Category Badge */}
                     <div className="flex items-start justify-between gap-3">
@@ -413,30 +413,30 @@ export default function CommunityHubPage() {
                         <img
                           src={post.author.avatarUrl || 'https://avatars.githubusercontent.com/u/84218321?v=4'}
                           alt={post.author.name}
-                          className="w-10 h-10 rounded-full border border-white/[0.1] object-cover"
+                          className="w-10 h-10 rounded-full border border-slate-200 dark:border-white/[0.1] object-cover"
                         />
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-white">{post.author.name}</span>
-                            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-white/[0.04] text-[#A78BFA]">
+                            <span className="text-xs font-bold text-slate-900 dark:text-white">{post.author.name}</span>
+                            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 dark:bg-white/[0.04] text-[#6366F1] dark:text-[#A78BFA] border border-slate-200 dark:border-white/[0.06]">
                               {post.author.dccLevel || 'Elite'} ({post.author.overallScore || 840})
                             </span>
                           </div>
-                          <span className="text-[10px] font-mono text-[#64748B]">
+                          <span className="text-[10px] font-mono text-slate-400 dark:text-[#64748B]">
                             @{post.author.username} • {new Date(post.createdAt).toLocaleDateString()}
                           </span>
                         </div>
                       </div>
 
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#8B5CF6]/15 text-[#A78BFA] border border-[#8B5CF6]/25 uppercase">
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-indigo-50 dark:bg-[#8B5CF6]/15 text-indigo-700 dark:text-[#A78BFA] border border-indigo-200 dark:border-[#8B5CF6]/25 uppercase">
                         {post.contentType.replace('_', ' ')}
                       </span>
                     </div>
 
                     {/* Title & Body */}
                     <div className="space-y-2">
-                      <h3 className="text-base font-bold text-white leading-snug">{post.title}</h3>
-                      <p className="text-xs text-[#94A3B8] leading-relaxed whitespace-pre-line">
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug">{post.title}</h3>
+                      <p className="text-xs text-slate-600 dark:text-[#94A3B8] leading-relaxed whitespace-pre-line">
                         {post.content}
                       </p>
                     </div>

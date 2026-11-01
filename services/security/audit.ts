@@ -57,7 +57,7 @@ export class AuditLogService {
           ipAddress: params.ipAddress || '127.0.0.1',
           details: params.details || {},
         }),
-        100
+        3000
       );
     } catch {
       // Memory store updated safely

@@ -127,9 +127,9 @@ export default function TeamWorkspacePage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-[#070A0F] text-[#F8FAFC]">
+      <div className="flex h-screen bg-canvas text-primary">
         <Sidebar />
-        <div className="flex-1 flex items-center justify-center text-xs text-[#64748B]">
+        <div className="flex-1 flex items-center justify-center text-xs text-slate-500 dark:text-[#64748B]">
           Loading team workspace...
         </div>
       </div>
@@ -138,11 +138,11 @@ export default function TeamWorkspacePage() {
 
   if (!team) {
     return (
-      <div className="flex h-screen bg-[#070A0F] text-[#F8FAFC]">
+      <div className="flex h-screen bg-canvas text-primary">
         <Sidebar />
         <div className="flex-1 flex flex-col items-center justify-center space-y-3">
-          <h3 className="text-sm font-bold text-white">Team Workspace Not Found</h3>
-          <Link href="/teams" className="text-xs text-[#38BDF8] underline">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white">Team Workspace Not Found</h3>
+          <Link href="/teams" className="text-xs text-sky-600 dark:text-[#38BDF8] underline">
             Return to Teams
           </Link>
         </div>
@@ -151,7 +151,7 @@ export default function TeamWorkspacePage() {
   }
 
   return (
-    <div className="flex h-screen bg-[#070A0F] text-[#F8FAFC]">
+    <div className="flex h-screen bg-canvas text-primary">
       <Sidebar />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -161,7 +161,7 @@ export default function TeamWorkspacePage() {
           <div>
             <Link
               href="/teams"
-              className="inline-flex items-center gap-1.5 text-xs text-[#94A3B8] hover:text-white transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs text-slate-600 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-white transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Back to Teams</span>
@@ -169,19 +169,19 @@ export default function TeamWorkspacePage() {
           </div>
 
           {/* Team Banner Header */}
-          <div className="bg-[#0D121A] border border-white/[0.08] p-6 sm:p-7 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] p-6 sm:p-7 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm">
             <div className="flex items-start gap-4">
               <img
                 src={team.avatarUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80'}
                 alt={team.name}
-                className="w-16 h-16 rounded-2xl border border-white/[0.1] object-cover shrink-0"
+                className="w-16 h-16 rounded-2xl border border-slate-200 dark:border-white/[0.1] object-cover shrink-0"
               />
               <div className="space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                  <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
                     {team.name}
                   </h1>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#111722] text-[#38BDF8] border border-[#38BDF8]/20 flex items-center gap-1">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-50 dark:bg-[#111722] text-sky-600 dark:text-[#38BDF8] border border-sky-500/20 dark:border-[#38BDF8]/20 flex items-center gap-1">
                     {team.visibility === 'public' ? <Globe className="w-3 h-3 text-[#10B981]" /> : <Lock className="w-3 h-3 text-[#F59E0B]" />}
                     <span className="capitalize">{team.visibility}</span>
                   </span>
@@ -192,7 +192,7 @@ export default function TeamWorkspacePage() {
                   )}
                 </div>
 
-                <p className="text-xs text-[#94A3B8] max-w-2xl">
+                <p className="text-xs text-slate-600 dark:text-[#94A3B8] max-w-2xl">
                   {team.description}
                 </p>
 
@@ -200,7 +200,7 @@ export default function TeamWorkspacePage() {
                   {team.skills.map(sk => (
                     <span
                       key={sk}
-                      className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#070A0F] border border-white/[0.06] text-[#E2E8F0]"
+                      className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-[#070A0F] border border-slate-200 dark:border-white/[0.06] text-slate-700 dark:text-[#E2E8F0]"
                     >
                       {sk}
                     </span>
@@ -212,19 +212,19 @@ export default function TeamWorkspacePage() {
             {/* Quick Stats */}
             <div className="flex items-center gap-4 shrink-0 text-right">
               <div>
-                <span className="text-lg font-bold font-mono text-white block">
+                <span className="text-lg font-bold font-mono text-slate-900 dark:text-white block">
                   {team.membersCount}
                 </span>
-                <span className="text-[10px] font-mono text-[#64748B]">
+                <span className="text-[10px] font-mono text-slate-500 dark:text-[#64748B]">
                   Active Members
                 </span>
               </div>
-              <div className="w-px h-8 bg-white/[0.08]" />
+              <div className="w-px h-8 bg-slate-200 dark:bg-white/[0.08]" />
               <div>
-                <span className="text-lg font-bold font-mono text-[#38BDF8] block">
+                <span className="text-lg font-bold font-mono text-sky-600 dark:text-[#38BDF8] block">
                   {team.projectsCount}
                 </span>
-                <span className="text-[10px] font-mono text-[#64748B]">
+                <span className="text-[10px] font-mono text-slate-500 dark:text-[#64748B]">
                   Linked Repos
                 </span>
               </div>
@@ -232,13 +232,13 @@ export default function TeamWorkspacePage() {
           </div>
 
           {/* Navigation Tabs */}
-          <div className="flex items-center gap-2 border-b border-white/[0.08] pb-1 text-xs">
+          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/[0.08] pb-1 text-xs">
             <button
               onClick={() => setActiveTab('overview')}
               className={`px-4 py-2 rounded-t-xl font-mono transition-colors ${
                 activeTab === 'overview'
-                  ? 'bg-[#111722] text-[#38BDF8] border-b-2 border-[#38BDF8] font-bold'
-                  : 'text-[#94A3B8] hover:text-white'
+                  ? 'bg-slate-100 dark:bg-[#111722] text-sky-600 dark:text-[#38BDF8] border-b-2 border-sky-600 dark:border-[#38BDF8] font-bold'
+                  : 'text-slate-600 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Overview & Members
@@ -247,8 +247,8 @@ export default function TeamWorkspacePage() {
               onClick={() => setActiveTab('tasks')}
               className={`px-4 py-2 rounded-t-xl font-mono transition-colors ${
                 activeTab === 'tasks'
-                  ? 'bg-[#111722] text-[#38BDF8] border-b-2 border-[#38BDF8] font-bold'
-                  : 'text-[#94A3B8] hover:text-white'
+                  ? 'bg-slate-100 dark:bg-[#111722] text-sky-600 dark:text-[#38BDF8] border-b-2 border-sky-600 dark:border-[#38BDF8] font-bold'
+                  : 'text-slate-600 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Tasks & Milestones ({team.tasks?.length || 0})
@@ -257,8 +257,8 @@ export default function TeamWorkspacePage() {
               onClick={() => setActiveTab('projects')}
               className={`px-4 py-2 rounded-t-xl font-mono transition-colors ${
                 activeTab === 'projects'
-                  ? 'bg-[#111722] text-[#38BDF8] border-b-2 border-[#38BDF8] font-bold'
-                  : 'text-[#94A3B8] hover:text-white'
+                  ? 'bg-slate-100 dark:bg-[#111722] text-sky-600 dark:text-[#38BDF8] border-b-2 border-sky-600 dark:border-[#38BDF8] font-bold'
+                  : 'text-slate-600 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Projects & Challenges ({team.projects?.length || 0})
@@ -267,8 +267,8 @@ export default function TeamWorkspacePage() {
               onClick={() => setActiveTab('contributions')}
               className={`px-4 py-2 rounded-t-xl font-mono transition-colors ${
                 activeTab === 'contributions'
-                  ? 'bg-[#111722] text-[#38BDF8] border-b-2 border-[#38BDF8] font-bold'
-                  : 'text-[#94A3B8] hover:text-white'
+                  ? 'bg-slate-100 dark:bg-[#111722] text-sky-600 dark:text-[#38BDF8] border-b-2 border-sky-600 dark:border-[#38BDF8] font-bold'
+                  : 'text-slate-600 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Granular Contributions (DCC Attributed)
@@ -279,30 +279,30 @@ export default function TeamWorkspacePage() {
           {activeTab === 'overview' && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               {/* Left Column: Team Members (8 cols) */}
-              <div className="lg:col-span-8 bg-[#0D121A] border border-white/[0.08] rounded-2xl p-6 space-y-4">
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+              <div className="lg:col-span-8 bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-6 space-y-4 shadow-sm">
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                   Roster & Verified Capabilities ({team.members?.length || 0})
                 </h3>
 
-                <div className="divide-y divide-white/[0.04]">
+                <div className="divide-y divide-slate-100 dark:divide-white/[0.04]">
                   {team.members?.map((m) => (
                     <div key={m.id} className="py-3.5 flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
                         <img
                           src={m.developer.avatarUrl || 'https://avatars.githubusercontent.com/u/84218321?v=4'}
                           alt={m.developer.name || m.developer.username}
-                          className="w-10 h-10 rounded-full border border-white/[0.1]"
+                          className="w-10 h-10 rounded-full border border-slate-200 dark:border-white/[0.1]"
                         />
                         <div>
                           <div className="flex items-center gap-2">
-                            <h4 className="text-xs font-bold text-white">
+                            <h4 className="text-xs font-bold text-slate-900 dark:text-white">
                               {m.developer.name || m.developer.username}
                             </h4>
-                            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-white/[0.04] text-[#A78BFA] capitalize">
+                            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 dark:bg-white/[0.04] text-indigo-600 dark:text-[#A78BFA] capitalize">
                               {m.role}
                             </span>
                           </div>
-                          <span className="text-[10px] font-mono text-[#64748B]">
+                          <span className="text-[10px] font-mono text-slate-500 dark:text-[#64748B]">
                             @{m.developer.username} • Verified {m.developer.dccLevel} ({m.developer.overallScore}/1000)
                           </span>
                         </div>
@@ -311,7 +311,7 @@ export default function TeamWorkspacePage() {
                       <Link
                         href={`/developer/${m.developer.username}`}
                         target="_blank"
-                        className="px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs font-semibold text-[#38BDF8] border border-white/[0.06] flex items-center gap-1 transition-colors"
+                        className="px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-white/[0.04] hover:bg-slate-100 dark:hover:bg-white/[0.08] text-xs font-semibold text-sky-600 dark:text-[#38BDF8] border border-slate-200 dark:border-white/[0.06] flex items-center gap-1 transition-colors"
                       >
                         <span>View DCC</span>
                         <ExternalLink className="w-3 h-3" />
@@ -322,12 +322,12 @@ export default function TeamWorkspacePage() {
               </div>
 
               {/* Right Column: Invite Member Drawer (4 cols) */}
-              <div className="lg:col-span-4 bg-[#0D121A] border border-white/[0.08] rounded-2xl p-6 space-y-4">
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                  <UserPlus className="w-4 h-4" />
+              <div className="lg:col-span-4 bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-6 space-y-4 shadow-sm">
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                  <UserPlus className="w-4 h-4 text-sky-600 dark:text-[#38BDF8]" />
                   <span>Invite Teammate</span>
                 </h3>
-                <p className="text-xs text-[#94A3B8]">
+                <p className="text-xs text-slate-600 dark:text-[#94A3B8]">
                   Add verified developers with complementary skill sets to collaborate on challenges.
                 </p>
 
@@ -337,12 +337,12 @@ export default function TeamWorkspacePage() {
                     value={inviteUserId}
                     onChange={(e) => setInviteUserId(e.target.value)}
                     placeholder="Enter developer username or ID..."
-                    className="w-full bg-[#111722] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#38BDF8]"
+                    className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 dark:focus:border-[#38BDF8]"
                   />
                   <button
                     type="submit"
                     disabled={inviting}
-                    className="w-full py-2.5 rounded-xl bg-[#38BDF8] hover:bg-[#0284C7] disabled:opacity-50 text-black text-xs font-bold transition-all shadow-md shadow-[#38BDF8]/20"
+                    className="w-full py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 dark:bg-[#38BDF8] dark:hover:bg-[#0284C7] disabled:opacity-50 text-white dark:text-black text-xs font-bold transition-all shadow-md shadow-sky-500/20"
                   >
                     {inviting ? 'Inviting...' : 'Send Invitation'}
                   </button>
@@ -361,9 +361,9 @@ export default function TeamWorkspacePage() {
           {activeTab === 'tasks' && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               {/* Tasks List (8 cols) */}
-              <div className="lg:col-span-8 bg-[#0D121A] border border-white/[0.08] rounded-2xl p-6 space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+              <div className="lg:col-span-8 bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-6 space-y-4 shadow-sm">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.06]">
+                  <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                     Task Pipeline ({team.tasks?.length || 0})
                   </h3>
                 </div>
@@ -374,18 +374,18 @@ export default function TeamWorkspacePage() {
                     value={newTaskTitle}
                     onChange={(e) => setNewTaskTitle(e.target.value)}
                     placeholder="Add a new engineering task or deliverable..."
-                    className="flex-1 bg-[#111722] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#38BDF8]"
+                    className="flex-1 bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#64748B] focus:outline-none focus:border-sky-500 dark:focus:border-[#38BDF8]"
                   />
                   <button
                     type="submit"
                     disabled={addingTask}
-                    className="px-4 py-2 rounded-xl bg-[#38BDF8] hover:bg-[#0284C7] disabled:opacity-50 text-black text-xs font-bold transition-all"
+                    className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 dark:bg-[#38BDF8] dark:hover:bg-[#0284C7] disabled:opacity-50 text-white dark:text-black text-xs font-bold transition-all"
                   >
                     Add Task
                   </button>
                 </form>
 
-                <div className="divide-y divide-white/[0.04] pt-2">
+                <div className="divide-y divide-slate-100 dark:divide-white/[0.04] pt-2">
                   {team.tasks?.map((tsk) => (
                     <div key={tsk.id} className="py-3 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
@@ -393,9 +393,9 @@ export default function TeamWorkspacePage() {
                           type="checkbox"
                           checked={tsk.status === 'completed'}
                           onChange={() => handleToggleTaskStatus(tsk)}
-                          className="w-4 h-4 rounded bg-[#111722] border-white/[0.2] accent-[#38BDF8] cursor-pointer"
+                          className="w-4 h-4 rounded bg-slate-100 dark:bg-[#111722] border-slate-300 dark:border-white/[0.2] accent-sky-500 dark:accent-[#38BDF8] cursor-pointer"
                         />
-                        <span className={`text-xs ${tsk.status === 'completed' ? 'line-through text-[#64748B]' : 'text-white font-medium'}`}>
+                        <span className={`text-xs ${tsk.status === 'completed' ? 'line-through text-slate-400 dark:text-[#64748B]' : 'text-slate-900 dark:text-white font-medium'}`}>
                           {tsk.title}
                         </span>
                       </div>
@@ -411,21 +411,21 @@ export default function TeamWorkspacePage() {
               </div>
 
               {/* Milestones (4 cols) */}
-              <div className="lg:col-span-4 bg-[#0D121A] border border-white/[0.08] rounded-2xl p-6 space-y-4">
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+              <div className="lg:col-span-4 bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-6 space-y-4 shadow-sm">
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                   Target Milestones
                 </h3>
 
                 <div className="space-y-3">
                   {team.milestones?.map((ms) => (
-                    <div key={ms.id} className="p-3.5 rounded-xl bg-[#111722] border border-white/[0.04] space-y-1">
+                    <div key={ms.id} className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#111722] border border-slate-200/60 dark:border-white/[0.04] space-y-1">
                       <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-bold text-white">{ms.title}</h4>
-                        <span className="text-[10px] font-mono text-[#38BDF8]">
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-white">{ms.title}</h4>
+                        <span className="text-[10px] font-mono text-sky-600 dark:text-[#38BDF8]">
                           {new Date(ms.targetDate).toLocaleDateString()}
                         </span>
                       </div>
-                      <span className="text-[10px] font-mono text-[#64748B] block">
+                      <span className="text-[10px] font-mono text-slate-500 dark:text-[#64748B] block">
                         Status: In Progress
                       </span>
                     </div>
@@ -437,26 +437,26 @@ export default function TeamWorkspacePage() {
 
           {/* TAB 3: Projects & Challenges */}
           {activeTab === 'projects' && (
-            <div className="bg-[#0D121A] border border-white/[0.08] rounded-2xl p-6 space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+            <div className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-6 space-y-4 shadow-sm">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.06]">
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                   Linked Repositories & Challenges
                 </h3>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {team.projects?.map((p) => (
-                  <div key={p.id} className="p-4 rounded-xl bg-[#111722] border border-white/[0.04] space-y-2">
+                  <div key={p.id} className="p-4 rounded-xl bg-slate-50 dark:bg-[#111722] border border-slate-200/60 dark:border-white/[0.04] space-y-2">
                     <div className="flex items-center gap-2">
-                      <FolderGit2 className="w-4 h-4 text-[#38BDF8]" />
-                      <h4 className="text-xs font-bold text-white">{p.name}</h4>
+                      <FolderGit2 className="w-4 h-4 text-sky-600 dark:text-[#38BDF8]" />
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white">{p.name}</h4>
                     </div>
-                    <p className="text-xs text-[#94A3B8]">{p.description}</p>
+                    <p className="text-xs text-slate-600 dark:text-[#94A3B8]">{p.description}</p>
                     <a
                       href={p.repositoryUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[11px] font-mono text-[#38BDF8] hover:underline"
+                      className="inline-flex items-center gap-1 text-[11px] font-mono text-sky-600 dark:text-[#38BDF8] hover:underline"
                     >
                       <span>{p.repositoryUrl}</span>
                       <ExternalLink className="w-3 h-3" />
@@ -469,33 +469,33 @@ export default function TeamWorkspacePage() {
 
           {/* TAB 4: Granular Contributions (DCC Attributed) */}
           {activeTab === 'contributions' && (
-            <div className="bg-[#0D121A] border border-white/[0.08] rounded-2xl p-6 space-y-4">
+            <div className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-6 space-y-4 shadow-sm">
               <div>
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                   Individual Contribution Tracking & Attribution
                 </h3>
-                <p className="text-xs text-[#94A3B8] mt-1">
+                <p className="text-xs text-slate-600 dark:text-[#94A3B8] mt-1">
                   Team work is attributed individually based on verified AST modules, PRs, and commits. Team reputation does not artificially inflate individual DCC scores.
                 </p>
               </div>
 
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-slate-100 dark:divide-white/[0.04]">
                 {team.contributions?.map((c) => (
                   <div key={c.userId} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <img
                         src={c.avatarUrl || 'https://avatars.githubusercontent.com/u/84218321?v=4'}
                         alt={c.developerName}
-                        className="w-11 h-11 rounded-full border border-white/[0.1]"
+                        className="w-11 h-11 rounded-full border border-slate-200 dark:border-white/[0.1]"
                       />
                       <div>
-                        <h4 className="text-xs font-bold text-white">{c.developerName}</h4>
-                        <span className="text-[10px] font-mono text-[#64748B]">
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-white">{c.developerName}</h4>
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-[#64748B]">
                           @{c.username}
                         </span>
                         <div className="flex flex-wrap items-center gap-1.5 mt-1">
                           {c.contributedSkillAreas.map(sk => (
-                            <span key={sk} className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-white/[0.04] text-[#A78BFA]">
+                            <span key={sk} className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 dark:bg-white/[0.04] text-indigo-600 dark:text-[#A78BFA]">
                               {sk}
                             </span>
                           ))}
@@ -505,16 +505,16 @@ export default function TeamWorkspacePage() {
 
                     <div className="flex items-center gap-6 text-right font-mono text-xs">
                       <div>
-                        <span className="text-sm font-bold text-white block">{c.commitsCount}</span>
-                        <span className="text-[10px] text-[#64748B]">Commits</span>
+                        <span className="text-sm font-bold text-slate-900 dark:text-white block">{c.commitsCount}</span>
+                        <span className="text-[10px] text-slate-500 dark:text-[#64748B]">Commits</span>
                       </div>
                       <div>
-                        <span className="text-sm font-bold text-[#38BDF8] block">{c.pullRequestsCount}</span>
-                        <span className="text-[10px] text-[#64748B]">PRs Audited</span>
+                        <span className="text-sm font-bold text-sky-600 dark:text-[#38BDF8] block">{c.pullRequestsCount}</span>
+                        <span className="text-[10px] text-slate-500 dark:text-[#64748B]">PRs Audited</span>
                       </div>
                       <div>
                         <span className="text-sm font-bold text-[#10B981] block">{c.astReviewedModulesCount}</span>
-                        <span className="text-[10px] text-[#64748B]">AST Modules</span>
+                        <span className="text-[10px] text-slate-500 dark:text-[#64748B]">AST Modules</span>
                       </div>
                     </div>
                   </div>

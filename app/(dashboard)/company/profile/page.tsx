@@ -83,7 +83,7 @@ export default function CompanyProfilePage() {
   };
 
   return (
-    <div className="flex h-screen bg-[#070A0F] text-[#F8FAFC]">
+    <div className="flex h-screen bg-slate-50 dark:bg-[#08090D] text-slate-900 dark:text-[#F1F5F9] transition-colors">
       <Sidebar />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -94,15 +94,15 @@ export default function CompanyProfilePage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-[#7C3AED]" />
-                <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                <Building2 className="w-5 h-5 text-[#6366F1]" />
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
                   Company Workspace Profile
                 </h1>
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/30">
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#14B8A6]/10 text-[#0D9488] dark:text-[#14B8A6] border border-[#14B8A6]/30">
                   ✓ Verified Company
                 </span>
               </div>
-              <p className="text-xs text-[#94A3B8] mt-1">
+              <p className="text-xs text-slate-600 dark:text-[#94A3B8] mt-1">
                 Manage your organization details and recruiter workspace identity.
               </p>
             </div>
@@ -116,11 +116,11 @@ export default function CompanyProfilePage() {
           )}
 
           {/* Form */}
-          <div className="bg-[#0D121A] border border-white/[0.08] rounded-2xl p-6 sm:p-8 space-y-6 shadow-sm">
+          <div className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-6 sm:p-8 space-y-6 shadow-sm">
             <form onSubmit={handleSave} className="space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[11px] font-mono text-[#64748B] block mb-1.5">
+                  <label className="text-[11px] font-mono text-slate-500 dark:text-[#64748B] block mb-1.5">
                     Company Name
                   </label>
                   <input
@@ -128,12 +128,12 @@ export default function CompanyProfilePage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
-                    className="w-full bg-[#111722] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#7C3AED]"
+                    className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#64748B] focus:outline-none focus:border-[#6366F1]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-mono text-[#64748B] block mb-1.5">
+                  <label className="text-[11px] font-mono text-slate-500 dark:text-[#64748B] block mb-1.5">
                     Official Website
                   </label>
                   <input
@@ -141,13 +141,13 @@ export default function CompanyProfilePage() {
                     value={website}
                     onChange={(e) => setWebsite(e.target.value)}
                     placeholder="https://company.com"
-                    className="w-full bg-[#111722] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#7C3AED]"
+                    className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#64748B] focus:outline-none focus:border-[#6366F1]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-[11px] font-mono text-[#64748B] block mb-1.5">
+                <label className="text-[11px] font-mono text-slate-500 dark:text-[#64748B] block mb-1.5">
                   About the Company
                 </label>
                 <textarea
@@ -155,13 +155,13 @@ export default function CompanyProfilePage() {
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
                   placeholder="Describe your engineering stack, mission, and culture..."
-                  className="w-full bg-[#111722] border border-white/[0.08] rounded-xl p-3.5 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#7C3AED]"
+                  className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl p-3.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#64748B] focus:outline-none focus:border-[#6366F1]"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-[11px] font-mono text-[#64748B] block mb-1.5">
+                  <label className="text-[11px] font-mono text-slate-500 dark:text-[#64748B] block mb-1.5">
                     Industry
                   </label>
                   <input
@@ -169,12 +169,12 @@ export default function CompanyProfilePage() {
                     value={industry}
                     onChange={(e) => setIndustry(e.target.value)}
                     placeholder="e.g. Developer Tools, FinTech"
-                    className="w-full bg-[#111722] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#7C3AED]"
+                    className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#64748B] focus:outline-none focus:border-[#6366F1]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-mono text-[#64748B] block mb-1.5">
+                  <label className="text-[11px] font-mono text-slate-500 dark:text-[#64748B] block mb-1.5">
                     Company Size
                   </label>
                   <input
@@ -182,12 +182,12 @@ export default function CompanyProfilePage() {
                     value={size}
                     onChange={(e) => setSize(e.target.value)}
                     placeholder="e.g. 50-200 employees"
-                    className="w-full bg-[#111722] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#7C3AED]"
+                    className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#64748B] focus:outline-none focus:border-[#6366F1]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-mono text-[#64748B] block mb-1.5">
+                  <label className="text-[11px] font-mono text-slate-500 dark:text-[#64748B] block mb-1.5">
                     Location
                   </label>
                   <input
@@ -195,16 +195,16 @@ export default function CompanyProfilePage() {
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="e.g. San Francisco, CA"
-                    className="w-full bg-[#111722] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#7C3AED]"
+                    className="w-full bg-slate-50 dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#64748B] focus:outline-none focus:border-[#6366F1]"
                   />
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-white/[0.06] flex items-center justify-end">
+              <div className="pt-4 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-end">
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#7C3AED] hover:bg-[#6D28D9] disabled:opacity-50 text-white text-xs font-semibold shadow-lg shadow-[#7C3AED]/25 transition-all"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#6366F1] hover:bg-[#4F46E5] disabled:opacity-50 text-white text-xs font-semibold shadow-lg shadow-[#6366F1]/25 transition-all"
                 >
                   <Save className="w-4 h-4" />
                   <span>{saving ? 'Saving Changes...' : 'Save Profile'}</span>

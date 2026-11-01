@@ -73,7 +73,7 @@ export default function CandidateComparePage() {
   };
 
   return (
-    <div className="flex h-screen bg-[#070A0F] text-[#F8FAFC]">
+    <div className="flex h-screen bg-canvas text-primary">
       <Sidebar />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -84,15 +84,15 @@ export default function CandidateComparePage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <ArrowLeftRight className="w-5 h-5 text-[#38BDF8]" />
-                <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                <ArrowLeftRight className="w-5 h-5 text-sky-600 dark:text-[#38BDF8]" />
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
                   Side-by-Side Candidate Evaluation
                 </h1>
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#111722] text-[#38BDF8] border border-[#38BDF8]/20">
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-sky-50 dark:bg-[#111722] text-sky-600 dark:text-[#38BDF8] border border-sky-500/20 dark:border-[#38BDF8]/20">
                   DCC 2.0 Benchmarks
                 </span>
               </div>
-              <p className="text-xs text-[#94A3B8] mt-1">
+              <p className="text-xs text-slate-600 dark:text-[#94A3B8] mt-1">
                 Objective comparison of candidate engineering capabilities, verified skills, and audited repositories.
               </p>
             </div>
@@ -104,12 +104,12 @@ export default function CandidateComparePage() {
                 value={addUsernameInput}
                 onChange={(e) => setAddUsernameInput(e.target.value)}
                 placeholder="Enter GitHub username..."
-                className="bg-[#111722] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#38BDF8]"
+                className="bg-white dark:bg-[#111722] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-[#64748B] focus:outline-none focus:border-sky-500 dark:focus:border-[#38BDF8]"
               />
               <button
                 onClick={handleAddCandidate}
                 disabled={candidateUsernames.length >= 3}
-                className="px-3.5 py-2 rounded-xl bg-[#38BDF8] hover:bg-[#0284C7] disabled:opacity-50 text-black text-xs font-semibold flex items-center gap-1.5 transition-all"
+                className="px-3.5 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 dark:bg-[#38BDF8] dark:hover:bg-[#0284C7] disabled:opacity-50 text-white dark:text-black text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add ({candidateUsernames.length}/3)</span>
@@ -118,14 +118,14 @@ export default function CandidateComparePage() {
           </div>
 
           {loading ? (
-            <div className="text-center py-20 text-xs text-[#64748B]">
+            <div className="text-center py-20 text-xs text-slate-500 dark:text-[#64748B]">
               Compiling candidate comparison matrix...
             </div>
           ) : !comparison || comparison.candidates.length === 0 ? (
-            <div className="bg-[#0D121A] border border-white/[0.08] rounded-2xl p-12 text-center space-y-3">
-              <ArrowLeftRight className="w-8 h-8 text-[#64748B] mx-auto" />
-              <h3 className="text-sm font-bold text-white">No candidates selected</h3>
-              <p className="text-xs text-[#94A3B8]">
+            <div className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-12 text-center space-y-3 shadow-sm">
+              <ArrowLeftRight className="w-8 h-8 text-slate-400 dark:text-[#64748B] mx-auto" />
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">No candidates selected</h3>
+              <p className="text-xs text-slate-600 dark:text-[#94A3B8]">
                 Add at least two developer usernames above to perform a side-by-side capability comparison.
               </p>
             </div>
@@ -136,11 +136,11 @@ export default function CandidateComparePage() {
                 {comparison.candidates.map((cand) => (
                   <div
                     key={cand.username}
-                    className="bg-[#0D121A] border border-white/[0.08] rounded-2xl p-5 space-y-4 relative"
+                    className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-5 space-y-4 relative shadow-sm"
                   >
                     <button
                       onClick={() => handleRemoveCandidate(cand.username)}
-                      className="absolute top-4 right-4 p-1 rounded-lg text-[#64748B] hover:text-red-400 transition-colors"
+                      className="absolute top-4 right-4 p-1 rounded-lg text-slate-400 dark:text-[#64748B] hover:text-red-500 transition-colors"
                       title="Remove candidate"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -150,26 +150,26 @@ export default function CandidateComparePage() {
                       <img
                         src={cand.avatarUrl}
                         alt={cand.name}
-                        className="w-12 h-12 rounded-full border border-white/[0.1]"
+                        className="w-12 h-12 rounded-full border border-slate-200 dark:border-white/[0.1]"
                       />
                       <div>
-                        <h3 className="text-sm font-bold text-white">{cand.name}</h3>
-                        <span className="text-xs text-[#38BDF8] font-mono">@{cand.username}</span>
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-white">{cand.name}</h3>
+                        <span className="text-xs text-sky-600 dark:text-[#38BDF8] font-mono">@{cand.username}</span>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/[0.06]">
-                      <div className="bg-[#111722] p-3 rounded-xl">
-                        <span className="text-[10px] font-mono text-[#64748B] uppercase block">
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-white/[0.06]">
+                      <div className="bg-slate-50 dark:bg-[#111722] p-3 rounded-xl border border-slate-100 dark:border-transparent">
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-[#64748B] uppercase block">
                           DCC Tier Level
                         </span>
-                        <span className="text-sm font-bold text-[#C4B5FD] font-mono">
+                        <span className="text-sm font-bold text-indigo-600 dark:text-[#C4B5FD] font-mono">
                           {cand.dccLevel}
                         </span>
                       </div>
 
-                      <div className="bg-[#111722] p-3 rounded-xl">
-                        <span className="text-[10px] font-mono text-[#64748B] uppercase block">
+                      <div className="bg-slate-50 dark:bg-[#111722] p-3 rounded-xl border border-slate-100 dark:border-transparent">
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-[#64748B] uppercase block">
                           AST Quality Score
                         </span>
                         <span className="text-sm font-bold text-[#10B981] font-mono">
@@ -181,7 +181,7 @@ export default function CandidateComparePage() {
                     <Link
                       href={`/developer/${cand.username}`}
                       target="_blank"
-                      className="w-full py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-xs font-semibold text-center block text-white transition-colors"
+                      className="w-full py-2 rounded-xl bg-slate-50 dark:bg-white/[0.04] hover:bg-slate-100 dark:hover:bg-white/[0.08] border border-slate-200 dark:border-white/[0.06] text-xs font-semibold text-center block text-slate-900 dark:text-white transition-colors"
                     >
                       View Developer Capability Card
                     </Link>
@@ -190,10 +190,10 @@ export default function CandidateComparePage() {
               </div>
 
               {/* Comparison Safety Notice */}
-              <div className="bg-[#131720] border border-white/[0.07] rounded-xl p-4 flex items-start gap-3">
-                <ShieldCheck className="w-4 h-4 text-[#7C3AED] shrink-0 mt-0.5" />
-                <div className="text-xs text-[#94A3B8] space-y-0.5">
-                  <strong className="text-white font-medium block">Dimensional Capability Evaluation</strong>
+              <div className="bg-slate-50 dark:bg-[#131720] border border-slate-200 dark:border-white/[0.07] rounded-xl p-4 flex items-start gap-3 shadow-sm">
+                <ShieldCheck className="w-4 h-4 text-indigo-600 dark:text-[#7C3AED] shrink-0 mt-0.5" />
+                <div className="text-xs text-slate-600 dark:text-[#94A3B8] space-y-0.5">
+                  <strong className="text-slate-900 dark:text-white font-medium block">Dimensional Capability Evaluation</strong>
                   <p>
                     SkillVerse compares candidates across concrete engineering dimensions (Engineering Rigor, Code Quality, Architecture, Testing) rather than a single number. Different strengths align with different organizational roles.
                   </p>
@@ -201,15 +201,15 @@ export default function CandidateComparePage() {
               </div>
 
               {/* Shared Verified Skills Comparison Matrix */}
-              <div className="bg-[#0D121A] border border-white/[0.08] rounded-2xl p-6 space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
+              <div className="bg-white dark:bg-[#0D121A] border border-slate-200 dark:border-white/[0.08] rounded-2xl p-6 space-y-4 shadow-sm">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.06]">
                   <div className="flex items-center gap-2">
                     <Code2 className="w-4 h-4 text-[#10B981]" />
-                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                       Verified Skills Comparison
                     </h3>
                   </div>
-                  <span className="text-xs text-[#64748B]">
+                  <span className="text-xs text-slate-500 dark:text-[#64748B]">
                     AST Verified Modularity & Quality
                   </span>
                 </div>
@@ -218,11 +218,11 @@ export default function CandidateComparePage() {
                   {comparison.sharedSkills.slice(0, 8).map((skillName) => (
                     <div
                       key={skillName}
-                      className="bg-[#111722] border border-white/[0.04] p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                      className="bg-slate-50 dark:bg-[#111722] border border-slate-200/60 dark:border-white/[0.04] p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                     >
                       <div className="flex items-center gap-2 min-w-44">
                         <span className="w-2 h-2 rounded-full bg-[#10B981]" />
-                        <span className="text-xs font-bold text-white font-mono">{skillName}</span>
+                        <span className="text-xs font-bold text-slate-900 dark:text-white font-mono">{skillName}</span>
                       </div>
 
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 flex-1">
@@ -232,7 +232,7 @@ export default function CandidateComparePage() {
                           );
                           return (
                             <div key={cand.username} className="flex items-center gap-2">
-                              <span className="text-[10px] text-[#64748B] font-mono truncate w-16">
+                              <span className="text-[10px] text-slate-500 dark:text-[#64748B] font-mono truncate w-16">
                                 @{cand.username}:
                               </span>
                               {skillMatch ? (
@@ -240,7 +240,7 @@ export default function CandidateComparePage() {
                                   ✓ Verified
                                 </span>
                               ) : (
-                                <span className="text-xs font-mono text-[#64748B]">
+                                <span className="text-xs font-mono text-slate-400 dark:text-[#64748B]">
                                   — Unaudited
                                 </span>
                               )}

@@ -104,9 +104,9 @@ export default function ChallengeDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-[#070A0F] text-[#F8FAFC]">
+      <div className="flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-[#08090D] text-slate-900 dark:text-[#F1F5F9] transition-colors">
         <Sidebar />
-        <div className="flex-1 flex items-center justify-center text-xs text-[#64748B]">
+        <div className="flex-1 flex items-center justify-center text-xs text-slate-500 dark:text-[#64748B]">
           Loading competition specifications...
         </div>
       </div>
@@ -115,10 +115,10 @@ export default function ChallengeDetailPage() {
 
   if (!challenge) {
     return (
-      <div className="flex h-screen bg-[#070A0F] text-[#F8FAFC]">
+      <div className="flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-[#08090D] text-slate-900 dark:text-[#F1F5F9] transition-colors">
         <Sidebar />
         <div className="flex-1 flex flex-col items-center justify-center space-y-3">
-          <h3 className="text-sm font-bold text-white">Challenge Not Found</h3>
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white">Challenge Not Found</h3>
           <Link href="/challenges" className="text-xs text-[#F59E0B] underline">
             Return to Challenges
           </Link>
@@ -128,7 +128,7 @@ export default function ChallengeDetailPage() {
   }
 
   return (
-    <div className="flex h-screen bg-[#070A0F] text-[#F8FAFC]">
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-[#08090D] text-slate-900 dark:text-[#F1F5F9] transition-colors">
       <Sidebar />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">

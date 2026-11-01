@@ -21,6 +21,7 @@ import {
 import { DeveloperSearchService } from '@/services/discovery/search';
 import { DeveloperCapabilityCardService } from '@/services/dcc/service';
 import { DUMMY_USERS } from '@/lib/dummyData';
+import { isDemoAuthEnabled } from '@/services/supabase';
 import { Logger } from '@/lib/logger';
 
 export const DEFAULT_COMPANY_ID = '00000000-0000-0000-0000-000000000001';
@@ -43,7 +44,7 @@ export class CompanyWorkspaceService {
   /**
    * Retrieves company workspace profile
    */
-  static async getCompanyProfile(companyId: string = DEFAULT_COMPANY_ID): Promise<CompanyProfile> {
+  static async getCompanyProfile(companyId: string = DEFAULT_COMPANY_ID): Promise<CompanyProfile | null> {
     try {
       const company = await withDbTimeout(
         db.query.companies.findFirst({
@@ -68,7 +69,11 @@ export class CompanyWorkspaceService {
       }
     } catch {}
 
-    return FALLBACK_COMPANY;
+    if (companyId === DEFAULT_COMPANY_ID && isDemoAuthEnabled()) {
+      return FALLBACK_COMPANY;
+    }
+
+    return null;
   }
 
   /**
@@ -77,7 +82,7 @@ export class CompanyWorkspaceService {
   static async updateCompanyProfile(
     companyId: string,
     data: Partial<CompanyProfile>
-  ): Promise<CompanyProfile> {
+  ): Promise<CompanyProfile | null> {
     try {
       await withDbTimeout(
         db.update(companies)
@@ -133,37 +138,41 @@ export class CompanyWorkspaceService {
       }
     } catch {}
 
-    // Resilient fallback members
-    return [
-      {
-        id: 'member-1',
-        companyId,
-        userId: '00000000-0000-0000-0000-000000000002',
-        user: {
-          name: 'Sarah Chen',
-          email: 'sarah.chen@acme-engineering.dev',
-          avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
-          username: 'sarahchen',
+    // Demo fallback members strictly for DEFAULT_COMPANY_ID when demo auth is enabled
+    if (companyId === DEFAULT_COMPANY_ID && isDemoAuthEnabled()) {
+      return [
+        {
+          id: 'member-1',
+          companyId,
+          userId: '00000000-0000-0000-0000-000000000002',
+          user: {
+            name: 'Sarah Chen',
+            email: 'sarah.chen@acme-engineering.dev',
+            avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
+            username: 'sarahchen',
+          },
+          role: 'company_admin',
+          status: 'active',
+          joinedAt: new Date().toISOString(),
         },
-        role: 'company_admin',
-        status: 'active',
-        joinedAt: new Date().toISOString(),
-      },
-      {
-        id: 'member-2',
-        companyId,
-        userId: '00000000-0000-0000-0000-000000000003',
-        user: {
-          name: 'Alex Rivera',
-          email: 'alex.rivera@acme-engineering.dev',
-          avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
-          username: 'alexrivera',
+        {
+          id: 'member-2',
+          companyId,
+          userId: '00000000-0000-0000-0000-000000000003',
+          user: {
+            name: 'Alex Rivera',
+            email: 'alex.rivera@acme-engineering.dev',
+            avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+            username: 'alexrivera',
+          },
+          role: 'recruiter',
+          status: 'active',
+          joinedAt: new Date().toISOString(),
         },
-        role: 'recruiter',
-        status: 'active',
-        joinedAt: new Date().toISOString(),
-      },
-    ];
+      ];
+    }
+
+    return [];
   }
 
   /**
@@ -256,22 +265,6 @@ export class CompanyWorkspaceService {
       });
     }
 
-    // Resilient fallback with active developer
-    if (devList.length > 0) {
-      return [
-        {
-          id: 'saved-1',
-          companyId,
-          recruiterId: 'recruiter-1',
-          developerUserId: devList[0].id,
-          developer: devList[0],
-          notes: 'Strong TypeScript and Next.js candidate with verified AST codebase quality score of 88/100.',
-          tags: ['Lead Candidate', 'High Signal'],
-          createdAt: new Date().toISOString(),
-        },
-      ];
-    }
-
     return [];
   }
 
@@ -362,19 +355,7 @@ export class CompanyWorkspaceService {
       }));
     }
 
-    return [
-      {
-        id: 'note-1',
-        companyId,
-        recruiterId: 'recruiter-1',
-        recruiterName: 'Sarah Chen (Lead Recruiter)',
-        developerUserId,
-        content: 'Candidate has stellar AST code quality benchmarks and active repository commits. Recommended for Staff Frontend or Full-Stack Engineering role.',
-        isPrivate: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    ];
+    return [];
   }
 
   /**
@@ -447,17 +428,45 @@ export class CompanyWorkspaceService {
     companyId: string = DEFAULT_COMPANY_ID,
     recruiterId?: string
   ): Promise<RecentlyViewedDeveloperItem[]> {
-    const searchRes = await DeveloperSearchService.searchDevelopers({});
-    const devList = searchRes.developers || [];
+    try {
+      const viewedRows = await withDbTimeout(
+        db.query.recentlyViewedDevelopers.findMany({
+          where: eq(recentlyViewedDevelopers.companyId, companyId),
+          orderBy: [desc(recentlyViewedDevelopers.viewedAt)],
+          limit: 10,
+        }),
+        250
+      );
 
-    return devList.slice(0, 4).map((dev, idx) => ({
-      id: `recent-${dev.id}`,
-      companyId,
-      recruiterId: recruiterId || 'recruiter-1',
-      developerUserId: dev.id,
-      developer: dev,
-      viewedAt: new Date(Date.now() - idx * 3600 * 1000).toISOString(),
-    }));
+      if (viewedRows.length > 0) {
+        const searchRes = await DeveloperSearchService.searchDevelopers({});
+        const devList = searchRes.developers || [];
+
+        return viewedRows.map(row => {
+          const matchedDev = devList.find(d => d.id === row.developerUserId) || {
+            id: row.developerUserId,
+            name: 'Candidate Developer',
+            username: 'developer',
+            avatarUrl: null,
+            overallScore: 750,
+            level: 'Builder',
+            tagline: 'Developer',
+            skills: ['Full-Stack'],
+          } as any;
+
+          return {
+            id: row.id,
+            companyId: row.companyId,
+            recruiterId: row.recruiterId,
+            developerUserId: row.developerUserId,
+            developer: matchedDev,
+            viewedAt: row.viewedAt.toISOString(),
+          };
+        });
+      }
+    } catch {}
+
+    return [];
   }
 
   /**

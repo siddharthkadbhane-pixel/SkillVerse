@@ -1,24 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { DUMMY_USERS, getDummyUserById, getDummyUserByUsername } from '@/lib/dummyData';
+import { DUMMY_USERS } from '@/lib/dummyData';
+import { isDemoAuthEnabled } from '@/services/supabase';
+import { DistributedRateLimiter } from '@/services/security/distributedRateLimiter';
 
 export async function GET(req: NextRequest) {
+  // Reject in production or when demo auth is disabled
+  if (!isDemoAuthEnabled()) {
+    return NextResponse.json(
+      { success: false, error: 'Forbidden', message: 'Demo authentication is disabled in this environment' },
+      { status: 403 }
+    );
+  }
+
   try {
     const cookieStore = await cookies();
     const demoUserId = cookieStore.get('skillverse_demo_user')?.value;
-    const currentUser = getDummyUserById(demoUserId);
+    const currentUser = demoUserId ? DUMMY_USERS.find((u) => u.id === demoUserId) || null : null;
 
     const { searchParams } = new URL(req.url);
     const switchUser = searchParams.get('switch');
     const redirectUrl = searchParams.get('redirect') || '/dashboard';
 
     if (switchUser) {
-      const targetUser = getDummyUserByUsername(switchUser) || getDummyUserById(switchUser);
+      const targetUser = DUMMY_USERS.find(
+        (u) => u.username.toLowerCase() === switchUser.toLowerCase() || u.id === switchUser
+      );
+
+      if (!targetUser) {
+        return NextResponse.json({ success: false, error: 'Invalid demo user specified' }, { status: 400 });
+      }
+
       cookieStore.set('skillverse_demo_user', targetUser.id, {
         path: '/',
-        httpOnly: false,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 30, // 30 days
+        maxAge: 60 * 60 * 24, // 1 day
       });
 
       return NextResponse.redirect(new URL(redirectUrl, req.url));
@@ -29,30 +47,54 @@ export async function GET(req: NextRequest) {
       data: {
         currentUser,
         availableUsers: DUMMY_USERS,
-      }
+      },
     });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
+  // Reject in production or when demo auth is disabled
+  if (!isDemoAuthEnabled()) {
+    return NextResponse.json(
+      { success: false, error: 'Forbidden', message: 'Demo authentication is disabled in this environment' },
+      { status: 403 }
+    );
+  }
+
+  // Rate limit protection against brute force
+  const clientIp = DistributedRateLimiter.getClientIp(req);
+  const rateLimit = await DistributedRateLimiter.check(clientIp, 'auth_sensitive');
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { success: false, error: 'Too Many Requests', message: 'Too many authentication attempts. Please retry later.' },
+      { status: 429, headers: rateLimit.headers }
+    );
+  }
+
   try {
     const body = await req.json().catch(() => ({}));
     const { userId, username } = body;
 
-    const targetUser = userId 
-      ? getDummyUserById(userId) 
-      : username 
-      ? getDummyUserByUsername(username) 
-      : DUMMY_USERS[0];
+    const targetUser = DUMMY_USERS.find(
+      (u) => (userId && u.id === userId) || (username && u.username.toLowerCase() === username.toLowerCase())
+    );
+
+    if (!targetUser) {
+      return NextResponse.json(
+        { success: false, error: 'Bad Request', message: 'Valid demo userId or username required' },
+        { status: 400 }
+      );
+    }
 
     const cookieStore = await cookies();
     cookieStore.set('skillverse_demo_user', targetUser.id, {
       path: '/',
-      httpOnly: false,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 30, // 30 days
+      maxAge: 60 * 60 * 24, // 1 day
     });
 
     return NextResponse.json({
@@ -61,20 +103,27 @@ export async function POST(req: NextRequest) {
       data: targetUser,
     });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function DELETE() {
+export async function DELETE(req: NextRequest) {
+  if (!isDemoAuthEnabled()) {
+    return NextResponse.json(
+      { success: false, error: 'Forbidden', message: 'Demo authentication is disabled in this environment' },
+      { status: 403 }
+    );
+  }
+
   try {
     const cookieStore = await cookies();
     cookieStore.delete('skillverse_demo_user');
 
     return NextResponse.json({
       success: true,
-      message: 'Demo test session reset to default',
+      message: 'Demo test session cleared',
     });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
