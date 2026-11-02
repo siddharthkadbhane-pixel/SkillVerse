@@ -13,6 +13,7 @@ export interface AuthConfigValidation {
   secret: string;
   baseURL: string;
   githubEnabled: boolean;
+  googleEnabled: boolean;
   errors: string[];
 }
 
@@ -113,6 +114,21 @@ export function validateAuthConfig(env: NodeJS.ProcessEnv = process.env): AuthCo
     }
   }
 
+  // Google OAuth validation (optional in dev, validated if configured in production)
+  const googleClientId = env.GOOGLE_CLIENT_ID || env.GOOGLE_ID || '';
+  const googleClientSecret = env.GOOGLE_CLIENT_SECRET || env.GOOGLE_SECRET || '';
+  const googleEnabled = Boolean(googleClientId && googleClientSecret);
+
+  if (isProduction) {
+    if (googleClientId && !googleClientSecret) {
+      errors.push('CRITICAL: GOOGLE_CLIENT_ID was provided without GOOGLE_CLIENT_SECRET.');
+    } else if (!googleClientId && googleClientSecret) {
+      errors.push('CRITICAL: GOOGLE_CLIENT_SECRET was provided without GOOGLE_CLIENT_ID.');
+    } else if (googleClientId.includes('placeholder') || googleClientSecret.includes('placeholder')) {
+      errors.push('CRITICAL: GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET contains placeholder values in production.');
+    }
+  }
+
   if (errors.length > 0 && isProduction) {
     throw new Error(`[BetterAuth Configuration Failure]\n- ${errors.join('\n- ')}`);
   }
@@ -122,6 +138,7 @@ export function validateAuthConfig(env: NodeJS.ProcessEnv = process.env): AuthCo
     secret,
     baseURL: baseURL || 'http://localhost:3000',
     githubEnabled,
+    googleEnabled,
     errors,
   };
 }
@@ -241,11 +258,31 @@ export const auth = betterAuth({
         };
       },
     },
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_ID || '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_SECRET || '',
+      enabled: authConfig.googleEnabled,
+      mapProfileToUser: async (profile: any) => {
+        const username = await resolveUniqueUsername({
+          login: profile.email?.split('@')[0],
+          email: profile.email,
+          id: profile.sub,
+        });
+        const fullName = profile.name || profile.email?.split('@')[0] || username;
+        const avatarUrl = profile.picture || '';
+        return {
+          name: fullName,
+          username,
+          avatarUrl,
+          role: 'developer',
+        };
+      },
+    },
   },
   account: {
     accountLinking: {
       enabled: true,
-      trustedProviders: ['github'],
+      trustedProviders: ['github', 'google'],
     },
   },
   databaseHooks: {

@@ -1,7 +1,9 @@
 import { cookies, headers } from 'next/headers';
 import { auth } from '@/lib/auth';
 import { DUMMY_USERS } from '@/lib/dummyData';
-import { checkDbAvailability } from '@/lib/drizzle';
+import { checkDbAvailability, db } from '@/lib/drizzle';
+import { accounts } from '@/database/schema';
+import { eq } from 'drizzle-orm';
 
 export interface SessionUser {
   id: string;
@@ -20,6 +22,7 @@ export interface SessionUser {
   };
   app_metadata?: {
     provider?: string;
+    providers?: string[];
     role?: string;
   };
   createdAt?: string;
@@ -60,6 +63,27 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
         if (session && session.user && session.user.id) {
           const u = session.user as any;
+
+          // Query linked providers directly from accounts table to support multiple linked providers accurately
+          let linkedProviders: string[] = [];
+          try {
+            const userAccounts = await db
+              .select({ providerId: accounts.providerId })
+              .from(accounts)
+              .where(eq(accounts.userId, u.id));
+            linkedProviders = Array.from(new Set(userAccounts.map((a) => a.providerId).filter(Boolean)));
+          } catch {
+            // Graceful fallback if accounts table query fails
+            if (u.githubId) linkedProviders.push('github');
+          }
+
+          const primaryProvider =
+            linkedProviders.length === 1
+              ? linkedProviders[0]
+              : linkedProviders.length > 1
+                ? 'multiple'
+                : (u.githubId ? 'github' : 'google');
+
           return {
             id: u.id,
             email: u.email,
@@ -73,10 +97,11 @@ export async function getSessionUser(): Promise<SessionUser | null> {
               user_name: u.username || u.name,
               avatar_url: u.avatarUrl || u.image,
               email: u.email,
-              sub: u.githubId,
+              sub: u.id || u.githubId,
             },
             app_metadata: {
-              provider: 'github',
+              provider: primaryProvider,
+              providers: linkedProviders.length > 0 ? linkedProviders : [primaryProvider],
               role: u.role || 'developer',
             },
             createdAt: u.createdAt ? new Date(u.createdAt).toISOString() : new Date().toISOString(),
