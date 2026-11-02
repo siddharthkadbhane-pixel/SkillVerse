@@ -511,6 +511,66 @@ export class CompanyWorkspaceService {
       comparedAt: new Date().toISOString(),
     };
   }
+
+  /**
+   * Registers a new company workspace and establishes verified company_admin ownership.
+   * Ensures users cannot arbitrarily self-assign company_admin without creating/joining a company.
+   */
+  static async registerCompany(
+    creatorUserId: string,
+    data: { name: string; website?: string; description?: string; logoUrl?: string }
+  ): Promise<{ success: boolean; company?: CompanyProfile; error?: string }> {
+    if (!data.name || !data.name.trim()) {
+      return { success: false, error: 'Company name is required.' };
+    }
+
+    try {
+      const insertedCompanies = await db.insert(companies).values({
+        name: data.name.trim(),
+        website: data.website?.trim() || null,
+        description: data.description?.trim() || null,
+        logoUrl: data.logoUrl || null,
+        verified: false,
+      }).returning();
+
+      const newCompany = insertedCompanies[0];
+
+      // Create company membership
+      await db.insert(companyMembers).values({
+        companyId: newCompany.id,
+        userId: creatorUserId,
+        role: 'company_admin',
+        status: 'active',
+      });
+
+      // Update user role to company_admin
+      await db.update(users).set({
+        role: 'company_admin',
+        companyId: newCompany.id,
+        updatedAt: new Date(),
+      }).where(eq(users.id, creatorUserId));
+
+      const profile = await this.getCompanyProfile(newCompany.id);
+      return {
+        success: true,
+        company: profile || {
+          id: newCompany.id,
+          name: newCompany.name,
+          logoUrl: newCompany.logoUrl,
+          website: newCompany.website,
+          description: newCompany.description,
+          industry: 'Software & Technology',
+          size: '1-50 employees',
+          location: 'Remote',
+          verificationStatus: 'pending',
+          createdAt: newCompany.createdAt?.toISOString() || new Date().toISOString(),
+        },
+      };
+    } catch (err: any) {
+      Logger.error('Failed to register company:', err);
+      return { success: false, error: err?.message || 'Database error during company registration' };
+    }
+  }
 }
 
 export default CompanyWorkspaceService;

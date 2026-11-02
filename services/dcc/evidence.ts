@@ -258,7 +258,10 @@ export class DCCEvidenceService {
       const sName = skillMap.get(us.skillId);
       if (sName) {
         const entry = getEntry(sName);
-        entry.manualProficiency = Math.max(entry.manualProficiency, (us.proficiencyLevel || 3) * 20);
+        // Only verified_inference user_skills upgrade proficiency
+        if (us.provenanceStatus === 'verified_inference') {
+          entry.manualProficiency = Math.max(entry.manualProficiency, (us.proficiencyLevel || 3) * 20);
+        }
       }
     }
 
@@ -313,6 +316,7 @@ export class DCCEvidenceService {
         const review = reviewMap.get(repo.id);
 
         if (review) {
+          const isGenuineInference = review.provenanceStatus === 'verified_inference';
           const extracted = Array.isArray(review.skillsExtracted) 
             ? (review.skillsExtracted as any[]).map((s: any) => typeof s === 'string' ? s : s?.name).filter(Boolean)
             : [];
@@ -328,25 +332,36 @@ export class DCCEvidenceService {
               const entry = getEntry(s);
               if (!entry.repoNames.has(repo.fullName)) {
                 entry.repoNames.add(repo.fullName);
-                entry.totalReviews += 1;
-                entry.sumScores += review.overallScore || 75;
                 entry.latestDate = repoDate;
-                if (!isFork) entry.hasCodebaseProof = true;
+
+                if (isGenuineInference) {
+                  entry.totalReviews += 1;
+                  entry.sumScores += review.overallScore || 75;
+                  if (!isFork) entry.hasCodebaseProof = true;
+                }
 
                 const score = review.overallScore || 75;
-                const isStrong = score >= 75 && !isFork;
+                // Strong evidence REQUIRES genuine verified inference from codebase AST review
+                const isStrong = isGenuineInference && score >= 75 && !isFork;
+                const evidenceStrength: EvidenceStrength = isStrong
+                  ? 'strong'
+                  : (isGenuineInference && score >= 60 ? 'moderate' : 'weak');
+
+                const verificationMethod = !isGenuineInference
+                  ? (review.provenanceStatus === 'simulated' ? 'Simulated Review (Unverified)' : 'Historical Record (Unknown Provenance)')
+                  : (isFork ? 'Forked Contribution Audit' : 'AI AST Code Review');
 
                 entry.evidenceList.push({
                   repoName: repo.name,
                   repoFullName: repo.fullName,
-                  isAnalyzed: true,
-                  reviewScore: review.overallScore,
+                  isAnalyzed: isGenuineInference,
+                  reviewScore: isGenuineInference ? review.overallScore : undefined,
                   source: 'codebase',
                   contributionRole: role,
-                  verificationMethod: isFork ? 'Forked Contribution Audit' : 'AI AST Code Review',
+                  verificationMethod,
                   highlights: Array.isArray(review.strengths) ? (review.strengths as string[]).slice(0, 2) : [],
                   lastUsedDate: repoDate,
-                  evidenceStrength: isStrong ? 'strong' : (score >= 60 ? 'moderate' : 'weak'),
+                  evidenceStrength,
                   isPublic: true,
                 });
               }

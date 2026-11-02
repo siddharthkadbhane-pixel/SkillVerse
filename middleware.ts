@@ -67,7 +67,39 @@ export function middleware(request: NextRequest) {
     );
   }
 
-  // 3. Clone response and inject Enterprise Security Headers
+  // 3. Fast Edge Session Interceptor for Protected Page Routes
+  const isProtectedPath =
+    pathname === '/overview' ||
+    pathname.startsWith('/overview/') ||
+    pathname === '/dashboard' ||
+    pathname.startsWith('/dashboard/') ||
+    pathname === '/career' ||
+    pathname.startsWith('/career/') ||
+    pathname === '/skill-dna' ||
+    pathname.startsWith('/skill-dna/') ||
+    pathname === '/repositories' ||
+    pathname.startsWith('/repositories/') ||
+    pathname === '/projects' ||
+    pathname.startsWith('/projects/') ||
+    pathname === '/company' ||
+    pathname.startsWith('/company/') ||
+    pathname === '/admin' ||
+    pathname.startsWith('/admin/');
+
+  if (isProtectedPath) {
+    const hasSessionCookie =
+      request.cookies.has('better-auth.session_token') ||
+      request.cookies.has('__Secure-better-auth.session_token') ||
+      (process.env.NODE_ENV !== 'production' && request.cookies.has('skillverse_demo_user'));
+
+    if (!hasSessionCookie) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('next', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  // 4. Clone response and inject Enterprise Security Headers
   const response = NextResponse.next();
 
   // Correlation Request ID

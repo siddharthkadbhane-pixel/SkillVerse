@@ -77,6 +77,27 @@ export default function SkillDnaPage() {
     }
   };
 
+  const handleExportDna = () => {
+    const exportData = {
+      developer: profile?.name || profile?.username || 'Verified Developer',
+      username: profile?.username || 'developer',
+      exportDate: new Date().toISOString(),
+      dccVerification: dcc,
+      composition,
+      evolutionData,
+      timeline: historyTimeline,
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `skillverse_dna_${profile?.username || 'developer'}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-[#070A0F] text-slate-900 dark:text-[#F8FAFC]">
       <Sidebar user={profile} />
@@ -98,7 +119,7 @@ export default function SkillDnaPage() {
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() => alert('Downloading Verified Skill DNA Export (.json)...')}
+                onClick={handleExportDna}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-[#111722] hover:bg-slate-100 dark:hover:bg-[#151B26] border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F8FAFC] transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />

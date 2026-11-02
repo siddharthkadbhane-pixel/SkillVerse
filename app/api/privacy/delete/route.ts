@@ -33,14 +33,25 @@ export async function POST(req: NextRequest) {
       }
     } catch {}
 
-    // 2. Anonymize user records (scrub email, name, website, github tokens)
+    // 2. Anonymize user records (scrub email, name, website, github tokens, sessions, accounts)
     const result = await DataControlsService.anonymizeUser(userId);
 
-    return NextResponse.json({
+    if (!result.success) {
+      return NextResponse.json({ success: false, error: result.message }, { status: 500 });
+    }
+
+    // Invalidate session cookies in the HTTP response
+    const response = NextResponse.json({
       success: true,
-      message: 'Account successfully anonymized and all active credentials revoked.',
+      message: 'Account successfully anonymized, all active credentials revoked, and sessions terminated.',
       details: result.message,
     });
+
+    response.cookies.delete('better-auth.session_token');
+    response.cookies.delete('better-auth.session_data');
+    response.cookies.delete('skillverse_session');
+
+    return response;
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }

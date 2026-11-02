@@ -5,7 +5,7 @@ import { Logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
-    const auth = await AuthorizationGuard.requireAuth(req);
+    const auth = await AuthorizationGuard.requireRole(req, ['recruiter', 'company_admin', 'admin']);
     if (!auth.authorized) {
       return auth.response!;
     }

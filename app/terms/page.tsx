@@ -121,7 +121,7 @@ export default function TermsPage() {
               <Shield className="w-4 h-4 text-purple-400" /> 5. Service Availability & Limitation of Liability
             </h2>
             <p className="mb-3 text-zinc-400">
-              SkillVerse is provided "as is" and "as available". To the maximum extent permitted by applicable law, SkillVerse shall not be liable for indirect, incidental, special, or consequential damages resulting from your use of or inability to use the platform.
+              SkillVerse is provided &quot;as is&quot; and &quot;as available&quot;. To the maximum extent permitted by applicable law, SkillVerse shall not be liable for indirect, incidental, special, or consequential damages resulting from your use of or inability to use the platform.
             </p>
           </section>
         </div>

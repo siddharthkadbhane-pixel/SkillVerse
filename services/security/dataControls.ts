@@ -1,7 +1,7 @@
 // SkillVerse GDPR & Privacy Account Data Controls (Phase 40)
 
 import { db, withDbTimeout } from '@/lib/drizzle';
-import { users, repositories, developerCapabilityCards } from '@/database/schema';
+import { users, repositories, developerCapabilityCards, sessions, accounts, personalAccessTokens, applications } from '@/database/schema';
 import { eq } from 'drizzle-orm';
 import { DUMMY_USERS, DUMMY_REPOSITORIES, getDummyDCCData } from '@/lib/dummyData';
 import { isDemoAuthEnabled } from '@/services/supabase';
@@ -149,30 +149,51 @@ export class DataControlsService {
     let failureReason = '';
 
     try {
-      const updatedRows = await withDbTimeout(
-        db
-          .update(users)
-          .set({
-            email: `${anonIdentifier}@deleted.skillverse.dev`,
-            name: 'Anonymized Developer',
-            username: anonIdentifier,
-            bio: 'This account has been deleted by the user.',
-            website: null,
-            githubToken: null,
-            avatarUrl: null,
-            updatedAt: new Date(),
-          })
-          .where(eq(users.id, userId))
-          .returning({ id: users.id }),
-        5000
+      await withDbTimeout(
+        db.transaction(async (tx) => {
+          // 1. Revoke and delete all active Better Auth sessions
+          await tx.delete(sessions).where(eq(sessions.userId, userId));
+
+          // 2. Revoke and delete all OAuth provider account linkages (GitHub)
+          await tx.delete(accounts).where(eq(accounts.userId, userId));
+
+          // 3. Revoke all active Personal Access Tokens
+          await tx.delete(personalAccessTokens).where(eq(personalAccessTokens.userId, userId));
+
+          // 4. Scrub secondary personal data (Job Applications: clear resumeUrl and coverLetter)
+          await tx
+            .update(applications)
+            .set({ resumeUrl: null, coverLetter: null })
+            .where(eq(applications.userId, userId));
+
+          // 5. Anonymize user record: scrub PII and sever GitHub identity linkage
+          const updatedRows = await tx
+            .update(users)
+            .set({
+              email: `${anonIdentifier}@deleted.skillverse.dev`,
+              name: 'Anonymized Developer',
+              username: anonIdentifier,
+              bio: 'This account has been deleted by the user.',
+              website: null,
+              githubId: null,      // Sever GitHub identity to prevent account reclaim
+              githubToken: null,   // Revoke stored OAuth access token
+              avatarUrl: null,
+              emailVerified: false,
+              updatedAt: new Date(),
+            })
+            .where(eq(users.id, userId))
+            .returning({ id: users.id });
+
+          if (Array.isArray(updatedRows) && updatedRows.length > 0) {
+            updated = true;
+          } else {
+            failureReason = 'User not found in database';
+          }
+        }),
+        10000
       );
-      if (Array.isArray(updatedRows) && updatedRows.length > 0) {
-        updated = true;
-      } else {
-        failureReason = 'User not found in database';
-      }
     } catch (err: any) {
-      failureReason = err.message || 'Database update failed';
+      failureReason = err.message || 'Database anonymization transaction failed';
       Logger.error(`Database anonymization failed for user ${userId}:`, err);
     }
 
@@ -207,7 +228,7 @@ export class DataControlsService {
 
     return {
       success: true,
-      message: 'Account personal data successfully anonymized and tokens revoked.',
+      message: 'Account personal data successfully anonymized, all active credentials revoked, and sessions terminated.',
     };
   }
 }

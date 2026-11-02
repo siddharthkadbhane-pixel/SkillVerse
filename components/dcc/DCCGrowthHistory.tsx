@@ -234,7 +234,7 @@ export default function DCCGrowthHistory({
               {insights?.advice && (
                 <div className="pt-2 border-t border-slate-200 dark:border-white/[0.04]">
                   <p className="text-xs text-slate-600 dark:text-[#94A3B8] italic leading-relaxed">
-                    "{insights.advice}"
+                    &quot;{insights.advice}&quot;
                   </p>
                 </div>
               )}

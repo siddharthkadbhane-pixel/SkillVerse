@@ -81,3 +81,51 @@ export async function PATCH(req: NextRequest) {
     }, { status: 500 });
   }
 }
+
+export async function POST(req: NextRequest) {
+  try {
+    const auth = await AuthorizationGuard.requireAuth(req);
+    if (!auth.authorized) {
+      return auth.response!;
+    }
+
+    const body = await req.json();
+    const { name, website, description, logoUrl } = body || {};
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return NextResponse.json(
+        { success: false, error: 'Bad Request', message: 'Company name is required.' },
+        { status: 400 }
+      );
+    }
+
+    const result = await CompanyWorkspaceService.registerCompany(auth.context.user.id, {
+      name,
+      website,
+      description,
+      logoUrl,
+    });
+
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: 'Registration Failed', message: result.error || 'Failed to register company.' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: result.company,
+        message: 'Company workspace successfully registered and administrative ownership established.',
+      },
+      { status: 201 }
+    );
+  } catch (error: any) {
+    Logger.error('API Error in POST /api/company:', error);
+    return NextResponse.json(
+      { success: false, error: 'An unexpected error occurred while registering company workspace.' },
+      { status: 500 }
+    );
+  }
+}

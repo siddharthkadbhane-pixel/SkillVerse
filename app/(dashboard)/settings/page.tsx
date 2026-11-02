@@ -14,6 +14,7 @@ import {
   Sun, Moon, Monitor
 } from 'lucide-react';
 import { useTheme, ThemePreference } from '@/components/theme/useTheme';
+import { authClient } from '@/lib/authClient';
 
 const TABS = ['Profile', 'Appearance', 'Billing & Usage', 'Integrations', 'API Keys', 'Webhooks', 'Notifications', 'Privacy'];
 
@@ -58,6 +59,37 @@ export default function SettingsPage() {
   });
   const [exportingData, setExportingData] = useState(false);
   const [disconnectingGithub, setDisconnectingGithub] = useState(false);
+  const [connectingGithub, setConnectingGithub] = useState(false);
+
+  const handleConnectGithub = async () => {
+    setConnectingGithub(true);
+    setPrivacyResult(null);
+    try {
+      if (typeof (authClient as any).linkSocial === 'function') {
+        await (authClient as any).linkSocial({
+          provider: 'github',
+          callbackURL: '/settings',
+        });
+      } else {
+        await authClient.signIn.social({
+          provider: 'github',
+          callbackURL: '/settings',
+        });
+      }
+    } catch (err: any) {
+      console.error('Failed to link GitHub:', err);
+      try {
+        await authClient.signIn.social({
+          provider: 'github',
+          callbackURL: '/settings',
+        });
+      } catch (signInErr: any) {
+        setPrivacyResult({ ok: false, msg: signInErr?.message || 'Failed to initiate GitHub connection.' });
+      }
+    } finally {
+      setConnectingGithub(false);
+    }
+  };
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [privacyResult, setPrivacyResult] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -377,7 +409,7 @@ export default function SettingsPage() {
                             <div className="sv-form-row-label">{field.label}</div>
                             <div className="sv-form-row-desc">{field.desc}</div>
                           </div>
-                          <div className="sv-form-row-ctrl">
+                          <div className="sv-form-row-ctrl" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                             <input
                               type={field.type}
                               className="sv-input"
@@ -385,6 +417,17 @@ export default function SettingsPage() {
                               value={field.value}
                               onChange={e => field.onChange(e.target.value)}
                             />
+                            {field.label === 'GitHub Username' && !field.value && (
+                              <button
+                                type="button"
+                                onClick={handleConnectGithub}
+                                disabled={connectingGithub}
+                                className="sv-btn sv-btn-sm sv-btn-secondary"
+                                style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+                              >
+                                {connectingGithub ? 'Connecting...' : 'Connect OAuth'}
+                              </button>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -984,7 +1027,7 @@ export default function SettingsPage() {
                       <strong style={{ fontSize: 13, color: '#FFFFFF' }}>Personal Access Token Created</strong>
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--sv-text-subtle)', marginBottom: 12 }}>
-                      Make sure to copy your new personal access token now. You won't be able to see it again!
+                      Make sure to copy your new personal access token now. You won&apos;t be able to see it again!
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <code className="sv-mono" style={{ background: '#070A0F', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', color: '#A78BFA', fontSize: 12, flex: 1, wordBreak: 'break-all' }}>
@@ -1282,11 +1325,24 @@ export default function SettingsPage() {
                           <span className="sv-badge sv-badge-green"><CheckCircle2 style={{ width: 9, height: 9 }} />Connected</span>
                         )}
                         <button
-                          disabled={(integration as any).disabled}
+                          disabled={(integration as any).disabled || (integration.name === 'GitHub' && (disconnectingGithub || connectingGithub))}
+                          onClick={
+                            integration.name === 'GitHub'
+                              ? integration.connected
+                                ? handleDisconnectGithub
+                                : handleConnectGithub
+                              : undefined
+                          }
                           className={`sv-btn sv-btn-sm ${integration.connected ? 'sv-btn-ghost sv-btn-danger' : 'sv-btn-secondary'}`}
                           style={{ opacity: (integration as any).disabled ? 0.5 : 1 }}
                         >
-                          {integration.connected ? 'Disconnect' : integration.action}
+                          {integration.name === 'GitHub' && connectingGithub
+                            ? 'Connecting...'
+                            : integration.name === 'GitHub' && disconnectingGithub
+                            ? 'Disconnecting...'
+                            : integration.connected
+                            ? 'Disconnect'
+                            : integration.action}
                         </button>
                       </div>
                     </div>
@@ -1459,7 +1515,7 @@ export default function SettingsPage() {
                         {githubUsername ? 'Active OAuth link for repository verification and commit signature proofs.' : 'Connect GitHub in the Integrations tab to link repositories.'}
                       </div>
                     </div>
-                    {githubUsername && (
+                    {githubUsername ? (
                       <button
                         onClick={handleDisconnectGithub}
                         disabled={disconnectingGithub}
@@ -1467,6 +1523,15 @@ export default function SettingsPage() {
                         style={{ fontSize: 12 }}
                       >
                         {disconnectingGithub ? 'Disconnecting...' : 'Disconnect GitHub'}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleConnectGithub}
+                        disabled={connectingGithub}
+                        className="sv-btn sv-btn-sm sv-btn-secondary"
+                        style={{ fontSize: 12 }}
+                      >
+                        {connectingGithub ? 'Connecting...' : 'Connect GitHub'}
                       </button>
                     )}
                   </div>

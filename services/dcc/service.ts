@@ -211,6 +211,7 @@ export class DeveloperCapabilityCardService {
 
     // 4. Compute Engineering Dimension (AST Code Quality & Modularity)
     let sumScore = 0;
+    let validReviewsCount = 0;
     if (analyzedRepos.length > 0) {
       try {
         const repoIds = analyzedRepos.map(r => r.id);
@@ -221,13 +222,17 @@ export class DeveloperCapabilityCardService {
           5000
         );
         for (const rev of reviewRows) {
-          sumScore += rev.overallScore || 75;
+          // Only genuine verified inference reviews count towards engineering capability benchmarks
+          if (rev.provenanceStatus === 'verified_inference') {
+            sumScore += rev.overallScore || 75;
+            validReviewsCount++;
+          }
         }
       } catch {}
     }
 
-    const avgRepoScore = analyzedRepos.length > 0 
-      ? Math.round(sumScore / analyzedRepos.length) 
+    const avgRepoScore = validReviewsCount > 0 
+      ? Math.round(sumScore / validReviewsCount) 
       : (isDemoUser ? 82 : 60);
 
     const engineeringDim = {

@@ -1,9 +1,10 @@
 // SkillVerse Centralized Authorization & Security Guard (Phase 40)
 
 import { NextRequest, NextResponse } from 'next/server';
+import { redirect } from 'next/navigation';
 import { ApiAuthService } from '@/services/api/auth';
 import { ApiAuthContext, ApiScope } from '@/types/api';
-import { getSessionUser, isDemoAuthEnabled } from '@/services/supabase';
+import { getSessionUser, isDemoAuthEnabled, type SessionUser } from '@/services/supabase';
 import { db, withDbTimeout } from '@/lib/drizzle';
 import { users, companyMembers } from '@/database/schema';
 import { eq, and } from 'drizzle-orm';
@@ -329,4 +330,128 @@ export class AuthorizationGuard {
 
     return clean(data);
   }
+}
+
+/**
+ * Server-side layout and page guard for authenticated routes.
+ * Throws Next.js redirect to /login if unauthenticated.
+ * If allowedRoles is specified, enforces role or redirects to /overview.
+ */
+export async function requireServerAuth(allowedRoles?: UserRole[]): Promise<SessionUser> {
+  const user = await getSessionUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
+  if (allowedRoles && allowedRoles.length > 0) {
+    const userRole = (user.role || 'developer') as UserRole;
+    if (userRole !== 'admin' && !allowedRoles.includes(userRole)) {
+      redirect('/overview?error=unauthorized_access');
+    }
+  }
+
+  return user;
+}
+
+/**
+ * Server-side layout and page guard for company workspace routes.
+ * Ensures user is recruiter, company_admin, or platform admin,
+ * AND has verified company membership.
+ */
+export async function requireServerCompanyAccess(
+  companyId?: string
+): Promise<{ user: SessionUser; companyId: string }> {
+  const user = await requireServerAuth();
+
+  // Platform Admins have overarching access across workspaces
+  if (user.role === 'admin') {
+    return { user, companyId: companyId || '00000000-0000-0000-0000-000000000001' };
+  }
+
+  // Developer role is strictly prohibited from accessing company workspaces
+  if (user.role !== 'recruiter' && user.role !== 'company_admin') {
+    redirect('/overview?error=unauthorized_company_workspace');
+  }
+
+  let resolvedCompanyId: string | null = null;
+
+  // Verify in database if available
+  try {
+    if (companyId) {
+      const member = await withDbTimeout(
+        db.query.companyMembers.findFirst({
+          where: and(
+            eq(companyMembers.companyId, companyId),
+            eq(companyMembers.userId, user.id),
+            eq(companyMembers.status, 'active')
+          ),
+        }),
+        3000
+      );
+      if (member) {
+        resolvedCompanyId = member.companyId;
+      }
+    } else {
+      const member = await withDbTimeout(
+        db.query.companyMembers.findFirst({
+          where: and(
+            eq(companyMembers.userId, user.id),
+            eq(companyMembers.status, 'active')
+          ),
+        }),
+        3000
+      );
+      if (member) {
+        resolvedCompanyId = member.companyId;
+      }
+    }
+  } catch {}
+
+  // Scoped demo membership resolution strictly for test/dev environments
+  if (!resolvedCompanyId && isDemoAuthEnabled()) {
+    const DEMO_MEMBERSHIPS: Record<string, { companyId: string; role: 'company_admin' | 'recruiter'; status: string }[]> = {
+      '00000000-0000-0000-0000-000000000002': [
+        { companyId: '00000000-0000-0000-0000-000000000001', role: 'company_admin', status: 'active' },
+      ],
+      '00000000-0000-0000-0000-000000000003': [
+        { companyId: '00000000-0000-0000-0000-000000000001', role: 'recruiter', status: 'active' },
+      ],
+      '00000000-0000-0000-0000-000000000004': [
+        { companyId: '00000000-0000-0000-0000-000000000002', role: 'recruiter', status: 'active' },
+      ],
+      '00000000-0000-0000-0000-000000000005': [
+        { companyId: '00000000-0000-0000-0000-000000000002', role: 'company_admin', status: 'active' },
+      ],
+    };
+
+    const memberships = DEMO_MEMBERSHIPS[user.id] || [];
+    const match = companyId
+      ? memberships.find((m) => m.companyId === companyId && m.status === 'active')
+      : memberships.find((m) => m.status === 'active');
+
+    if (match) {
+      resolvedCompanyId = match.companyId;
+    }
+  }
+
+  if (!resolvedCompanyId) {
+    redirect('/overview?error=no_company_membership');
+  }
+
+  return { user, companyId: resolvedCompanyId };
+}
+
+/**
+ * Server-side layout and page guard for platform admin console.
+ * Restricts access exclusively to users with role === 'admin'.
+ */
+export async function requireServerAdmin(): Promise<SessionUser> {
+  const user = await requireServerAuth();
+
+  if (user.role !== 'admin') {
+    redirect('/overview?error=unauthorized_admin_access');
+  }
+
+  return user;
 }

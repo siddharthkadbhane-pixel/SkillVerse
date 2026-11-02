@@ -95,21 +95,21 @@ export async function GET(req: NextRequest) {
           location: dbUser.location,
           role: dbUser.role,
         },
-        trustScore: userTrustScore || {
+        trustScore: userTrustScore || (isDemoAuthEnabled() ? {
           overallScore: 940,
           projectScore: 960,
           contributionScore: 920,
           competitionScore: 950,
           peerVouchScore: 910,
-        },
-        skillDna: userSkillDna?.dnaStructure || [
+        } : null),
+        skillDna: userSkillDna?.dnaStructure || (isDemoAuthEnabled() ? [
           { skill: 'TypeScript', score: 98, category: 'Language' },
           { skill: 'Next.js 15', score: 96, category: 'Frontend' },
           { skill: 'React 19', score: 95, category: 'Frontend' },
           { skill: 'Rust', score: 94, category: 'Systems' },
           { skill: 'PostgreSQL', score: 92, category: 'Database' },
           { skill: 'Python', score: 90, category: 'AI/ML' },
-        ],
+        ] : []),
       },
     });
   } catch (error: any) {
@@ -128,6 +128,8 @@ export async function GET(req: NextRequest) {
     });
   }
 }
+
+export const PUT = PATCH;
 
 export async function PATCH(req: NextRequest) {
   try {

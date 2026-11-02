@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import Navbar from '@/components/shared/Navbar';
 import Sidebar from '@/components/shared/Sidebar';
 import {
@@ -801,9 +802,9 @@ export default function CareerIntelligencePage() {
                       <Trophy className="w-3.5 h-3.5 text-[#F59E0B]" />
                       <span>Matching Verification Challenges</span>
                     </h3>
-                    <a href="/challenges" className="text-[11px] text-[#A78BFA] hover:underline font-semibold">
+                    <Link href="/challenges" className="text-[11px] text-[#A78BFA] hover:underline font-semibold">
                       View All &rarr;
-                    </a>
+                    </Link>
                   </div>
 
                   <div className="space-y-2">
@@ -818,12 +819,9 @@ export default function CareerIntelligencePage() {
                             {ch.organizer} • {ch.difficulty}
                           </span>
                         </div>
-                        <a
-                          href={`/challenges/${ch.id}`}
-                          className="px-2.5 py-1 rounded bg-[#7C3AED]/20 hover:bg-[#7C3AED]/30 text-[#C4B5FD] border border-[#7C3AED]/40 text-xs font-semibold shrink-0"
-                        >
+                        <Link href={`/challenges/${ch.id}`} className="px-2.5 py-1 rounded bg-[#7C3AED]/20 hover:bg-[#7C3AED]/30 text-[#C4B5FD] border border-[#7C3AED]/40 text-xs font-semibold shrink-0">
                           Enter
-                        </a>
+                        </Link>
                       </div>
                     ))}
                   </div>
@@ -836,9 +834,9 @@ export default function CareerIntelligencePage() {
                       <Briefcase className="w-3.5 h-3.5 text-[#10B981]" />
                       <span>Matched Opportunities</span>
                     </h3>
-                    <a href="/jobs" className="text-[11px] text-[#A78BFA] hover:underline font-semibold">
+                    <Link href="/jobs" className="text-[11px] text-[#A78BFA] hover:underline font-semibold">
                       View All &rarr;
-                    </a>
+                    </Link>
                   </div>
 
                   <div className="space-y-2">

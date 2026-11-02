@@ -8,7 +8,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
     const { id } = await params;
     const user = await getSessionUser();
-    const userId = user?.id || DUMMY_USERS[0].id;
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    const userId = user.id;
 
     const body = await req.json().catch(() => ({ completed: true }));
     const completed = body.completed !== undefined ? Boolean(body.completed) : true;

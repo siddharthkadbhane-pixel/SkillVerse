@@ -775,74 +775,94 @@ export class CareerEngine {
     }
 
     // Default fallback tasks
-    return [
-      {
-        id: 'task_001',
-        userId,
-        stageNumber: 1,
-        title: 'Write 3 unit tests for your core service module with Vitest',
-        description: 'Add automated assertion cases covering positive input, null validation, and exception throws.',
-        cadence: 'daily',
-        taskType: 'skill_practice',
-        targetSkill: 'Vitest',
-        targetCapability: 'Testing & QA',
-        status: 'todo',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 'task_002',
-        userId,
-        stageNumber: 1,
-        title: 'Review AST linting rules and eliminate strict type warnings',
-        description: 'Ensure clean code quality metrics and zero TypeScript strict mode errors.',
-        cadence: 'daily',
-        taskType: 'architecture_study',
-        targetSkill: 'TypeScript',
-        targetCapability: 'Developer Tooling',
-        status: 'completed',
-        completedAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 'task_003',
-        userId,
-        stageNumber: 1,
-        title: 'Build a containerized REST service with Docker & multi-stage build',
-        description: 'Create a lightweight Dockerfile with non-root user execution and healthcheck endpoints.',
-        cadence: 'weekly',
-        taskType: 'project_build',
-        targetSkill: 'Docker',
-        targetCapability: 'DevOps & Infrastructure',
-        status: 'todo',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 'task_004',
-        userId,
-        stageNumber: 2,
-        title: 'Optimize database schema indexes and measure query plan latency',
-        description: 'Use EXPLAIN ANALYZE on top queries and add composite indexes.',
-        cadence: 'weekly',
-        taskType: 'skill_practice',
-        targetSkill: 'PostgreSQL',
-        targetCapability: 'Database Engineering',
-        status: 'todo',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 'task_005',
-        userId,
-        stageNumber: 3,
-        title: 'Complete Capstone and submit repository for AST AI Review',
-        description: 'Submit your repository for multi-agent AST audit to verify capabilities on your DCC.',
-        cadence: 'monthly',
-        taskType: 'project_build',
-        targetSkill: 'Node.js',
-        targetCapability: 'Backend Engineering',
-        status: 'todo',
-        createdAt: new Date().toISOString(),
-      },
-    ];
+    // If no learning tasks exist in database, seed initial learning tasks in PostgreSQL
+    try {
+      const defaultSeed = [
+        {
+          userId,
+          stageNumber: 1,
+          title: 'Write 3 unit tests for your core service module with Vitest',
+          description: 'Add automated assertion cases covering positive input, null validation, and exception throws.',
+          cadence: 'daily',
+          taskType: 'skill_practice',
+          targetSkill: 'Vitest',
+          targetCapability: 'Testing & QA',
+          status: 'todo',
+        },
+        {
+          userId,
+          stageNumber: 1,
+          title: 'Review AST linting rules and eliminate strict type warnings',
+          description: 'Ensure clean code quality metrics and zero TypeScript strict mode errors.',
+          cadence: 'daily',
+          taskType: 'architecture_study',
+          targetSkill: 'TypeScript',
+          targetCapability: 'Developer Tooling',
+          status: 'todo',
+        },
+        {
+          userId,
+          stageNumber: 1,
+          title: 'Build a containerized REST service with Docker & multi-stage build',
+          description: 'Create a lightweight Dockerfile with non-root user execution and healthcheck endpoints.',
+          cadence: 'weekly',
+          taskType: 'project_build',
+          targetSkill: 'Docker',
+          targetCapability: 'DevOps & Infrastructure',
+          status: 'todo',
+        },
+        {
+          userId,
+          stageNumber: 2,
+          title: 'Optimize database schema indexes and measure query plan latency',
+          description: 'Use EXPLAIN ANALYZE on top queries and add composite indexes.',
+          cadence: 'weekly',
+          taskType: 'skill_practice',
+          targetSkill: 'PostgreSQL',
+          targetCapability: 'Database Engineering',
+          status: 'todo',
+        },
+        {
+          userId,
+          stageNumber: 3,
+          title: 'Complete Capstone and submit repository for AST AI Review',
+          description: 'Submit your repository for multi-agent AST audit to verify capabilities on your DCC.',
+          cadence: 'monthly',
+          taskType: 'project_build',
+          targetSkill: 'Node.js',
+          targetCapability: 'Backend Engineering',
+          status: 'todo',
+        },
+      ];
+
+      const inserted = await withDbTimeout(
+        db.insert(learningTasks).values(defaultSeed as any).returning(),
+        5000
+      );
+
+      if (inserted && inserted.length > 0) {
+        return inserted.map((r) => ({
+          id: r.id,
+          userId: r.userId,
+          goalId: r.goalId || undefined,
+          roadmapId: r.roadmapId || undefined,
+          stageNumber: r.stageNumber || 1,
+          title: r.title,
+          description: r.description || '',
+          cadence: r.cadence as any,
+          taskType: r.taskType as any,
+          targetSkill: r.targetSkill || undefined,
+          targetCapability: r.targetCapability || undefined,
+          status: r.status as any,
+          completedAt: r.completedAt ? r.completedAt.toISOString() : undefined,
+          createdAt: r.createdAt.toISOString(),
+        }));
+      }
+    } catch (seedErr: any) {
+      Logger.warn(`Failed to seed learning tasks into DB: ${seedErr.message}`);
+    }
+
+    return [];
   }
 
   /**
@@ -891,19 +911,8 @@ export class CareerEngine {
       Logger.warn(`DB update error in completeLearningTask: ${err.message}`);
     }
 
-    // Fallback returned task
-    return {
-      id: taskId,
-      userId,
-      stageNumber: 1,
-      title: 'Learning Task',
-      description: 'Actionable learning task',
-      cadence: 'daily',
-      taskType: 'skill_practice',
-      status: newStatus as any,
-      completedAt: completedAt ? completedAt.toISOString() : undefined,
-      createdAt: new Date().toISOString(),
-    };
+    // Strict integrity: Never return fake success if record was not updated in PostgreSQL
+    throw new Error(`Learning task ${taskId} not found or not owned by user ${userId}.`);
   }
 
   /**

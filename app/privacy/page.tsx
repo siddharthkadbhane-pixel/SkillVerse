@@ -127,7 +127,7 @@ export default function PrivacyPolicyPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-4">
               <div className="p-4 rounded-lg bg-zinc-900/60 border border-white/[0.06]">
                 <strong className="text-white block mb-1">Right to Access & Portability</strong>
-                <span className="text-xs text-zinc-400">Download a complete verified JSON archive of your profile, DCC, and evidence via "Download My Data" in Settings.</span>
+                <span className="text-xs text-zinc-400">Download a complete verified JSON archive of your profile, DCC, and evidence via &quot;Download My Data&quot; in Settings.</span>
               </div>
               <div className="p-4 rounded-lg bg-zinc-900/60 border border-white/[0.06]">
                 <strong className="text-white block mb-1">Right to Erasure / Anonymization</strong>

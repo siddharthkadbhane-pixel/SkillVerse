@@ -166,6 +166,20 @@ export function validateRuntimeDatabaseConfig(env: EnvironmentVariables = proces
 
   if (isProduction) {
     if (!appUrl || appUrl.trim().length === 0) {
+      const isBuildPhase =
+        env.NEXT_PHASE === 'phase-production-build' ||
+        process.env.NEXT_PHASE === 'phase-production-build';
+      if (isBuildPhase) {
+        const dummyUrl = 'postgresql://skillverse_app:build_placeholder@127.0.0.1:5432/neondb';
+        return {
+          connectionString: dummyUrl,
+          username: 'skillverse_app',
+          host: '127.0.0.1',
+          database: 'neondb',
+          isProduction: true,
+          redactedUrl: redactDatabaseUrl(dummyUrl),
+        };
+      }
       if (fallbackUrl && fallbackUrl.trim().length > 0) {
         throw new Error(
           '[DB Security Failure] Production application runtime requires APP_DATABASE_URL. ' +

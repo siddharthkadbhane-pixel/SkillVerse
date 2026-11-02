@@ -101,6 +101,9 @@ export const reviews = pgTable('reviews', {
   aiExplainability: jsonb('ai_explainability'), // Premium AI findings and evidence
   skillsExtracted: jsonb('skills_extracted'), // Advanced verified skills
   rawAiOutput: text('raw_ai_output'),
+  provenanceStatus: varchar('provenance_status', { length: 30 }).default('unknown').notNull(),
+  modelProvider: varchar('model_provider', { length: 50 }),
+  modelName: varchar('model_name', { length: 100 }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -124,6 +127,9 @@ export const reviewHistory = pgTable('review_history', {
   aiExplainability: jsonb('ai_explainability'),
   skillsExtracted: jsonb('skills_extracted'),
   rawAiOutput: text('raw_ai_output'),
+  provenanceStatus: varchar('provenance_status', { length: 30 }).default('unknown').notNull(),
+  modelProvider: varchar('model_provider', { length: 50 }),
+  modelName: varchar('model_name', { length: 100 }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -142,6 +148,7 @@ export const userSkills = pgTable('user_skills', {
   skillId: uuid('skill_id').references(() => skills.id, { onDelete: 'cascade' }).notNull(),
   proficiencyLevel: integer('proficiency_level').default(1).notNull(),
   verificationSource: varchar('verification_source', { length: 100 }).notNull(),
+  provenanceStatus: varchar('provenance_status', { length: 30 }).default('unknown').notNull(),
   reviewId: uuid('review_id').references(() => reviews.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (t) => ({

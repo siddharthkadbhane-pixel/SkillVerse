@@ -13,24 +13,37 @@ export async function POST(
     const { id } = await params;
     const user = await getSessionUser();
     
-    // Default fallback trigger if not authenticated
+    // Reject unauthenticated review dispatches
     if (!user) {
-      // Simulate background review trigger in mock mode
-      return NextResponse.json({
-        success: true,
-        message: 'AI Review triggered (Mock mode)',
-        status: 'running',
-      }, { status: 202 });
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     const dbUser = await db.query.users.findFirst({
       where: eq(users.id, user.id),
     });
 
+    // Resolve repository and enforce resource ownership (Anti-IDOR)
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+    const repo = await db.query.repositories.findFirst({
+      where: isUuid ? eq(repositories.id, id) : eq(repositories.githubRepoId, parseInt(id, 10)),
+      columns: { id: true, userId: true },
+    });
+
+    if (!repo) {
+      return NextResponse.json({ success: false, error: 'Repository not found' }, { status: 404 });
+    }
+
+    if (repo.userId !== user.id && user.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden: You do not have permission to trigger a review for this repository.' },
+        { status: 403 }
+      );
+    }
+
     const gitToken = dbUser?.githubToken || process.env.GITHUB_ACCESS_TOKEN || '';
 
     // Trigger AI Review in the background (Non-blocking async promise)
-    AiReviewService.processRepositoryReview(id, gitToken).catch(err => {
+    AiReviewService.processRepositoryReview(repo.id, gitToken).catch(err => {
       console.error('Background review execution error:', err);
     });
 
@@ -71,6 +84,23 @@ export async function GET(
         repoDbId = repo.id;
       }
 
+      // Enforce repository ownership on review read (Anti-IDOR)
+      const targetRepo = await db.query.repositories.findFirst({
+        where: eq(repositories.id, repoDbId),
+        columns: { id: true, userId: true },
+      });
+
+      if (!targetRepo) {
+        return NextResponse.json({ success: false, error: 'Repository not found' }, { status: 404 });
+      }
+
+      if (targetRepo.userId !== user.id && user.role !== 'admin') {
+        return NextResponse.json(
+          { success: false, error: 'Forbidden: You do not have permission to view this review.' },
+          { status: 403 }
+        );
+      }
+
       const reviewRecord = await db.query.reviews.findFirst({
         where: eq(reviews.repositoryId, repoDbId),
       });
@@ -83,8 +113,12 @@ export async function GET(
         success: true,
         data: reviewRecord,
       });
-    } catch {
-      // Return a mock review record if database fails or is unconfigured
+    } catch (dbErr: any) {
+      // In production, never return synthetic fallback scores on database failure
+      if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json({ success: false, error: 'Failed to fetch repository review.' }, { status: 500 });
+      }
+      // Return a mock review record in non-production development if database fails
       const mockResult = {
         id: 'rev_mock_details',
         repositoryId: id,

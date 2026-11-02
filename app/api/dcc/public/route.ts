@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       });
     } catch {}
 
-    if (!targetUser) {
+    if (!targetUser || targetUser.email?.endsWith('@deleted.skillverse.dev') || targetUser.username?.startsWith('anon_')) {
       return NextResponse.json({ success: false, error: 'Developer not found' }, { status: 404 });
     }
 

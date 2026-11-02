@@ -45,19 +45,43 @@ export class AiReviewService {
       const intelReport = RepositoryIntelligenceService.generateReport(contextData);
       const healthReport = RepositoryHealthService.generateReport(contextData, intelReport);
 
+      let provenanceStatus: 'verified_inference' | 'simulated' | 'unknown' = 'verified_inference';
+      let modelProvider: string = 'huggingface';
+      let modelName: string = this.MODEL;
+
+      const isProduction = process.env.NODE_ENV === 'production';
+
       if (!this.HUGGINGFACE_API_KEY) {
-        Logger.warn('⚠️ HUGGINGFACE_API_KEY is not defined. Falling back to mock review generation...');
+        if (isProduction) {
+          throw new Error('[AI Review Service] AI inference provider is unconfigured in production. Mock review generation is strictly prohibited.');
+        }
+        Logger.warn('⚠️ HUGGINGFACE_API_KEY is not defined. Generating simulated review in non-production environment...');
         parsedReview = this.generateMockReview(repo.name, contextData);
+        provenanceStatus = 'simulated';
+        modelProvider = 'mock';
+        modelName = 'local-simulation';
       } else {
         try {
           // Send request to Hugging Face
           const rawResponse = await this.queryHuggingFace(repo.name, contextData);
           parsedReview = AiOutputValidator.parseAndValidate(rawResponse);
-        } catch (hfError) {
-          Logger.warn('⚠️ HuggingFace review generation failed. Falling back to mock review:', hfError);
+          provenanceStatus = 'verified_inference';
+          modelProvider = 'huggingface';
+          modelName = this.MODEL;
+        } catch (hfError: any) {
+          if (isProduction) {
+            Logger.error('❌ Hugging Face review generation failed in production:', hfError);
+            throw new Error(`[AI Review Service] AI inference failed: ${hfError.message || 'Provider unavailable'}. Review aborted.`);
+          }
+          Logger.warn('⚠️ HuggingFace review generation failed. Falling back to simulated review in non-production environment:', hfError);
           parsedReview = this.generateMockReview(repo.name, contextData);
+          provenanceStatus = 'simulated';
+          modelProvider = 'mock';
+          modelName = 'local-simulation';
         }
       }
+
+      const isGenuine = provenanceStatus === 'verified_inference';
 
       // Ground extracted skills against codebase context to avoid hallucinated claims (Phase 42)
       const { groundedSkills, unsupportedClaims } = AiOutputValidator.groundExtractedSkills(
@@ -71,9 +95,11 @@ export class AiReviewService {
         category: skill.category,
         level: skill.level,
         confidence: Math.min(100, Math.max(10, Math.round(parsedReview.confidence_score * 0.95))),
-        evidence: `Detected imports and patterns inside ${repo.name} manifest and source files.`,
+        evidence: isGenuine
+          ? `Detected imports and patterns inside ${repo.name} manifest and source files.`
+          : `Simulated development analysis for ${repo.name}. Genuine review required for verification.`,
         repositorySource: repo.fullName,
-        verificationStatus: 'verified' as const,
+        verificationStatus: isGenuine ? ('verified' as const) : ('unverified' as const),
       }));
 
       // Compile AI Explainability parameters (Module 6)
@@ -110,6 +136,9 @@ export class AiReviewService {
           aiExplainability: aiExplainability,
           skillsExtracted: mappedSkills,
           rawAiOutput: JSON.stringify(parsedReview),
+          provenanceStatus,
+          modelProvider,
+          modelName,
         })
         .onConflictDoUpdate({
           target: reviews.repositoryId,
@@ -129,6 +158,9 @@ export class AiReviewService {
             aiExplainability: aiExplainability,
             skillsExtracted: mappedSkills,
             rawAiOutput: JSON.stringify(parsedReview),
+            provenanceStatus,
+            modelProvider,
+            modelName,
           },
         })
         .returning();
@@ -160,6 +192,9 @@ export class AiReviewService {
           aiExplainability: aiExplainability,
           skillsExtracted: mappedSkills,
           rawAiOutput: JSON.stringify(parsedReview),
+          provenanceStatus,
+          modelProvider,
+          modelName,
         });
 
       // 4. Extract and save verified skills
@@ -206,14 +241,16 @@ export class AiReviewService {
                 userId: repo.userId,
                 skillId,
                 proficiencyLevel: skillItem.level,
-                verificationSource: 'ai_review',
+                verificationSource: isGenuine ? 'ai_review' : 'simulated_review',
+                provenanceStatus,
                 reviewId: reviewRecord.id,
               })
               .onConflictDoUpdate({
                 target: [userSkills.userId, userSkills.skillId],
                 set: {
                   proficiencyLevel: skillItem.level,
-                  verificationSource: 'ai_review',
+                  verificationSource: isGenuine ? 'ai_review' : 'simulated_review',
+                  provenanceStatus,
                   reviewId: reviewRecord.id,
                   createdAt: new Date(),
                 },
@@ -234,8 +271,8 @@ export class AiReviewService {
         }
       }
 
-      // 5. Calculate and update Trust Score
-      if (repo.userId) {
+      // 5. Calculate and update Trust Score (only genuine verified reviews)
+      if (repo.userId && isGenuine) {
         try {
           const { TrustCalculatorService } = await import('../trust/calculator');
           await TrustCalculatorService.calculateUserTrustScore(repo.userId);
@@ -244,8 +281,8 @@ export class AiReviewService {
         }
       }
 
-      // 6. Update Skill DNA structure
-      if (repo.userId) {
+      // 6. Update Skill DNA structure (only genuine verified reviews)
+      if (repo.userId && isGenuine) {
         try {
           const allUserSkillRecords = await db.query.userSkills.findMany({
             where: eq(userSkills.userId, repo.userId),
@@ -287,8 +324,8 @@ export class AiReviewService {
         })
         .where(isUuid ? eq(repositories.id, repoId) : eq(repositories.githubRepoId, parseInt(repoId, 10)));
 
-      // 8. Trigger Capability Growth Engine Events (Phase 23)
-      if (repo.userId) {
+      // 8. Trigger Capability Growth Engine Events (Phase 23) (only genuine verified reviews)
+      if (repo.userId && isGenuine) {
         try {
           const { CapabilityGrowthService } = await import('../dcc/growth');
           await CapabilityGrowthService.processAuditGrowthEvents(

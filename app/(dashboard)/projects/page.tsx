@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Navbar from '@/components/shared/Navbar';
 import Sidebar from '@/components/shared/Sidebar';
 import PageHeader from '@/components/ui/PageHeader';
@@ -21,6 +22,7 @@ import {
 import { DUMMY_REPOSITORIES } from '@/lib/dummyData';
 
 export default function ProjectsPage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
   const [repos, setRepos] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -85,7 +87,7 @@ export default function ProjectsPage() {
               Sync GitHub
             </button>
             <button
-              onClick={() => alert('Connect your GitHub account in Settings to import more repos.')}
+              onClick={() => router.push('/settings')}
               className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg text-[12px] font-medium bg-[#6366F1] hover:bg-[#4F46E5] text-white transition-colors shadow-sm"
             >
               <Plus className="w-3.5 h-3.5" />

@@ -27,8 +27,8 @@ import {
   ArrowLeftRight,
   Compass,
   MessageSquare,
+  Shield,
 } from 'lucide-react';
-import { DUMMY_USERS } from '@/lib/dummyData';
 
 interface SidebarProps {
   trustScore?: { overallScore: number } | null;
@@ -39,37 +39,40 @@ export default function Sidebar({ trustScore, user }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
-  const [activeUser, setActiveUser] = useState(DUMMY_USERS[0]);
+  const [fetchedUser, setFetchedUser] = useState<any>(null);
 
-  const isCompanyPath = pathname?.startsWith('/company');
-  const isRecruiterOrAdmin = activeUser.role === 'recruiter' || activeUser.role === 'admin';
-  const isCompanyMode =
-    isCompanyPath ||
-    (isRecruiterOrAdmin &&
-      !pathname?.startsWith('/overview') &&
-      !pathname?.startsWith('/skill-dna') &&
-      !pathname?.startsWith('/skills') &&
-      !pathname?.startsWith('/projects') &&
-      !pathname?.startsWith('/github') &&
-      !pathname?.startsWith('/activity') &&
-      !pathname?.startsWith('/network') &&
-      !pathname?.startsWith('/challenges') &&
-      !pathname?.startsWith('/community') &&
-      !pathname?.startsWith('/career') &&
-      !pathname?.startsWith('/profile') &&
-      !pathname?.startsWith('/developers') &&
-      !pathname?.startsWith('/developer'));
-
+  // If user prop was not provided, fetch authenticated user identity from /api/v1/me
   useEffect(() => {
-    if (user?.username) {
-      const match = DUMMY_USERS.find((u) => u.username === user.username);
-      if (match) setActiveUser(match);
+    if (!user) {
+      fetch('/api/v1/me')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((res) => {
+          if (res?.data?.user) {
+            setFetchedUser(res.data.user);
+          }
+        })
+        .catch(() => {});
     }
   }, [user]);
+
+  const activeUser = user || fetchedUser || {
+    name: 'Developer',
+    username: 'developer',
+    avatarUrl: '',
+    role: 'developer',
+  };
+
+  const role = (activeUser.role || 'developer').toLowerCase();
+  const isPrivileged = role === 'recruiter' || role === 'company_admin' || role === 'admin';
+  const isAdmin = role === 'admin';
+
+  const isCompanyPath = pathname?.startsWith('/company');
+  const isCompanyMode = isPrivileged && isCompanyPath;
 
   const isActive = (href: string) => {
     if (href === '/overview' && (pathname === '/overview' || pathname === '/dashboard')) return true;
     if (href === '/company' && pathname === '/company') return true;
+    if (href === '/admin' && pathname === '/admin') return true;
     return pathname === href || (href !== '/' && href !== '/company' && pathname?.startsWith(href));
   };
 
@@ -106,7 +109,12 @@ export default function Sidebar({ trustScore, user }: SidebarProps) {
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
+  const ADMIN_NAV = [
+    { name: 'Admin Console', href: '/admin', icon: Shield },
+  ];
+
   const toggleMode = () => {
+    if (!isPrivileged) return;
     if (isCompanyMode) {
       router.push('/overview');
     } else {
@@ -114,14 +122,15 @@ export default function Sidebar({ trustScore, user }: SidebarProps) {
     }
   };
 
-  const currentScore = trustScore?.overallScore || activeUser.trustScore.overallScore || 940;
-  const scorePercent = Math.round((currentScore / 1000) * 100);
+  const currentScore = trustScore?.overallScore ?? null;
+  const scorePercent = currentScore ? Math.round((currentScore / 1000) * 100) : 0;
 
   // Nav item renderer
   const NavItem = ({ item, activeColor }: { item: { name: string; href: string; icon: any }; activeColor: string }) => {
     const Icon = item.icon;
     const active = isActive(item.href);
     const isTeal = activeColor === 'teal' || activeColor === 'cyan';
+    const isPurple = activeColor === 'purple';
     return (
       <Link
         href={item.href}
@@ -133,6 +142,8 @@ export default function Sidebar({ trustScore, user }: SidebarProps) {
           active
             ? isTeal
               ? 'bg-[rgba(20,184,166,0.08)] dark:bg-[rgba(20,184,166,0.15)] text-[#14B8A6] dark:text-[#5EEAD4] font-medium'
+              : isPurple
+              ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 font-medium'
               : 'bg-[rgba(99,102,241,0.08)] dark:bg-[rgba(99,102,241,0.15)] text-[#6366F1] dark:text-[#93C5FD] font-medium'
             : 'text-slate-600 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-[#F1F5F9] hover:bg-slate-100 dark:hover:bg-[#181F2C]',
         ].join(' ')}
@@ -141,7 +152,9 @@ export default function Sidebar({ trustScore, user }: SidebarProps) {
         {active && (
           <span
             className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full"
-            style={{ background: isTeal ? '#14B8A6' : '#6366F1' }}
+            style={{
+              background: isTeal ? '#14B8A6' : isPurple ? '#A855F7' : '#6366F1',
+            }}
           />
         )}
         <Icon
@@ -150,6 +163,8 @@ export default function Sidebar({ trustScore, user }: SidebarProps) {
             active
               ? isTeal
                 ? 'text-[#14B8A6] dark:text-[#5EEAD4] opacity-100'
+                : isPurple
+                ? 'text-purple-500 dark:text-purple-400 opacity-100'
                 : 'text-[#6366F1] dark:text-[#93C5FD] opacity-100'
               : 'text-slate-400 dark:text-[#64748B] opacity-70',
           ].join(' ')}
@@ -157,6 +172,13 @@ export default function Sidebar({ trustScore, user }: SidebarProps) {
         {!collapsed && <span className="truncate">{item.name}</span>}
       </Link>
     );
+  };
+
+  const getRoleBadge = () => {
+    if (role === 'admin') return 'Platform Admin';
+    if (role === 'company_admin') return 'Company Admin';
+    if (role === 'recruiter') return 'Recruiter';
+    return trustScore?.overallScore ? `Score ${trustScore.overallScore}` : 'Developer';
   };
 
   return (
@@ -176,28 +198,38 @@ export default function Sidebar({ trustScore, user }: SidebarProps) {
       </button>
 
       {/* Mode indicator strip */}
-      <div
-        className="px-3 pt-3 pb-2 border-b border-slate-200 dark:border-white/[0.07]"
-      >
-        <button
-          onClick={toggleMode}
-          aria-label={isCompanyMode ? 'Switch to Developer Workspace' : 'Switch to Company Workspace'}
-          title={isCompanyMode ? 'Switch to Developer Workspace' : 'Switch to Company Workspace'}
-          className={[
-            'w-full flex items-center gap-2 px-2.5 py-[7px] rounded-lg text-[12px] font-medium transition-colors border',
-            collapsed ? 'justify-center' : '',
-            isCompanyMode
-              ? 'bg-[rgba(20,184,166,0.08)] text-[#14B8A6] border-[rgba(20,184,166,0.20)] hover:bg-[rgba(20,184,166,0.14)]'
-              : 'bg-[rgba(99,102,241,0.08)] text-[#6366F1] border-[rgba(99,102,241,0.20)] hover:bg-[rgba(99,102,241,0.14)]',
-          ].join(' ')}
-        >
-          <ArrowLeftRight className="w-3.5 h-3.5 shrink-0" />
-          {!collapsed && (
-            <span className="truncate">
-              {isCompanyMode ? 'Company Workspace' : 'Developer Workspace'}
-            </span>
-          )}
-        </button>
+      <div className="px-3 pt-3 pb-2 border-b border-slate-200 dark:border-white/[0.07]">
+        {isPrivileged ? (
+          <button
+            onClick={toggleMode}
+            aria-label={isCompanyMode ? 'Switch to Developer Workspace' : 'Switch to Company Workspace'}
+            title={isCompanyMode ? 'Switch to Developer Workspace' : 'Switch to Company Workspace'}
+            className={[
+              'w-full flex items-center gap-2 px-2.5 py-[7px] rounded-lg text-[12px] font-medium transition-colors border',
+              collapsed ? 'justify-center' : '',
+              isCompanyMode
+                ? 'bg-[rgba(20,184,166,0.08)] text-[#14B8A6] border-[rgba(20,184,166,0.20)] hover:bg-[rgba(20,184,166,0.14)]'
+                : 'bg-[rgba(99,102,241,0.08)] text-[#6366F1] border-[rgba(99,102,241,0.20)] hover:bg-[rgba(99,102,241,0.14)]',
+            ].join(' ')}
+          >
+            <ArrowLeftRight className="w-3.5 h-3.5 shrink-0" />
+            {!collapsed && (
+              <span className="truncate">
+                {isCompanyMode ? 'Company Workspace' : 'Developer Workspace'}
+              </span>
+            )}
+          </button>
+        ) : (
+          <div
+            className={[
+              'w-full flex items-center gap-2 px-2.5 py-[7px] rounded-lg text-[12px] font-medium border bg-[rgba(99,102,241,0.08)] text-[#6366F1] border-[rgba(99,102,241,0.20)]',
+              collapsed ? 'justify-center' : '',
+            ].join(' ')}
+          >
+            <Code2 className="w-3.5 h-3.5 shrink-0" />
+            {!collapsed && <span className="truncate">Developer Workspace</span>}
+          </div>
+        )}
       </div>
 
       {/* Score mini-card (developer mode, expanded) */}
@@ -205,15 +237,17 @@ export default function Sidebar({ trustScore, user }: SidebarProps) {
         <div className="mx-3 mt-3 p-3 rounded-lg bg-white dark:bg-[#131720] border border-slate-200 dark:border-white/[0.06] shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] text-slate-500 dark:text-[#64748B] font-medium">Verified Score</span>
-            <span
-              className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-[#14B8A6]/10 text-[#14B8A6]"
-            >
-              Elite
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+              currentScore !== null && currentScore >= 900
+                ? 'bg-[#14B8A6]/10 text-[#14B8A6]'
+                : 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400'
+            }`}>
+              {currentScore !== null ? (currentScore >= 900 ? 'Elite' : currentScore >= 750 ? 'Senior' : 'Active') : 'Pending'}
             </span>
           </div>
           <div className="flex items-baseline gap-1.5 mb-2">
             <span className="text-[18px] font-semibold text-slate-900 dark:text-[#F1F5F9] tracking-tight leading-none">
-              {currentScore}
+              {currentScore !== null ? currentScore : '—'}
             </span>
             <span className="text-[11px] text-slate-400 dark:text-[#64748B]">/1000</span>
           </div>
@@ -269,6 +303,22 @@ export default function Sidebar({ trustScore, user }: SidebarProps) {
             </div>
           </div>
         )}
+
+        {/* Admin Navigation Section (Admin Only) */}
+        {isAdmin && (
+          <div>
+            {!collapsed && (
+              <div className="px-2.5 py-1.5 text-[10.5px] font-medium uppercase tracking-[0.05em] text-purple-400 dark:text-purple-400">
+                Governance
+              </div>
+            )}
+            <div className="space-y-0.5 mt-0.5">
+              {ADMIN_NAV.map((item) => (
+                <NavItem key={item.name} item={item} activeColor="purple" />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Footer */}
@@ -276,24 +326,28 @@ export default function Sidebar({ trustScore, user }: SidebarProps) {
         {!collapsed ? (
           <div className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-[#181F2C] transition-colors">
             <div className="flex items-center gap-2.5 min-w-0">
-              <img
-                src={activeUser.avatarUrl}
-                alt={activeUser.name}
-                className="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-white/[0.08] shrink-0"
-              />
+              {activeUser.avatarUrl ? (
+                <img
+                  src={activeUser.avatarUrl}
+                  alt={activeUser.name || 'User'}
+                  className="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-white/[0.08] shrink-0"
+                />
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-500 to-blue-600 flex items-center justify-center text-white text-[11px] font-bold shrink-0">
+                  {(activeUser.name || activeUser.username || 'D').charAt(0).toUpperCase()}
+                </div>
+              )}
               <div className="min-w-0">
                 <span className="block text-[13px] font-medium text-slate-900 dark:text-[#F1F5F9] truncate leading-tight">
                   {activeUser.name}
                 </span>
                 <span className="block text-[11px] text-slate-500 dark:text-[#64748B] truncate leading-tight">
-                  {activeUser.role === 'recruiter'
-                    ? 'Recruiter'
-                    : `Score ${activeUser.trustScore.overallScore}`}
+                  {getRoleBadge()}
                 </span>
               </div>
             </div>
             <Link
-              href={`/u/${activeUser.username}`}
+              href={`/u/${activeUser.username || 'developer'}`}
               className="text-slate-400 dark:text-[#64748B] hover:text-[#6366F1] dark:hover:text-[#93C5FD] transition-colors p-1 shrink-0"
               title="View Public Profile"
             >
@@ -302,12 +356,18 @@ export default function Sidebar({ trustScore, user }: SidebarProps) {
           </div>
         ) : (
           <div className="flex justify-center py-1">
-            <img
-              src={activeUser.avatarUrl}
-              alt={activeUser.name}
-              className="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-white/[0.08]"
-              title={activeUser.name}
-            />
+            {activeUser.avatarUrl ? (
+              <img
+                src={activeUser.avatarUrl}
+                alt={activeUser.name || 'User'}
+                className="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-white/[0.08]"
+                title={activeUser.name}
+              />
+            ) : (
+              <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-500 to-blue-600 flex items-center justify-center text-white text-[11px] font-bold">
+                {(activeUser.name || activeUser.username || 'D').charAt(0).toUpperCase()}
+              </div>
+            )}
           </div>
         )}
       </div>

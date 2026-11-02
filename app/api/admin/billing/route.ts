@@ -11,8 +11,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Role check: Only admin or company_admin can view aggregate billing telemetry
-    if (user.role !== 'admin' && user.role !== 'company_admin') {
+    // Role check: Strictly admin can view aggregate platform billing telemetry
+    if (user.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Forbidden: Admin privilege required' },
         { status: 403 }
