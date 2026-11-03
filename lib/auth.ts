@@ -2,9 +2,10 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { db } from '@/lib/drizzle';
 import { users, sessions, accounts, verifications } from '@/database/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import crypto from 'crypto';
 import { redactDatabaseUrl } from '@/lib/db-config';
+import { SuperAdminBootstrapService } from '@/services/auth/bootstrap';
 
 export const DEV_FALLBACK_SECRET = 'skillverse_development_better_auth_secret_minimum_32_bytes_long';
 
@@ -270,11 +271,20 @@ export const auth = betterAuth({
         });
         const fullName = profile.name || profile.email?.split('@')[0] || username;
         const avatarUrl = profile.picture || '';
+
+        // Initial Super Admin Bootstrap: verify Google identity against configured owner identity
+        const isEligibleOwner = SuperAdminBootstrapService.isEligible({
+          email: profile.email,
+          emailVerified: profile.email_verified,
+          provider: 'google',
+          googleSub: profile.sub,
+        });
+
         return {
           name: fullName,
           username,
           avatarUrl,
-          role: 'developer',
+          role: isEligibleOwner ? 'admin' : 'developer',
         };
       },
     },
@@ -286,6 +296,37 @@ export const auth = betterAuth({
     },
   },
   databaseHooks: {
+    session: {
+      create: {
+        after: async (session: any) => {
+          // Idempotent owner bootstrap check on session creation:
+          // If the user logging in matches the configured owner Google account but still has 'developer' role
+          // (e.g. account existed prior to setting SUPER_ADMIN_BOOTSTRAP_EMAIL), safely promote them.
+          try {
+            const user = await db.query.users.findFirst({
+              where: eq(users.id, session.userId),
+            });
+            if (user && user.role !== 'admin') {
+              const googleAccount = await db.query.accounts.findFirst({
+                where: and(eq(accounts.userId, user.id), eq(accounts.providerId, 'google')),
+              });
+              if (googleAccount) {
+                await SuperAdminBootstrapService.provisionIfEligible({
+                  userId: user.id,
+                  email: user.email,
+                  emailVerified: user.emailVerified,
+                  provider: 'google',
+                  googleSub: googleAccount.accountId,
+                });
+              }
+            }
+          } catch (err) {
+            // Log and fail closed without crashing session creation
+            console.error('[BetterAuth Hook] Bootstrap check error on session create:', err);
+          }
+        },
+      },
+    },
     account: {
       create: {
         after: async (account: any) => {

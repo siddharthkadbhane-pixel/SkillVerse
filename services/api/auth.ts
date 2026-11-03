@@ -6,6 +6,7 @@ import { db, withDbTimeout } from '@/lib/drizzle';
 import { users } from '@/database/schema';
 import { eq } from 'drizzle-orm';
 import { DUMMY_USERS, getDummyUserById } from '@/lib/dummyData';
+import { UserStatusService } from '@/services/admin/userStatus';
 
 export class ApiAuthService {
   /**
@@ -77,6 +78,15 @@ export class ApiAuthService {
 
       // Resolve user data
       const tokenUser = await this.resolveUserById(validation.tokenData.userId);
+      if (tokenUser && (await UserStatusService.isUserSuspended(tokenUser.id))) {
+        return {
+          success: false,
+          errorStatus: 403,
+          errorCode: 'ACCOUNT_SUSPENDED',
+          errorMessage: 'This account has been suspended by an administrator.',
+          context: this.createEmptyContext(requestId, clientType),
+        };
+      }
 
       if (!tokenUser) {
         return {
@@ -114,21 +124,42 @@ export class ApiAuthService {
       if (!sessionUser && isDemoAuthEnabled()) {
         const demoUserId = req.cookies.get('skillverse_demo_user')?.value;
         if (demoUserId) {
-          const testUser = DUMMY_USERS.find((u) => u.id === demoUserId);
-          if (testUser) {
+          if (demoUserId === '00000000-0000-0000-0000-0000000000ad') {
             sessionUser = {
-              id: testUser.id,
-              email: testUser.email,
-              username: testUser.username,
-              name: testUser.name,
-              role: testUser.role,
-              avatarUrl: testUser.avatarUrl,
+              id: '00000000-0000-0000-0000-0000000000ad',
+              email: 'admin@skillverse.dev',
+              username: 'superadmin',
+              name: 'Super Administrator',
+              role: 'admin',
+              avatarUrl: '',
             } as any;
+          } else {
+            const testUser = DUMMY_USERS.find((u) => u.id === demoUserId);
+            if (testUser) {
+              sessionUser = {
+                id: testUser.id,
+                email: testUser.email,
+                username: testUser.username,
+                name: testUser.name,
+                role: testUser.role,
+                avatarUrl: testUser.avatarUrl,
+              } as any;
+            }
           }
         }
       }
 
       if (sessionUser && sessionUser.id) {
+        if (await UserStatusService.isUserSuspended(sessionUser.id)) {
+          return {
+            success: false,
+            errorStatus: 403,
+            errorCode: 'ACCOUNT_SUSPENDED',
+            errorMessage: 'This account has been suspended by an administrator.',
+            context: this.createEmptyContext(requestId, clientType),
+          };
+        }
+
         const fullScopes: ApiScope[] = [
           'read:profile',
           'read:dcc',
@@ -230,6 +261,16 @@ export class ApiAuthService {
     }
 
     if (isDemoAuthEnabled()) {
+      if (userId === '00000000-0000-0000-0000-0000000000ad') {
+        return {
+          id: '00000000-0000-0000-0000-0000000000ad',
+          email: 'admin@skillverse.dev',
+          username: 'superadmin',
+          name: 'Super Administrator',
+          role: 'admin',
+          avatarUrl: '',
+        };
+      }
       const dummy = getDummyUserById(userId);
       if (dummy) {
         return {

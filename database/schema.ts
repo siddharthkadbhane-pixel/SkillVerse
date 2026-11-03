@@ -44,7 +44,7 @@ export const trustScores = pgTable('trust_scores', {
 // 2b. Trust History Table
 export const trustHistory = pgTable('trust_history', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull().unique(),
   overallScore: integer('overall_score').notNull(),
   categoryScores: jsonb('category_scores').notNull(),
   engineVersion: varchar('engine_version', { length: 50 }).notNull(),
@@ -1454,15 +1454,15 @@ export const verifications = pgTable('verifications', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
-
-
-
-
-
-
-
-
-
-
-
-
+// 108. Two Factors Table (Better Auth Official Multi-Factor Authentication Plugin)
+export const twoFactors = pgTable('two_factors', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  secret: text('secret').notNull(),
+  backupCodes: text('backup_codes').notNull(),
+  verified: boolean('verified').default(true).notNull(),
+  failedVerificationCount: integer('failed_verification_count').default(0).notNull(),
+  lockedUntil: timestamp('locked_until'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});

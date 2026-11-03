@@ -1,6 +1,7 @@
 import { cookies, headers } from 'next/headers';
 import { auth } from '@/lib/auth';
 import { DUMMY_USERS } from '@/lib/dummyData';
+import { UserStatusService } from '@/services/admin/userStatus';
 import { checkDbAvailability, db } from '@/lib/drizzle';
 import { accounts } from '@/database/schema';
 import { eq } from 'drizzle-orm';
@@ -13,6 +14,7 @@ export interface SessionUser {
   avatarUrl?: string;
   role: string;
   githubId?: string;
+  companyId?: string;
   user_metadata?: {
     full_name?: string;
     user_name?: string;
@@ -64,6 +66,13 @@ export async function getSessionUser(): Promise<SessionUser | null> {
         if (session && session.user && session.user.id) {
           const u = session.user as any;
 
+          // Reject access if user is suspended
+          const isSuspended = await UserStatusService.isUserSuspended(u.id);
+          if (isSuspended) {
+            console.warn(`[SessionAuth] Access denied: user ${u.id} (${u.email}) is currently suspended.`);
+            return null;
+          }
+
           // Query linked providers directly from accounts table to support multiple linked providers accurately
           let linkedProviders: string[] = [];
           try {
@@ -92,6 +101,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
             avatarUrl: u.avatarUrl || u.image || '',
             role: u.role || 'developer',
             githubId: u.githubId,
+            companyId: u.companyId,
             user_metadata: {
               full_name: u.name,
               user_name: u.username || u.name,
@@ -122,6 +132,29 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     if (isDemoAuthEnabled() && !hasBetterAuthCookie) {
       const demoUserId = cookieStore.get('skillverse_demo_user')?.value;
       if (demoUserId) {
+        if (demoUserId === '00000000-0000-0000-0000-0000000000ad') {
+          return {
+            id: '00000000-0000-0000-0000-0000000000ad',
+            email: 'admin@skillverse.dev',
+            name: 'Super Administrator',
+            username: 'superadmin',
+            avatarUrl: '',
+            role: 'admin',
+            githubId: '10000000',
+            user_metadata: {
+              full_name: 'Super Administrator',
+              user_name: 'superadmin',
+              avatar_url: '',
+              email: 'admin@skillverse.dev',
+              sub: 'admin-sub-001',
+            },
+            app_metadata: {
+              provider: 'demo',
+              role: 'admin',
+            },
+            createdAt: new Date().toISOString(),
+          };
+        }
         const testUser = DUMMY_USERS.find((u) => u.id === demoUserId);
         if (testUser) {
           return {

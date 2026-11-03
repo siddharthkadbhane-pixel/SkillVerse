@@ -9,6 +9,7 @@ import { db, withDbTimeout } from '@/lib/drizzle';
 import { users, companyMembers } from '@/database/schema';
 import { eq, and } from 'drizzle-orm';
 import { DUMMY_USERS } from '@/lib/dummyData';
+import { MfaService, MfaTokenService } from '@/services/auth/mfa';
 
 export type UserRole = 'developer' | 'recruiter' | 'company_admin' | 'admin';
 
@@ -24,18 +25,19 @@ export class AuthorizationGuard {
     const authResult = await ApiAuthService.authenticate(req);
 
     if (!authResult.success || !authResult.context.isAuthenticated) {
+      const status = authResult.errorStatus || 401;
       return {
         authorized: false,
         context: authResult.context,
         response: NextResponse.json(
           {
             success: false,
-            error: 'Unauthorized',
+            error: status === 403 ? 'Forbidden' : 'Unauthorized',
             code: authResult.errorCode || 'AUTHENTICATION_REQUIRED',
             message: authResult.errorMessage || 'Valid authentication session or API token required.',
             requestId: authResult.context.requestId,
           },
-          { status: 401 }
+          { status }
         ),
       };
     }
@@ -246,7 +248,60 @@ export class AuthorizationGuard {
       };
     }
 
-    return { authorized: true, context: auth.context };
+        // Enforce Multi-Factor Authentication on Super Admin operations
+    if (allowedRoles.includes('admin') || userRole === 'admin') {
+      const isMfaEnforced = process.env.MFA_REQUIRED_FOR_ADMIN !== 'false';
+      if (isMfaEnforced) {
+        const path = req.nextUrl?.pathname || '';
+        const isMfaRoute = path.startsWith('/api/admin/mfa');
+
+        if (!isMfaRoute) {
+          const isEnrolled = await MfaService.isMfaEnrolled(auth.context.user.id);
+          if (!isEnrolled) {
+            return {
+              authorized: false,
+              context: auth.context,
+              response: NextResponse.json(
+                {
+                  success: false,
+                  error: 'Forbidden',
+                  code: 'MFA_ENROLLMENT_REQUIRED',
+                  message: 'Multi-factor authentication (MFA/TOTP) enrollment is required for platform administrators.',
+                  requestId: auth.context.requestId,
+                },
+                { status: 403 }
+              ),
+            };
+          }
+
+          const sessionToken = req.cookies.get('better-auth.session_token')?.value ||
+            req.cookies.get('__Secure-better-auth.session_token')?.value ||
+            `session_${auth.context.user.id}`;
+          const mfaCookieValue = req.cookies.get('skillverse_mfa_verified')?.value;
+          const tokenCheck = MfaTokenService.verifySignedToken(mfaCookieValue, auth.context.user.id, sessionToken);
+          const isVerified = tokenCheck.valid;
+
+          if (!isVerified) {
+            return {
+              authorized: false,
+              context: auth.context,
+              response: NextResponse.json(
+                {
+                  success: false,
+                  error: 'Forbidden',
+                  code: 'MFA_VERIFICATION_REQUIRED',
+                  message: 'Multi-factor authentication (MFA) challenge must be completed for this session.',
+                  requestId: auth.context.requestId,
+                },
+                { status: 403 }
+              ),
+            };
+          }
+        }
+      }
+    }
+
+return { authorized: true, context: auth.context };
   }
 
   /**

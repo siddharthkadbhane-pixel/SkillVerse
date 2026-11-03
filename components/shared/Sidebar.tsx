@@ -113,8 +113,16 @@ export default function Sidebar({ trustScore, user }: SidebarProps) {
     { name: 'Admin Console', href: '/admin', icon: Shield },
   ];
 
-  const toggleMode = () => {
+  const toggleMode = async () => {
     if (!isPrivileged) return;
+    const targetMode = isCompanyMode ? 'developer' : 'company';
+    try {
+      await fetch('/api/workspace/switch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: targetMode }),
+      });
+    } catch {}
     if (isCompanyMode) {
       router.push('/overview');
     } else {
