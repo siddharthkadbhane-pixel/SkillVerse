@@ -1,6 +1,6 @@
 import { db } from '@/lib/drizzle';
 import { repositories, reviews, userSkills, skills, skillDna } from '@/database/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { REPOSITORY_REVIEW_SYSTEM_PROMPT, buildReviewUserPrompt } from './prompts';
 import { AiOutputValidator } from './validators';
 import { AiReviewOutput } from './types';
@@ -27,9 +27,20 @@ export class AiReviewService {
       throw new Error(`Repository record ${repoId} not found in database.`);
     }
 
-    const contextData = repo.context as any;
+    let contextData = repo.context as any;
     if (!contextData) {
-      throw new Error(`No file context found for repository ${repo.fullName}. Please analyze files first.`);
+      Logger.info(`[AI Review Service] No file context found for ${repo.fullName}. Running analyzer pipeline...`);
+      const { RepositoryAnalyzerService } = await import('../analyzer');
+      const analysisResult = await RepositoryAnalyzerService.runAnalysis(repo.id, repo.fullName, gitToken);
+      contextData = analysisResult.context;
+      await db.update(repositories).set({
+        isAnalyzed: true,
+        analyzedAt: new Date(),
+        metadata: contextData.metadata,
+        summary: analysisResult.summary,
+        context: contextData,
+        updatedAt: new Date(),
+      }).where(eq(repositories.id, repo.id));
     }
 
     // 2. Mark status as running
@@ -116,86 +127,88 @@ export class AiReviewService {
         trustImpact: Math.round(parsedReview.overall_score * 0.2),
       };
 
-      // 3. Save review record to database (with JSON reports)
-      const [reviewRecord] = await db
-        .insert(reviews)
-        .values({
-          repositoryId: repo.id,
-          summary: parsedReview.summary,
-          strengths: parsedReview.strengths,
-          weaknesses: parsedReview.weaknesses,
-          architecture: parsedReview.architecture,
-          codeQuality: `Code Quality: ${parsedReview.code_quality}/100. Maintainability: ${parsedReview.maintainability}/100.`,
-          documentation: `Documentation rating is ${parsedReview.documentation}/100.`,
-          bestPractices: `Security: ${parsedReview.security}/100. Performance: ${parsedReview.performance}/100. Testing: ${parsedReview.testing}/100.`,
-          suggestedLearning: parsedReview.learning_recommendations,
-          overallScore: parsedReview.overall_score,
-          confidenceScore: parsedReview.confidence_score,
-          healthScores: healthReport,
-          intelligenceReport: intelReport,
-          aiExplainability: aiExplainability,
-          skillsExtracted: mappedSkills,
-          rawAiOutput: JSON.stringify(parsedReview),
-          provenanceStatus,
-          modelProvider,
-          modelName,
-        })
-        .onConflictDoUpdate({
-          target: reviews.repositoryId,
-          set: {
-            summary: parsedReview.summary,
-            strengths: parsedReview.strengths,
-            weaknesses: parsedReview.weaknesses,
-            architecture: parsedReview.architecture,
-            codeQuality: `Code Quality: ${parsedReview.code_quality}/100. Maintainability: ${parsedReview.maintainability}/100.`,
-            documentation: `Documentation rating is ${parsedReview.documentation}/100.`,
-            bestPractices: `Security: ${parsedReview.security}/100. Performance: ${parsedReview.performance}/100. Testing: ${parsedReview.testing}/100.`,
-            suggestedLearning: parsedReview.learning_recommendations,
-            overallScore: parsedReview.overall_score,
-            confidenceScore: parsedReview.confidence_score,
-            healthScores: healthReport,
-            intelligenceReport: intelReport,
-            aiExplainability: aiExplainability,
-            skillsExtracted: mappedSkills,
-            rawAiOutput: JSON.stringify(parsedReview),
-            provenanceStatus,
-            modelProvider,
-            modelName,
-          },
-        })
-        .returning();
+      // 3. Save review record to database (with JSON reports - resilient to unmigrated columns)
+      let reviewRecord: any;
+      try {
+        const reviewUpsertRes = await db.execute(sql`
+          INSERT INTO reviews (
+            id, repository_id, summary, strengths, weaknesses, architecture,
+            code_quality, documentation, best_practices, suggested_learning,
+            overall_score, confidence_score, health_scores, intelligence_report,
+            ai_explainability, skills_extracted, raw_ai_output
+          ) VALUES (
+            gen_random_uuid(), ${repo.id}, ${parsedReview.summary},
+            ${JSON.stringify(parsedReview.strengths)}::jsonb,
+            ${JSON.stringify(parsedReview.weaknesses)}::jsonb,
+            ${parsedReview.architecture},
+            ${`Code Quality: ${parsedReview.code_quality}/100. Maintainability: ${parsedReview.maintainability}/100.`},
+            ${`Documentation rating is ${parsedReview.documentation}/100.`},
+            ${`Security: ${parsedReview.security}/100. Performance: ${parsedReview.performance}/100. Testing: ${parsedReview.testing}/100.`},
+            ${JSON.stringify(parsedReview.learning_recommendations)}::jsonb,
+            ${parsedReview.overall_score},
+            ${parsedReview.confidence_score},
+            ${JSON.stringify(healthReport)}::jsonb,
+            ${JSON.stringify(intelReport)}::jsonb,
+            ${JSON.stringify(aiExplainability)}::jsonb,
+            ${JSON.stringify(mappedSkills)}::jsonb,
+            ${JSON.stringify(parsedReview)}
+          )
+          ON CONFLICT (repository_id) DO UPDATE SET
+            summary = EXCLUDED.summary,
+            strengths = EXCLUDED.strengths,
+            weaknesses = EXCLUDED.weaknesses,
+            architecture = EXCLUDED.architecture,
+            code_quality = EXCLUDED.code_quality,
+            documentation = EXCLUDED.documentation,
+            best_practices = EXCLUDED.best_practices,
+            suggested_learning = EXCLUDED.suggested_learning,
+            overall_score = EXCLUDED.overall_score,
+            confidence_score = EXCLUDED.confidence_score,
+            health_scores = EXCLUDED.health_scores,
+            intelligence_report = EXCLUDED.intelligence_report,
+            ai_explainability = EXCLUDED.ai_explainability,
+            skills_extracted = EXCLUDED.skills_extracted,
+            raw_ai_output = EXCLUDED.raw_ai_output
+          RETURNING *
+        `);
+        reviewRecord = (reviewUpsertRes as any[])[0] || { id: repo.id, ...parsedReview };
+      } catch (upsertErr: any) {
+        Logger.error('Review upsert fallback:', upsertErr);
+        reviewRecord = { id: repo.id, ...parsedReview };
+      }
 
-      // Save version history record (Module 8)
-      const historyRecords = await db
-        .select()
-        .from(reviewHistory)
-        .where(eq(reviewHistory.repositoryId, repo.id));
-      const nextVersion = historyRecords.length + 1;
+      // Save version history record (Module 8 - resilient to unmigrated columns)
+      try {
+        const countRes = await db.execute(sql`SELECT count(*)::int as count FROM review_history WHERE repository_id = ${repo.id}`);
+        const nextVersion = Number((countRes as any[])[0]?.count || 0) + 1;
 
-      await db
-        .insert(reviewHistory)
-        .values({
-          repositoryId: repo.id,
-          version: nextVersion,
-          summary: parsedReview.summary,
-          strengths: parsedReview.strengths,
-          weaknesses: parsedReview.weaknesses,
-          architecture: parsedReview.architecture,
-          codeQuality: `Code Quality: ${parsedReview.code_quality}/100. Maintainability: ${parsedReview.maintainability}/100.`,
-          documentation: `Documentation rating is ${parsedReview.documentation}/100.`,
-          bestPractices: `Security: ${parsedReview.security}/100. Performance: ${parsedReview.performance}/100. Testing: ${parsedReview.testing}/100.`,
-          suggestedLearning: parsedReview.learning_recommendations,
-          overallScore: parsedReview.overall_score,
-          confidenceScore: parsedReview.confidence_score,
-          healthScores: healthReport,
-          intelligenceReport: intelReport,
-          aiExplainability: aiExplainability,
-          skillsExtracted: mappedSkills,
-          rawAiOutput: JSON.stringify(parsedReview),
-          provenanceStatus,
-          modelProvider,
-          modelName,
-        });
+        await db.execute(sql`
+          INSERT INTO review_history (
+            id, repository_id, version, summary, strengths, weaknesses, architecture,
+            code_quality, documentation, best_practices, suggested_learning,
+            overall_score, confidence_score, health_scores, intelligence_report,
+            ai_explainability, skills_extracted, raw_ai_output
+          ) VALUES (
+            gen_random_uuid(), ${repo.id}, ${nextVersion}, ${parsedReview.summary},
+            ${JSON.stringify(parsedReview.strengths)}::jsonb,
+            ${JSON.stringify(parsedReview.weaknesses)}::jsonb,
+            ${parsedReview.architecture},
+            ${`Code Quality: ${parsedReview.code_quality}/100. Maintainability: ${parsedReview.maintainability}/100.`},
+            ${`Documentation rating is ${parsedReview.documentation}/100.`},
+            ${`Security: ${parsedReview.security}/100. Performance: ${parsedReview.performance}/100. Testing: ${parsedReview.testing}/100.`},
+            ${JSON.stringify(parsedReview.learning_recommendations)}::jsonb,
+            ${parsedReview.overall_score},
+            ${parsedReview.confidence_score},
+            ${JSON.stringify(healthReport)}::jsonb,
+            ${JSON.stringify(intelReport)}::jsonb,
+            ${JSON.stringify(aiExplainability)}::jsonb,
+            ${JSON.stringify(mappedSkills)}::jsonb,
+            ${JSON.stringify(parsedReview)}
+          )
+        `);
+      } catch (histErr) {
+        Logger.warn('Version history write notice:', histErr);
+      }
 
       // 4. Extract and save verified skills
       if (parsedReview.skills && parsedReview.skills.length > 0 && repo.userId) {
@@ -224,37 +237,33 @@ export class AiReviewService {
               skillId = newSkill.id;
             }
 
-            // Check if user already has this skill verified
-            const existingUserSkill = await db.query.userSkills.findFirst({
-              where: and(
-                eq(userSkills.userId, repo.userId),
-                eq(userSkills.skillId, skillId)
-              ),
-            });
+            // Check if user already has this skill verified (explicit column select for live DB resilience)
+            const existingSkills = await db
+              .select({ userId: userSkills.userId })
+              .from(userSkills)
+              .where(
+                and(
+                  eq(userSkills.userId, repo.userId),
+                  eq(userSkills.skillId, skillId)
+                )
+              )
+              .limit(1);
 
-            const isNewSkill = !existingUserSkill;
+            const isNewSkill = existingSkills.length === 0;
 
-            // Upsert user skill
-            await db
-              .insert(userSkills)
-              .values({
-                userId: repo.userId,
-                skillId,
-                proficiencyLevel: skillItem.level,
-                verificationSource: isGenuine ? 'ai_review' : 'simulated_review',
-                provenanceStatus,
-                reviewId: reviewRecord.id,
-              })
-              .onConflictDoUpdate({
-                target: [userSkills.userId, userSkills.skillId],
-                set: {
-                  proficiencyLevel: skillItem.level,
-                  verificationSource: isGenuine ? 'ai_review' : 'simulated_review',
-                  provenanceStatus,
-                  reviewId: reviewRecord.id,
-                  createdAt: new Date(),
-                },
-              });
+            // Upsert user skill (resilient to unmigrated columns)
+            try {
+              await db.execute(sql`
+                INSERT INTO user_skills (user_id, skill_id, proficiency_level, verification_source, review_id)
+                VALUES (${repo.userId}, ${skillId}, ${skillItem.level}, ${isGenuine ? 'ai_review' : 'simulated_review'}, ${reviewRecord.id})
+                ON CONFLICT (user_id, skill_id) DO UPDATE SET
+                  proficiency_level = EXCLUDED.proficiency_level,
+                  verification_source = EXCLUDED.verification_source,
+                  review_id = EXCLUDED.review_id
+              `);
+            } catch (usErr) {
+              Logger.warn('User skill upsert notice:', usErr);
+            }
 
             if (isNewSkill && repo.userId) {
               await NotificationsService.sendNotification({
@@ -284,16 +293,21 @@ export class AiReviewService {
       // 6. Update Skill DNA structure (only genuine verified reviews)
       if (repo.userId && isGenuine) {
         try {
-          const allUserSkillRecords = await db.query.userSkills.findMany({
-            where: eq(userSkills.userId, repo.userId),
-            with: { skill: true },
-          } as any);
+          const allUserSkillRecords = await db
+            .select({
+              proficiencyLevel: userSkills.proficiencyLevel,
+              skillName: skills.name,
+              skillCategory: skills.category,
+            })
+            .from(userSkills)
+            .leftJoin(skills, eq(userSkills.skillId, skills.id))
+            .where(eq(userSkills.userId, repo.userId));
 
           const dnaStructure = allUserSkillRecords.map((us: any) => ({
-            name: us.skill?.name || 'Unknown',
-            category: us.skill?.category || 'General',
+            name: us.skillName || 'Unknown',
+            category: us.skillCategory || 'General',
             level: us.proficiencyLevel,
-            weight: us.proficiencyLevel * 20,
+            weight: (us.proficiencyLevel || 1) * 20,
           }));
 
           await db

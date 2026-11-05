@@ -1,9 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { repositories, users, reviews } from '@/database/schema';
+import { repositories, users, reviews, accounts } from '@/database/schema';
 import { getSessionUser } from '@/services/supabase';
 import { AiReviewService } from '@/services/ai';
 import { eq, and } from 'drizzle-orm';
+
+// Allow extended serverless execution for AST parsing and AI review completion
+export const maxDuration = 60;
 
 export async function POST(
   req: NextRequest,
@@ -40,12 +43,44 @@ export async function POST(
       );
     }
 
-    const gitToken = dbUser?.githubToken || process.env.GITHUB_ACCESS_TOKEN || '';
+    // Resolve GitHub credentials with Google OAuth fallback
+    let gitToken = dbUser?.githubToken || process.env.GITHUB_ACCESS_TOKEN || '';
+    if (!gitToken) {
+      try {
+        const ghAccount = await db.query.accounts.findFirst({
+          where: and(eq(accounts.userId, user.id), eq(accounts.providerId, 'github')),
+        });
+        if (ghAccount?.accessToken) gitToken = ghAccount.accessToken;
+      } catch {}
+    }
 
-    // Trigger AI Review in the background (Non-blocking async promise)
-    AiReviewService.processRepositoryReview(repo.id, gitToken).catch(err => {
-      console.error('Background review execution error:', err);
+    // Enforce idempotency: prevent starting duplicate concurrent reviews
+    const fullRepo = await db.query.repositories.findFirst({
+      where: eq(repositories.id, repo.id),
     });
+    if (fullRepo?.reviewStatus === 'running') {
+      return NextResponse.json({
+        success: true,
+        message: 'Review is already in progress.',
+        status: 'running',
+      }, { status: 200 });
+    }
+
+    // Schedule execution via Next.js 15 after() to ensure completion in serverless environments
+    try {
+      after(async () => {
+        try {
+          await AiReviewService.processRepositoryReview(repo.id, gitToken);
+        } catch (err) {
+          console.error('Background review execution error:', err);
+        }
+      });
+    } catch {
+      // Outside Next.js request scope (e.g. headless test suite), execute asynchronously
+      AiReviewService.processRepositoryReview(repo.id, gitToken).catch((err) => {
+        console.error('Background review execution error (test fallback):', err);
+      });
+    }
 
     return NextResponse.json({
       success: true,
@@ -101,9 +136,27 @@ export async function GET(
         );
       }
 
-      const reviewRecord = await db.query.reviews.findFirst({
-        where: eq(reviews.repositoryId, repoDbId),
-      });
+      const reviewRows = await db.select({
+        id: reviews.id,
+        repositoryId: reviews.repositoryId,
+        summary: reviews.summary,
+        strengths: reviews.strengths,
+        weaknesses: reviews.weaknesses,
+        architecture: reviews.architecture,
+        codeQuality: reviews.codeQuality,
+        documentation: reviews.documentation,
+        bestPractices: reviews.bestPractices,
+        suggestedLearning: reviews.suggestedLearning,
+        overallScore: reviews.overallScore,
+        confidenceScore: reviews.confidenceScore,
+        healthScores: reviews.healthScores,
+        intelligenceReport: reviews.intelligenceReport,
+        aiExplainability: reviews.aiExplainability,
+        skillsExtracted: reviews.skillsExtracted,
+        rawAiOutput: reviews.rawAiOutput,
+        createdAt: reviews.createdAt,
+      }).from(reviews).where(eq(reviews.repositoryId, repoDbId)).limit(1);
+      const reviewRecord = reviewRows[0] || null;
 
       if (!reviewRecord) {
         return NextResponse.json({ success: false, error: 'AI Review not found' }, { status: 200 });

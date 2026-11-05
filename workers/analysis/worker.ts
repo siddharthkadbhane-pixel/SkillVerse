@@ -17,6 +17,54 @@ export class AnalysisWorker {
   private static queue: Job[] = [];
   private static processing = false;
 
+  static async processDirect(repoId: string, fullName: string, gitToken: string): Promise<boolean> {
+    Logger.info(`Direct execution of analysis for ${fullName}...`);
+    try {
+      await db
+        .update(repositories)
+        .set({ reviewStatus: 'running' })
+        .where(eq(repositories.id, repoId));
+
+      const { summary, context } = await RepositoryAnalyzerService.runAnalysis(
+        repoId,
+        fullName,
+        gitToken
+      );
+
+      await db
+        .update(repositories)
+        .set({
+          isAnalyzed: true,
+          analyzedAt: new Date(),
+          metadata: context.metadata,
+          summary,
+          context,
+          updatedAt: new Date(),
+        })
+        .where(eq(repositories.id, repoId));
+
+      await AiReviewService.processRepositoryReview(repoId, gitToken);
+
+      await db
+        .update(repositories)
+        .set({
+          reviewStatus: 'completed',
+          isAnalyzed: true,
+          analyzedAt: new Date(),
+        })
+        .where(eq(repositories.id, repoId));
+
+      return true;
+    } catch (err: any) {
+      Logger.error(`Direct analysis failed for ${fullName}:`, err);
+      await db
+        .update(repositories)
+        .set({ reviewStatus: 'failed' })
+        .where(eq(repositories.id, repoId));
+      return false;
+    }
+  }
+
   static enqueue(repoId: string, fullName: string, gitToken: string, maxAttempts = 3): void {
     // Avoid duplicate jobs in queue
     if (this.queue.some(job => job.id === repoId)) {

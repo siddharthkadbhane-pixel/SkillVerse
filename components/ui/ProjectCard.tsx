@@ -35,6 +35,7 @@ function getLanguageColor(lang: string | null): string {
 }
 
 export default function ProjectCard({
+  id,
   name,
   fullName,
   description,
@@ -56,9 +57,11 @@ export default function ProjectCard({
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <Code2 className="w-3.5 h-3.5 text-slate-400 dark:text-[#64748B] shrink-0" />
-          <h3 className="text-[13px] font-medium text-slate-900 dark:text-[#F1F5F9] group-hover:text-[#6366F1] dark:group-hover:text-[#93C5FD] transition-colors truncate">
-            {name}
-          </h3>
+          <Link href={`/repositories/${id}`} className="hover:underline truncate">
+            <h3 className="text-[13px] font-medium text-slate-900 dark:text-[#F1F5F9] group-hover:text-[#6366F1] dark:group-hover:text-[#93C5FD] transition-colors truncate">
+              {name}
+            </h3>
+          </Link>
         </div>
         <div className="shrink-0">
           {isAnalyzed ? (
@@ -126,10 +129,10 @@ export default function ProjectCard({
             <Github className="w-3.5 h-3.5" />
           </a>
           <Link
-            href={`/reviews?repo=${encodeURIComponent(fullName || name)}`}
+            href={`/repositories/${id}`}
             className="inline-flex items-center gap-1 text-[11.5px] font-medium text-[#6366F1] dark:text-[#93C5FD] hover:underline transition-colors"
           >
-            Audit
+            {isAnalyzed ? 'Scorecard' : 'Audit'}
             <ArrowUpRight className="w-3 h-3" />
           </Link>
         </div>

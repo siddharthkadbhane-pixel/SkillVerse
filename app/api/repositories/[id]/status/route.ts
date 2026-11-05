@@ -25,22 +25,27 @@ export async function GET(
     try {
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
       const repo = await db.query.repositories.findFirst({
-        where: and(
-          isUuid ? eq(repositories.id, id) : eq(repositories.githubRepoId, parseInt(id, 10)),
-          eq(repositories.userId, user.id)
-        ),
+        where: isUuid ? eq(repositories.id, id) : eq(repositories.githubRepoId, parseInt(id, 10)),
       });
 
       if (!repo) {
         return NextResponse.json({ success: false, error: 'Repository not found' }, { status: 404 });
       }
 
+      // Check ownership or admin
+      if (repo.userId !== user.id && user.role !== 'admin') {
+        return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+      }
+
       return NextResponse.json({
         success: true,
         data: {
+          id: repo.id,
+          githubRepoId: repo.githubRepoId,
           isAnalyzed: repo.isAnalyzed,
           analyzedAt: repo.analyzedAt,
-          status: repo.isAnalyzed ? 'completed' : 'idle',
+          reviewStatus: repo.reviewStatus,
+          status: repo.reviewStatus || (repo.isAnalyzed ? 'completed' : 'idle'),
         },
       });
     } catch {
